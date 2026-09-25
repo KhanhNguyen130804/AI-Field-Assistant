@@ -27,7 +27,7 @@
 - `flutter test` — đạt; test chuyển tab trên viewport 320×568 không phát hiện lỗi render.
 - `flutter build web --release` — build thành công.
 - `flutter build apk --debug` — build thành công; lúc kiểm tra coding agent chưa có Android device để cài/chạy.
-- **Bổ sung xác nhận của chủ dự án:** APK đã được mở qua Android Studio và chạy trên điện thoại Android thật; hai ảnh đính kèm cho thấy hai tab. Coding agent không thể tự kiểm chứng thiết bị trong phiên do `flutter devices` không thấy Android device.
+- **Bổ sung xác nhận của chủ dự án:** APK Ngày 1 đã được mở qua Android Studio và chạy trên điện thoại Android thật; hai ảnh đính kèm cho thấy hai tab. Coding agent không thể tự kiểm chứng thiết bị trong phiên do `flutter devices` không thấy Android device.
 
 ### Nếu có thêm 7 ngày
 
@@ -39,3 +39,32 @@
 6. **Ngày 7:** Sửa lỗi, build APK, rà soát secret/quyền riêng tư, hoàn thiện README/worklog và chuẩn bị demo trung thực theo tính năng đã chạy.
 
 Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉnh sửa → xác nhận → lưu → xem lịch sử hoạt động ổn định.
+
+## 2026-09-25 — Ngày 2: nhập mô tả và ảnh
+
+### Công cụ và yêu cầu
+
+- **AI coding agent:** OpenCode, model gpt-6-luna.
+- **Công cụ:** Flutter CLI; dependency `image_picker` 1.2.3 được thêm bằng `flutter pub add image_picker`.
+- **Yêu cầu:** Thực hiện `docs/implement_plan_day2.md`, làm form nhập mô tả/ảnh, validation và preview; chưa tích hợp AI hoặc lưu trữ.
+
+### AI hỗ trợ như thế nào
+
+- Đọc roadmap và plan Ngày 2, triển khai `CreateReportScreen`, picker camera/gallery, preview cục bộ, validation và widget tests.
+- Giữ picker dependency ở mức tối thiểu; không thêm `permission_handler`, permission storage rộng, AI service hoặc cơ sở dữ liệu.
+
+### Kết quả chưa chính xác và cách sửa
+
+- Test ban đầu dùng `find.text` cho mô tả xuất hiện ở cả `EditableText` lẫn preview; chuyển sang key riêng. Test CTA ở ngoài viewport được sửa bằng cách cuộn tới nút trước khi tap.
+- Thử pre-decode bằng `ui.instantiateImageCodec` khiến widget test không hoàn tất; bỏ pre-decode đó. Thay vào đó kiểm tra kích thước/bytes/signature và dùng `Image.errorBuilder` làm fallback để không crash khi Flutter không render được ảnh; nhánh decoder-error chưa kiểm chứng trên thiết bị.
+- APK build đầu tiên lỗi Kotlin incremental cache do source plugin ở ổ `C:` còn project ở ổ `D:`. Tham số `--android-project-arg=kotlin.incremental=false` xác nhận workaround; sau đó đặt `kotlin.incremental=false` trong `android/gradle.properties` để Android Studio/Flutter dùng chung fix. Build chuẩn thành công; tradeoff là Kotlin có thể biên dịch lâu hơn.
+- AI chưa được tích hợp; chưa có đầu ra AI trong sản phẩm để đánh giá.
+
+### Kiểm chứng Ngày 2
+
+- `dart format lib test` — hoàn tất.
+- `flutter analyze` — không có vấn đề.
+- `flutter test --reporter expanded` — 8 tests đạt: điều hướng/màn hình hẹp, validation rỗng, xem lại mô tả/ảnh, camera/gallery source, hủy picker, permission error, ảnh quá lớn và ảnh không hợp lệ.
+- `flutter build web --release` — thành công; có cảnh báo không blocking về Cupertino icon font và Wasm dry-run.
+- `flutter build apk --debug` — sau khi đặt `kotlin.incremental=false` trong project config, build thành công. Gradle có cảnh báo non-blocking về restricted Java API.
+- `flutter devices` ở agent chỉ thấy Windows, Chrome và Edge. Chủ dự án gửi hai ảnh từ điện thoại Android thật: một ảnh cuộn của form có mô tả và ảnh đã chọn; ảnh kia là system photo picker. Chủ dự án báo ảnh nguồn lớn hơn 10 MiB; ảnh chụp không cho biết dung lượng file sau resize/compress. Điều này xác nhận gallery selection/preview theo báo cáo chủ dự án, không xác nhận camera hoặc từ chối quyền.

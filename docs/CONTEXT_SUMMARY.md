@@ -1,4 +1,4 @@
-# Tóm tắt dự án — Ngày 1
+# Tóm tắt dự án — đến Ngày 2
 
 > Bản tóm tắt tự chứa các quyết định quan trọng của Ngày 1 để bàn giao cho coding agent. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Cập nhật khi quyết định hoặc trạng thái triển khai đổi.
 
@@ -12,7 +12,7 @@ AI Field Assistant trước hết dành cho **nhân viên bảo trì tòa nhà**
 Tạo báo cáo → Xem/chỉnh sửa bản nháp → Lịch sử → Chi tiết báo cáo
 ```
 
-Đây là luồng thiết kế Ngày 1, không có nghĩa tất cả màn hình đã được triển khai. Mã nguồn hiện chỉ có hai khu vực: **Tạo báo cáo** (giới thiệu quy trình dự kiến) và **Lịch sử** (empty state). Tab dưới cùng chuyển màn hình được; nội dung hai trang chưa có thao tác tạo, sửa hay lưu báo cáo. Theo phạm vi đã chọn, chưa dựng màn hình kết quả/chỉnh sửa/chi tiết bằng dữ liệu giả.
+Đây là luồng sản phẩm đã thống nhất; chưa có nghĩa tất cả màn hình đã được triển khai. Hiện **Tạo báo cáo** có nhập mô tả, chụp/chọn một ảnh và xem lại đầu vào cục bộ; **Lịch sử** vẫn là empty state. Tab dưới cùng chuyển màn hình được. AI draft, màn hình kết quả/chỉnh sửa, lưu và chi tiết chưa được dựng hay giả lập bằng dữ liệu mẫu.
 
 ## Schema báo cáo đã thống nhất
 
@@ -32,9 +32,11 @@ Các trường nội dung lõi: `category`, `location`, `priority`, `issue`, `su
 
 ## Công nghệ, hiện trạng và giới hạn
 
-- **Flutter/Dart**, Android-first; Web bật để xem trước giao diện. UI dùng Material 3, `NavigationBar` và `IndexedStack`; chưa thêm dependency nghiệp vụ.
-- Điểm vào UI: `lib/main.dart`. Widget test: `test/widget_test.dart`.
-- Chưa có nhập mô tả/ảnh, camera, AI service, report model, parser, lưu trữ cục bộ, dữ liệu lịch sử hoặc màn hình kết quả/chi tiết hoạt động.
+- **Flutter/Dart**, Android-first; Web bật để xem trước giao diện. UI dùng Material 3, `NavigationBar` và `IndexedStack`.
+- Image picker: `image_picker` 1.2.3; yêu cầu resize tối đa 1600×1600, JPEG quality 85 và giới hạn 10 MiB. Không thêm `permission_handler` hoặc quyền storage rộng.
+- Điểm vào app shell: `lib/main.dart`; form: `lib/screens/create_report_screen.dart`; widget tests: `test/widget_test.dart`.
+- Ngày 2 đã thêm nhập mô tả, camera/gallery picker, preview cục bộ, validation đầu vào và thông báo lỗi. Chưa có AI service, report model, parser, lưu trữ cục bộ, dữ liệu lịch sử hoặc màn hình kết quả/chi tiết hoạt động.
+- Mô tả nằm trong state của màn hình; ảnh là `XFile` tạm của picker. Không gửi qua mạng, không lưu thành báo cáo và không đảm bảo giữ sau khi app bị đóng.
 - Không có API key trong source. Nếu tích hợp AI sau này, dùng backend/proxy hoặc cơ chế phù hợp cho ứng dụng di động.
 
 ## Chạy và kiểm chứng
@@ -48,9 +50,11 @@ flutter test
 flutter build apk --debug
 ```
 
-Đã kiểm chứng trong môi trường phát triển: `dart format lib test`, `flutter analyze`, `flutter test`, `flutter build web --release` và `flutter build apk --debug` đều thành công. APK debug được tạo tại `build/app/outputs/flutter-apk/app-debug.apk`.
+Đã kiểm chứng trong môi trường phát triển: `dart format lib test`, `flutter analyze`, `flutter test` (8 tests), `flutter build web --release` và `flutter build apk --debug` đều thành công. APK debug được tạo tại `build/app/outputs/flutter-apk/app-debug.apk`.
 
-Chủ dự án xác nhận đã mở APK bằng Android Studio và chạy trên điện thoại Android thật; hai ảnh cung cấp thể hiện hai tab. Trong các lần rà soát của coding agent không có Android device kết nối để kiểm chứng độc lập. Ở trạng thái kiểm tra hiện tại, `flutter devices` chỉ nhận Windows/Chrome/Edge.
+Chủ dự án xác nhận đã chạy app trên Android thật. Ảnh Ngày 2 cho thấy photo picker mở được và ảnh được chọn/preview cùng mô tả; chủ dự án báo ảnh nguồn lớn hơn 10 MiB. Ảnh không cho biết byte length trước/sau xử lý. Camera và từ chối quyền chưa được xác nhận thử thủ công. `flutter devices` trong môi trường agent chỉ nhận Windows/Chrome/Edge.
+
+Trong Windows workspace này, Kotlin incremental cache từng lỗi khi project ở ổ `D:` và Pub Cache ở ổ `C:`. `android/gradle.properties` hiện đặt `kotlin.incremental=false`; build chuẩn `flutter build apk --debug` đã thành công. Kotlin compile có thể chậm hơn do không dùng incremental cache.
 
 ## Tài liệu liên quan
 
@@ -60,3 +64,4 @@ Chủ dự án xác nhận đã mở APK bằng Android Studio và chạy trên 
 - `docs/PROMPT_01.md` — prompt khởi tạo nền tảng.
 - `docs/AI_WORKLOG.md` — công cụ AI, lỗi thực tế và kiểm chứng.
 - `docs/WALKTHROUGH.md` — cách chạy và kiểm tra giao diện hiện có.
+- `docs/implement_plan_day2.md` — phạm vi và tiêu chí triển khai Ngày 2.

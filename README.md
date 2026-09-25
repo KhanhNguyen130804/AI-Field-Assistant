@@ -6,10 +6,10 @@
 
 Đã có hai khu vực điều hướng bằng tab tiếng Việt:
 
-- **Tạo báo cáo:** giới thiệu quy trình dự kiến.
+- **Tạo báo cáo:** nhập mô tả, chụp/chọn một ảnh, xem preview và xem lại đầu vào cục bộ.
 - **Lịch sử:** trạng thái rỗng cho báo cáo đã lưu trong tương lai.
 
-Chưa tích hợp nhập mô tả, camera/chọn ảnh, AI, lưu trữ, voice-to-text, GPS, đăng nhập hoặc cloud. Vì vậy chưa có dữ liệu báo cáo, loading/error state hay lịch sử hoạt động.
+Mô tả nằm trong state của màn hình; ảnh dùng `XFile` tạm do picker cung cấp. Đầu vào không gửi qua mạng và chưa được lưu thành báo cáo. Chưa tích hợp AI, tạo/sửa báo cáo, lưu trữ, lịch sử có dữ liệu, voice-to-text, GPS, đăng nhập hoặc cloud; app không đảm bảo giữ đầu vào sau khi đóng.
 
 ## Kiến trúc hiện tại
 
@@ -18,11 +18,11 @@ Flutter Material 3 app
 └── lib/main.dart
     ├── AiFieldAssistantApp — theme và tên ứng dụng
     └── _HomeScreen — NavigationBar + IndexedStack
-        ├── _CreateReportScreen — giới thiệu quy trình dự kiến
+        ├── CreateReportScreen — mô tả, image picker và preview cục bộ
         └── _HistoryScreen — empty state
 ```
 
-Prototype giữ giao diện trong một file để dễ hiểu và chưa tạo service, model hay repository trước khi có tính năng cần dùng chúng. `test/widget_test.dart` kiểm tra điều hướng giữa hai tab và bố cục ở viewport 320×568.
+App shell ở `lib/main.dart`; form nằm trong `lib/screens/create_report_screen.dart`. `test/widget_test.dart` kiểm tra điều hướng, validation, preview, lỗi picker và bố cục ở viewport 320×568. Chưa tạo AI service, report model hay repository.
 
 ## Luồng màn hình đã chốt
 
@@ -30,7 +30,7 @@ Prototype giữ giao diện trong một file để dễ hiểu và chưa tạo s
 Tạo báo cáo → Xem/chỉnh sửa bản nháp → Lịch sử → Chi tiết báo cáo
 ```
 
-Đây là luồng sản phẩm đã thống nhất cho thiết kế. Trong mã nguồn hiện tại mới có màn hình khung **Tạo báo cáo** và trạng thái rỗng **Lịch sử**; màn hình xem/chỉnh sửa và chi tiết chưa được dựng. Chúng không được giả lập bằng dữ liệu AI hoặc báo cáo mẫu.
+Đây là luồng sản phẩm đã thống nhất cho thiết kế. Hiện **Tạo báo cáo** cho nhập và xem lại đầu vào cục bộ; **Lịch sử** vẫn rỗng. AI draft, màn hình kết quả/chỉnh sửa, lưu và chi tiết chưa được dựng hay giả lập bằng dữ liệu mẫu.
 
 ## Quy trình AI dự kiến — chưa tích hợp
 
@@ -64,7 +64,8 @@ Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `iss
 - **Flutter/Dart:** ưu tiên một codebase Android-first phù hợp với prototype di động.
 - **Web preview:** bật Web để xem giao diện trong môi trường chưa có Android device/emulator kết nối.
 - **Material 3, `NavigationBar`, `IndexedStack`:** tạo điều hướng đơn giản, trạng thái chọn tab rõ ràng và chuyển màn hình không cần thư viện ngoài.
-- **Chưa thêm dependency nghiệp vụ:** camera, AI và lưu trữ chỉ được chọn khi bắt đầu triển khai các luồng tương ứng.
+- **`image_picker` 1.2.3:** dùng system picker cho camera/thư viện; preview đọc bytes trong phiên hiện tại. Không thêm `permission_handler` hoặc quyền Android rộng trong bước này.
+- Ảnh được yêu cầu resize tối đa 1600×1600, JPEG quality 85; kiểm tra file nhận được không quá 10 MiB. Đây là ngưỡng hiện tại của prototype.
 - **Bảo vệ thông tin xác thực:** nếu tích hợp AI, không nhúng secret vào APK; dùng backend/proxy hoặc cơ chế dành cho client có giới hạn phù hợp.
 
 ## Chạy ứng dụng
@@ -82,22 +83,27 @@ Xem trước trên Chrome bằng `flutter run -d chrome`. Nếu Flutter yêu c�
 flutter build apk --debug
 ```
 
+`android/gradle.properties` tắt Kotlin incremental để tránh lỗi cache khi project Windows và Pub Cache nằm ở hai ổ đĩa khác nhau. Điều này làm một số lần build Kotlin biên dịch lại lâu hơn, nhưng không cần thêm tham số cho Android Studio hoặc `flutter run`. APK được tạo tại `build/app/outputs/flutter-apk/app-debug.apk`.
+
 ## Kiểm tra
 
 ```bash
 dart format lib test
 flutter analyze
 flutter test
+flutter build web --release
 ```
 
-Trong lần kiểm tra nền tảng Ngày 1, các lệnh trên cùng `flutter build web --release` và `flutter build apk --debug` đều hoàn tất thành công. Chủ dự án xác nhận đã mở APK trong Android Studio và chạy trên điện thoại Android thật; hai ảnh đính kèm thể hiện hai tab tương ứng. Trong lần rà soát bằng coding agent không có Android device kết nối để chạy kiểm chứng độc lập.
+Sau thay đổi Ngày 2, `dart format lib test`, `flutter analyze`, `flutter test`, `flutter build web --release` và `flutter build apk --debug` đã thành công. Chủ dự án cung cấp ảnh chụp xác nhận đã mở photo picker và chọn ảnh trên điện thoại Android thật; ảnh đầu vào được báo là trên 10 MiB nhưng đã hiện preview sau xử lý. Ảnh không hiển thị số byte trước/sau xử lý. Coding agent không có Android device kết nối để kiểm tra lại.
 
 ## Hạn chế đã biết và hướng tiếp theo
 
-- Hai màn hình hiện là giao diện khung; chưa có nhập liệu/chụp ảnh, AI thật, chỉnh sửa/xác nhận báo cáo hay lưu trữ.
+- Nhập mô tả/chụp/chọn ảnh và xem lại đầu vào đã có; chưa có AI thật, chỉnh sửa/xác nhận báo cáo hay lưu trữ.
 - Tab Lịch sử luôn rỗng; chưa có model báo cáo hoặc cơ sở dữ liệu cục bộ.
-- Chưa có kiểm thử lỗi mạng/API, timeout, JSON không hợp lệ hoặc quyền camera/thư viện vì các luồng này chưa tồn tại.
-- Coding agent chưa kiểm tra trực tiếp trên Android trong phiên này; chủ dự án xác nhận đã chạy APK trên thiết bị thật. Web cũng được bật để xem trước trong giai đoạn phát triển.
+- Gallery picker và preview đã được chủ dự án thử trên điện thoại thật; camera, từ chối quyền và hủy picker chưa có bằng chứng thử thủ công.
+- Ảnh rỗng/quá lớn/không nhận diện được signature bị từ chối trước khi thay ảnh hiện có; lỗi decode còn lại có fallback hiển thị nhưng chưa được kiểm chứng trên thiết bị.
+- Chưa có kiểm thử lỗi mạng/API, timeout hoặc JSON không hợp lệ vì chưa có AI/network flow.
+- Đầu vào không được lưu sau khi app đóng; Web build thành công nhưng tương tác camera/picker trên trình duyệt chưa được kiểm chứng.
 
 Ưu tiên tiếp theo là hoàn thiện nhập mô tả/ảnh và xác thực đầu vào, tích hợp AI an toàn với schema được kiểm tra, cho người dùng sửa/xác nhận, rồi lưu và đọc lại báo cáo cục bộ. Chỉ cân nhắc voice/GPS sau khi luồng cốt lõi chạy ổn.
 
