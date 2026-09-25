@@ -1,0 +1,41 @@
+# AI Worklog
+
+## 2026-09-25 — Dựng nền tảng Ngày 1
+
+### Công cụ và prompt
+
+- **AI coding agent:** OpenCode, model gpt-6-luna.
+- **Công cụ phát triển khác:** Flutter CLI tạo khung Android/Web; Dart/Flutter dùng để format, analyze, test và build.
+- **Prompt chính:** `docs/PROMPT_01.md` — khởi tạo nền tảng Ngày 1, hai tab tiếng Việt, chưa tích hợp AI/camera/lưu trữ, cập nhật README và kiểm tra kết quả.
+
+### AI hỗ trợ như thế nào
+
+- Rà soát hướng dẫn và roadmap, xác nhận repo ban đầu chỉ có tài liệu và Flutter/Android tooling có sẵn.
+- Hỗ trợ dựng giao diện Flutter cho hai tab, tên ứng dụng, test điều hướng, README và tài liệu cấu hình dự án.
+- Rà soát những gì cần đưa vào GitHub, giữ lịch sử remote ban đầu và kiểm tra để không đưa build artifacts hoặc đường dẫn SDK cục bộ lên repo.
+
+### Kết quả chưa chính xác và cách sửa
+
+- Khi bổ sung kiểm thử viewport hẹp, test dùng `Size(320, 568)` nhưng thiếu import `dart:ui`; `flutter analyze` và `flutter test` báo không nhận diện `Size`. Đã thêm import, chạy lại format/analyze/test và cả ba đều thành công.
+- Scaffold Android ban đầu có rule ignore Gradle wrapper. Nếu giữ nguyên khi commit, repo clone có thể thiếu wrapper cần cho build Android. Đã kiểm tra trạng thái Git, thêm rule cho phép commit `gradlew`, `gradlew.bat` và `gradle-wrapper.jar`, đồng thời tiếp tục loại `android/local.properties` khỏi Git.
+- **AI trong sản phẩm:** chưa tích hợp model/API, nên chưa có kết quả phân tích sự cố nào để đánh giá là đúng hoặc sai. Chưa tạo ví dụ AI giả; cần ghi lại các kết quả thực tế và cách kiểm chứng sau khi tích hợp.
+
+### Kiểm chứng đã chạy
+
+- `dart format lib test` — hoàn tất.
+- `flutter analyze` — không có vấn đề.
+- `flutter test` — đạt; test chuyển tab trên viewport 320×568 không phát hiện lỗi render.
+- `flutter build web --release` — build thành công.
+- `flutter build apk --debug` — build thành công; lúc kiểm tra coding agent chưa có Android device để cài/chạy.
+- **Bổ sung xác nhận của chủ dự án:** APK đã được mở qua Android Studio và chạy trên điện thoại Android thật; hai ảnh đính kèm cho thấy hai tab. Coding agent không thể tự kiểm chứng thiết bị trong phiên do `flutter devices` không thấy Android device.
+
+### Nếu có thêm 7 ngày
+
+1. **Ngày 1–2:** Làm nhập mô tả, chọn/chụp ảnh, xem trước ảnh, kiểm tra nội dung rỗng/kích thước và xử lý quyền bị từ chối.
+2. **Ngày 3:** Chọn dịch vụ AI và cách gọi an toàn qua backend/proxy; viết prompt có quy tắc không suy đoán và chốt schema báo cáo.
+3. **Ngày 4:** Parse/validate phản hồi; xử lý JSON lỗi, trường thiếu, timeout, lỗi mạng; đánh dấu dữ liệu cần người dùng xác nhận.
+4. **Ngày 5:** Làm màn hình sửa/xác nhận, lưu cục bộ và đọc lại lịch sử; không coi bản nháp AI là báo cáo đã xác nhận.
+5. **Ngày 6:** Kiểm thử các tình huống rõ ràng, mơ hồ/thiếu địa điểm, ảnh không liên quan, mất mạng và dữ liệu sai schema; chạy trên thiết bị Android.
+6. **Ngày 7:** Sửa lỗi, build APK, rà soát secret/quyền riêng tư, hoàn thiện README/worklog và chuẩn bị demo trung thực theo tính năng đã chạy.
+
+Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉnh sửa → xác nhận → lưu → xem lịch sử hoạt động ổn định.

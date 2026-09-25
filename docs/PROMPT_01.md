@@ -7,7 +7,7 @@ Sao chép toàn bộ nội dung trong khung dưới đây và gửi cho coding a
 ```text
 Bạn là coding agent hỗ trợ tôi xây dựng ứng dụng di động AI Field Assistant cho thử thách 7 ngày.
 
-Trước tiên, hãy đọc AGENTS.md và CHALLENGE_VI_ROADMAP.md. Tuân thủ hướng dẫn trong AGENTS.md. Repo hiện có thể mới chỉ chứa tài liệu, vì vậy hãy kiểm tra trạng thái thực tế trước khi kết luận.
+Trước tiên, hãy đọc `AGENTS.md` và `docs/CHALLENGE_VI_ROADMAP.md`. Tuân thủ hướng dẫn trong `AGENTS.md`. Repo hiện có thể mới chỉ chứa tài liệu, vì vậy hãy kiểm tra trạng thái thực tế trước khi kết luận.
 
 MỤC TIÊU CỦA LẦN LÀM VIỆC NÀY
 Chỉ hoàn thành phần nền tảng của Ngày 1: xác nhận công nghệ/môi trường, khởi tạo ứng dụng chạy được, dựng khung điều hướng và giao diện cơ bản. Chưa tích hợp AI, camera, cơ sở dữ liệu, voice, GPS, đăng nhập hoặc cloud trong bước này.
@@ -28,7 +28,7 @@ PHẠM VI TRIỂN KHAI
 - Điều hướng giữa hai khu vực phải hoạt động. Có trạng thái chọn tab rõ ràng và không bị tràn trên màn hình nhỏ.
 - Dùng cấu trúc thư mục đơn giản, phù hợp quy mô prototype. Chưa tạo abstraction/dependency cho các tính năng chưa làm.
 - Thêm README ngắn với tên sản phẩm, mục tiêu hiện tại, cách chạy theo đúng công nghệ được chọn và phần ghi rõ AI/camera/lưu trữ chưa tích hợp ở giai đoạn này.
-- Không sửa nội dung CHALLENGE_VI_ROADMAP.md hoặc AGENTS.md trừ khi phát hiện lỗi cần thiết; nếu cần sửa, giải thích lý do.
+- Không sửa nội dung `docs/CHALLENGE_VI_ROADMAP.md` hoặc `AGENTS.md` trừ khi phát hiện lỗi cần thiết; nếu cần sửa, giải thích lý do.
 
 TIÊU CHÍ HOÀN THÀNH
 - Ứng dụng khởi chạy và mở được hai khu vực điều hướng nêu trên.
@@ -45,5 +45,5 @@ Khi hoàn tất, dừng ở nền tảng Ngày 1. Không tự triển khai các 
 ## Cách dùng
 
 1. Mở thư mục dự án bằng coding agent (Cursor, Claude Code, Copilot Agent hoặc công cụ tương tự).
-2. Đảm bảo agent nhìn thấy `AGENTS.md`, `CHALLENGE_VI_ROADMAP.md` và `PROMPT_01.md`.
+2. Đảm bảo agent nhìn thấy `AGENTS.md`, `docs/CHALLENGE_VI_ROADMAP.md` và `docs/PROMPT_01.md`.
 3. Gửi phần prompt trong khung code. Sau khi agent hoàn tất, mở/chạy ứng dụng và kiểm tra kết quả trước khi yêu cầu bước tiếp theo.

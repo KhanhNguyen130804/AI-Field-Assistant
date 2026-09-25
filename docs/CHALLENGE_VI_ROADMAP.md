@@ -95,7 +95,7 @@ Có thể được cộng điểm nếu triển khai thêm:
 - **Mã nguồn:** Đường dẫn GitHub nếu có.
 - **README:** Trình bày vấn đề, giải pháp, kiến trúc/quy trình, cách dùng AI, phần đã hoàn thành và các giới hạn.
 - **Video demo:** Dài tối đa 5 phút.
-- **`AI_WORKLOG.md`:** Ghi lại các công cụ AI đã dùng; AI đã hỗ trợ thế nào; kết quả AI nào không chính xác; bạn đã cải thiện chúng ra sao; và bạn sẽ cải thiện điều gì nếu có thêm 7 ngày.
+- **`docs/AI_WORKLOG.md`:** Ghi lại các công cụ AI đã dùng; AI đã hỗ trợ thế nào; kết quả AI nào không chính xác; bạn đã cải thiện chúng ra sao; và bạn sẽ cải thiện điều gì nếu có thêm 7 ngày.
 
 README cũng cần giải thích kiến trúc ứng dụng, quy trình AI, quyết định kỹ thuật và các hạn chế đã biết.
 
@@ -207,8 +207,8 @@ Hoàn thành một luồng chính chạy được từ đầu đến cuối trư
 - Tài khoản/cấu hình dịch vụ AI, giới hạn chi phí và một phương án dự phòng khi API không hoạt động.
 - 5–10 tình huống mẫu, gồm sự cố rõ ràng, thiếu địa điểm, mô tả mơ hồ, không có ảnh, ảnh không liên quan và văn bản rỗng.
 - Một thư mục lưu ảnh demo không chứa thông tin cá nhân hoặc dữ liệu nhạy cảm.
-- GitHub repo, README nháp, danh sách công việc và nơi lưu lại các prompt/đầu ra AI để viết `AI_WORKLOG.md`.
-- Tạo sớm các tệp dự kiến: `README.md`, `AI_WORKLOG.md`, `.gitignore`; không đưa key, token hoặc dữ liệu nhạy cảm vào Git.
+- GitHub repo, README nháp, danh sách công việc và nơi lưu lại các prompt/đầu ra AI để viết `docs/AI_WORKLOG.md`.
+- Tạo sớm các tệp dự kiến: `README.md`, `docs/AI_WORKLOG.md`, `.gitignore`; không đưa key, token hoặc dữ liệu nhạy cảm vào Git.
 
 ## 4. Roadmap 7 ngày
 
@@ -248,7 +248,7 @@ Hoàn thành một luồng chính chạy được từ đầu đến cuối trư
 3. Yêu cầu đầu ra JSON đúng schema; kiểm tra và parse kết quả thay vì hiển thị nguyên văn.
 4. Thêm timeout, loading state, nút thử lại và thông báo lỗi mạng/API.
 5. Nếu AI trả trường thiếu, JSON lỗi hoặc thông tin không chắc chắn, hiển thị giá trị cần xác nhận thay vì tự khẳng định.
-6. Lưu lại prompt, kết quả tốt, kết quả sai và cách bạn sửa để điền `AI_WORKLOG.md`.
+6. Lưu lại prompt, kết quả tốt, kết quả sai và cách bạn sửa để điền `docs/AI_WORKLOG.md`.
 
 **Kết quả cuối ngày:** Có thể đưa đầu vào mẫu vào và nhận báo cáo từ AI trong ứng dụng.  
 **Điểm kiểm soát:** Nếu AI/API chưa chạy ổn, dành thời gian sửa tích hợp. Chưa thêm voice/GPS.
@@ -284,7 +284,7 @@ Hoàn thành một luồng chính chạy được từ đầu đến cuối trư
 
 1. Tạo bản build release/APK; cài lại từ đầu trên thiết bị khác nếu có thể.
 2. Viết README: vấn đề, người dùng, giải pháp, cách chạy, kiến trúc, luồng AI, quyết định kỹ thuật, phần hoàn thành và hạn chế.
-3. Hoàn thiện `AI_WORKLOG.md` bằng trải nghiệm thật, gồm prompt và ví dụ AI trả sai rồi được bạn kiểm chứng/sửa.
+3. Hoàn thiện `docs/AI_WORKLOG.md` bằng trải nghiệm thật, gồm prompt và ví dụ AI trả sai rồi được bạn kiểm chứng/sửa.
 4. Chuẩn bị kịch bản video dưới 5 phút: vấn đề → tạo báo cáo → AI phân tích → người dùng sửa → lưu/lịch sử → xử lý một tình huống lỗi → kiến trúc và giới hạn.
 5. Quay thử; bảo đảm chữ đọc được, thông báo không lộ dữ liệu cá nhân, không có màn hình chờ dài.
 
@@ -297,7 +297,7 @@ Hoàn thành một luồng chính chạy được từ đầu đến cuối trư
 1. Làm theo đúng kịch bản demo trên bản build cuối cùng.
 2. Kiểm tra sạch secret/API key khỏi GitHub, file cấu hình công khai, ảnh chụp màn hình và video.
 3. Mở thử link tải/demo trong cửa sổ riêng tư hoặc trên thiết bị khác; xác nhận quyền truy cập.
-4. Kiểm tra repo, README, `AI_WORKLOG.md`, video và bản build đều khớp nhau.
+4. Kiểm tra repo, README, `docs/AI_WORKLOG.md`, video và bản build đều khớp nhau.
 5. Điền biểu mẫu: sản phẩm hoặc link, ít nhất một prompt, mô tả quy trình trên 30 ký tự, số giờ ước tính tiết kiệm và tùy chọn chia sẻ.
 6. Xóa tên/logo cá nhân khỏi tệp cần chấm ẩn danh.
 7. Nộp trước hạn, không đợi đến phút cuối; giữ lại bằng chứng/link xác nhận nộp.
@@ -339,14 +339,14 @@ Quy tắc:
 - Chỉ dùng thông tin có trong mô tả hoặc nhìn thấy rõ trong ảnh.
 - Không tự bịa địa điểm, nguyên nhân, mức độ hư hỏng hoặc hành động đã thực hiện.
 - Nếu thiếu dữ liệu, dùng chuỗi rỗng hoặc ghi rõ cần người dùng xác nhận.
-- priority chỉ được là "low", "medium" hoặc "high".
+- priority chỉ được là "low", "medium", "high" hoặc `null` nếu không đủ căn cứ; không tự mặc định "medium".
 - suggested_action là đề xuất, không khẳng định công việc đã hoàn tất.
 - Trả về JSON hợp lệ đúng cấu trúc bên dưới, không thêm markdown hay lời dẫn.
 
 {
   "category": "",
   "location": "",
-  "priority": "medium",
+  "priority": null,
   "issue": "",
   "suggested_action": "",
   "summary": "",
@@ -415,7 +415,7 @@ Trước khi nộp, thử tối thiểu các trường hợp sau:
 ### Tài liệu và bài nộp
 
 - [ ] README mô tả vấn đề, giải pháp, kiến trúc, workflow AI, quyết định kỹ thuật và hạn chế.
-- [ ] `AI_WORKLOG.md` nêu công cụ, prompt/cách dùng, lỗi AI, cách sửa và việc sẽ cải thiện nếu có thêm 7 ngày.
+- [ ] `docs/AI_WORKLOG.md` nêu công cụ, prompt/cách dùng, lỗi AI, cách sửa và việc sẽ cải thiện nếu có thêm 7 ngày.
 - [ ] Video demo dài tối đa 5 phút.
 - [ ] Có sản phẩm/tệp hoặc link hoạt động và đã kiểm tra quyền truy cập.
 - [ ] Biểu mẫu có ít nhất một prompt đã dùng.
@@ -450,5 +450,5 @@ Bạn có thể dùng mẫu dưới đây rồi thay bằng thông tin thật c�
 3. Chốt schema báo cáo và prompt có quy tắc không bịa thông tin.
 4. Dựng màn hình nhập liệu, ảnh, kết quả chỉnh sửa và lịch sử.
 5. Tích hợp AI thật an toàn; lưu cục bộ; ưu tiên xử lý lỗi.
-6. Hoàn thiện README, `AI_WORKLOG.md`, APK/demo và video trước ngày cuối.
+6. Hoàn thiện README, `docs/AI_WORKLOG.md`, APK/demo và video trước ngày cuối.
 7. Nộp sớm sau khi kiểm tra link, quyền truy cập và tính ẩn danh.

@@ -2,13 +2,13 @@
 
 ## Mục tiêu dự án
 
-Xây dựng **AI Field Assistant**, ứng dụng mobile-first giúp nhân viên hiện trường ghi nhận sự cố bằng ảnh, văn bản hoặc giọng nói; dùng AI tạo báo cáo có cấu trúc; cho người dùng kiểm tra/chỉnh sửa trước khi lưu; và xem lại báo cáo trong lịch sử.
+Xây dựng **AI Field Assistant** trước hết cho nhân viên bảo trì tòa nhà ghi nhận sự cố điện, nước, điều hòa và thiết bị. Biểu mẫu dài làm gián đoạn công việc; báo cáo có thể thiếu ảnh/bối cảnh hoặc cách ghi không thống nhất. Ứng dụng hướng tới chuyển mô tả/ảnh thành bản nháp có cấu trúc để nhân viên kiểm tra, chỉnh sửa và xác nhận trước khi lưu.
 
 Ưu tiên Android để tạo demo/APK trong thời gian thử thách. Giao diện và tài liệu mặc định dùng tiếng Việt; giữ các thuật ngữ kỹ thuật tiếng Anh cần thiết.
 
 ## Trạng thái và nguồn yêu cầu
 
-- Đọc `CHALLENGE_VI_ROADMAP.md` trước khi thực hiện thay đổi liên quan phạm vi sản phẩm.
+- Đọc `docs/CHALLENGE_VI_ROADMAP.md` trước khi thực hiện thay đổi liên quan phạm vi sản phẩm.
 - Thư mục này có thể còn trống ngoài các tài liệu kế hoạch. Không giả định đã có Flutter project, backend, API key hoặc dịch vụ được cấu hình.
 - Nếu chưa có quyết định công nghệ và Flutter được cài đặt, ưu tiên Flutter để tạo bản Android. Nếu repo đã có công nghệ hoặc người dùng đã chọn công nghệ khác, tiếp tục theo lựa chọn đó thay vì tạo ứng dụng thứ hai.
 - Nếu môi trường thiếu công cụ cần thiết, báo rõ trở ngại và đề xuất bước tiếp theo; không tạo các tệp giả như thể ứng dụng đã chạy.
@@ -28,6 +28,8 @@ Không mở rộng phạm vi sang đăng nhập, đồng bộ cloud, push notifi
 - Làm theo từng lát chức năng nhỏ, chạy được; không tạo toàn bộ sản phẩm trong một lần nếu yêu cầu chỉ là một bước của roadmap.
 - Dùng kiến trúc đơn giản, dễ giải thích. Tách tối thiểu model báo cáo, dịch vụ AI và nơi lưu báo cáo khi các phần đó được triển khai; tránh framework/abstraction không cần thiết.
 - Giữ schema báo cáo thống nhất. Các trường cốt lõi: `category`, `location`, `priority`, `issue`, `suggested_action`, `summary`; có thể bổ sung thời gian tạo, trạng thái, đường dẫn ảnh và danh sách nội dung cần xác nhận.
+- Trong bản nháp, `category`, `location`, `suggested_action` và `summary` có thể là chuỗi rỗng nếu không đủ căn cứ; `priority` chỉ nhận `low`, `medium`, `high` hoặc `null` khi chưa xác định được, không tự mặc định `medium`. `issue` có thể rỗng ở bản nháp nhưng phải có nội dung trước khi lưu.
+- `needs_confirmation` là danh sách các trường người dùng cần xem lại. Trước khi lưu, người dùng phải điền trường còn thiếu hoặc xác nhận thông tin đó không có; trường đã xác nhận là không có có thể tiếp tục để trống. Nếu `summary` có nội dung, chỉ tóm tắt dữ kiện đã được xác nhận.
 - AI chỉ tạo **bản nháp đề xuất**. Không lưu báo cáo AI như nội dung đã xác nhận nếu chưa cho người dùng xem lại/chỉnh sửa/xác nhận.
 - Không cho AI tự bịa thông tin thiếu. Biểu thị dữ liệu thiếu hoặc không chắc chắn để người dùng xác nhận; không trình bày `suggested_action` như hành động đã thực hiện.
 - Parse và kiểm tra cấu trúc phản hồi AI trước khi dùng. Xử lý JSON sai định dạng, trường thiếu, API lỗi, mất mạng, timeout và đầu vào rỗng mà không làm ứng dụng crash hoặc mất nội dung người dùng nhập.
@@ -55,5 +57,5 @@ Không mở rộng phạm vi sang đăng nhập, đồng bộ cloud, push notifi
 
 - Trả lời người dùng bằng tiếng Việt, ngắn gọn và cụ thể; giữ nguyên tên API, lệnh, field hoặc thuật ngữ tiếng Anh khi cần.
 - Cập nhật README khi có quyết định kiến trúc, bước chạy hoặc giới hạn sản phẩm mới.
-- Ghi lại công cụ AI đã dùng, prompt quan trọng, lỗi/đề xuất sai của AI và cách kiểm chứng trong `AI_WORKLOG.md` khi bắt đầu có quá trình phát triển thực tế. Không bịa nhật ký hồi cứu.
+- Ghi lại công cụ AI đã dùng, prompt quan trọng, lỗi/đề xuất sai của AI và cách kiểm chứng trong `docs/AI_WORKLOG.md` khi bắt đầu có quá trình phát triển thực tế. Không bịa nhật ký hồi cứu.
 - README và demo phải phân biệt rõ tính năng hoàn thành, tính năng chưa hoàn thành và giới hạn.
