@@ -22,7 +22,7 @@ Flutter Material 3 app
         └── _HistoryScreen — empty state
 ```
 
-App shell ở `lib/main.dart`; form nằm trong `lib/screens/create_report_screen.dart`. `test/widget_test.dart` kiểm tra điều hướng, validation, preview, lỗi picker và bố cục ở viewport 320×568. Chưa tạo AI service, report model hay repository.
+App shell ở `lib/main.dart`; form nằm trong `lib/screens/create_report_screen.dart`. Schema/parser bản nháp ở `lib/models/report_draft.dart`, prompt chưa chạy ở `lib/services/report_draft_prompt.dart`; chưa nối tới Firebase AI Logic. Widget tests ở `test/widget_test.dart`; model tests ở `test/report_draft_test.dart`.
 
 ## Luồng màn hình đã chốt
 
@@ -59,7 +59,7 @@ Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `iss
 | `summary` | Có thể rỗng nếu chưa đủ dữ kiện; nếu có nội dung, chỉ tóm tắt dữ kiện đã xác nhận. | Có thể để trống sau khi người dùng xem lại. |
 | `needs_confirmation` | Danh sách tên các trường cần bổ sung hoặc xác nhận. | Người dùng phải xem từng mục; có thể xác nhận trường không có dữ liệu và giữ trống. |
 
-`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata riêng, không phải trường nội dung cốt lõi. Đây mới là schema thiết kế; chưa có model/parser trong Dart. AI chỉ tạo bản nháp; `suggested_action` không phải hành động đã thực hiện. Đã chuyển lựa chọn tích hợp sang Firebase AI Logic trên Spark với Gemini Developer API `gemini-3.8-flash`; hiện app chưa có Firebase AI Logic SDK, prompt chạy trong ứng dụng, parser, màn hình draft hoặc cơ sở dữ liệu.
+`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata riêng, không phải trường nội dung cốt lõi. `ReportDraft` Dart model/parser và prompt đã được tạo nhưng chưa chạy với model; prompt yêu cầu summary chỉ tóm tắt dữ kiện người dùng nêu rõ. AI chỉ được phép tạo bản nháp, `suggested_action` không phải hành động đã thực hiện. Đã chọn Firebase AI Logic trên Spark với Gemini Developer API `gemini-3.8-flash`; Firebase SDK chưa được nối vào app và chưa có màn hình draft hoặc cơ sở dữ liệu.
 
 ## Quyết định kỹ thuật
 
@@ -69,6 +69,7 @@ Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `iss
 - **`image_picker` 1.2.3:** dùng system picker cho camera/thư viện; preview đọc bytes trong phiên hiện tại. Không thêm `permission_handler` hoặc quyền Android rộng trong bước này.
 - Ảnh được yêu cầu resize tối đa 1600×1600, JPEG quality 85; kiểm tra file nhận được không quá 10 MiB. Đây là ngưỡng hiện tại của prototype.
 - **AI đã chọn, chưa tích hợp:** Firebase AI Logic trên Spark, Gemini Developer API `gemini-3.8-flash`. Firebase-managed proxy giữ Gemini API key phía server; không có Cloud Run backend hoặc Secret Manager do dự án tự quản lý.
+- Task 2 đã thêm `ReportDraft` schema/parser và prompt chưa chạy; response schema cho Firebase SDK, network call và JSON output thật vẫn chưa được triển khai.
 - Firebase Console đã bật API, AI monitoring và đăng ký app Android/Web; FlutterFire tạo `lib/firebase_options.dart`. App Check hiện vẫn báo **Unregistered** cho hai app; SDK/App Check chưa được nối vào code.
 - Firebase AI Logic quota `Generate content requests` đã được đặt 5 RPM cho từng vùng Asia trong bảng quota (per-user/per-region); quota riêng của Gemini Developer API free tier vẫn có thể thấp hơn. Quota Bidi chưa đổi vì app không dùng streaming.
 - Spark/free tier không cần thẻ hoặc Cloud Billing. Free-tier input có thể được dùng để cải thiện sản phẩm Google, nên chỉ thử bằng mô tả/ảnh tổng hợp, không dùng dữ liệu hiện trường thật. Paid tier và mục tiêu USD 5/tháng chưa áp dụng; việc bật billing sau này cần xác nhận riêng.
@@ -107,11 +108,13 @@ Sau thay đổi Ngày 2, `dart format lib test`, `flutter analyze`, `flutter tes
 - Nhập mô tả/chụp/chọn ảnh và xem lại đầu vào đã có; chưa có AI thật, chỉnh sửa/xác nhận báo cáo hay lưu trữ.
 - Firebase AI Logic đã được bật trong Console nhưng Flutter chưa gửi request; chỉ dùng dữ liệu tổng hợp khi tích hợp free tier.
 - App Check Android/Web chưa đăng ký provider (`Unregistered`); cần cấu hình debug provider cho local trước khi gọi AI Logic và provider production trước khi phân phối.
-- Tab Lịch sử luôn rỗng; chưa có model báo cáo hoặc cơ sở dữ liệu cục bộ.
+- Tab Lịch sử luôn rỗng; chưa có lưu trữ cục bộ hoặc dữ liệu lịch sử.
+- `ReportDraft` model/parser và prompt có trong mã, nhưng chưa được gọi bởi Firebase AI Logic; chưa có dữ liệu draft thực từ Gemini.
 - Gallery picker và preview đã được chủ dự án thử trên điện thoại thật; camera, từ chối quyền và hủy picker chưa có bằng chứng thử thủ công.
 - Ảnh rỗng/quá lớn/không nhận diện được signature bị từ chối trước khi thay ảnh hiện có; lỗi decode còn lại có fallback hiển thị nhưng chưa được kiểm chứng trên thiết bị.
 - Chưa có kiểm thử lỗi mạng/API, timeout hoặc JSON không hợp lệ vì chưa có AI/network flow.
 - Đầu vào không được lưu sau khi app đóng; Web build thành công nhưng tương tác camera/picker trên trình duyệt chưa được kiểm chứng.
+- Sau khi FlutterFire tạo `lib/firebase_options.dart`, `flutter analyze` toàn dự án báo thiếu `firebase_core` vì dependencies Firebase chưa được nối (Task 3). Task 2 tests và analyze theo các file Task 2 đã đạt; xem kết quả cụ thể trong `docs/AI_WORKLOG.md`.
 
 Ưu tiên tiếp theo là nối Firebase Core/AI Logic/App Check vào Flutter, thêm model/prompt/response validation và loading/error/retry, rồi cho người dùng sửa/xác nhận và lưu/đọc lịch sử cục bộ. Chỉ cân nhắc voice/GPS sau khi luồng cốt lõi chạy ổn.
 

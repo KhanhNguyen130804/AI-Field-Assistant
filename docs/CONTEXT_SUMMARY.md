@@ -28,21 +28,22 @@ Các trường nội dung lõi: `category`, `location`, `priority`, `issue`, `su
 | `summary` | Có thể rỗng nếu chưa đủ dữ kiện; nếu có thì chỉ tóm tắt dữ kiện đã xác nhận. | Có thể giữ trống sau khi người dùng xem lại. |
 | `needs_confirmation` | Danh sách tên trường đang cần người dùng xem lại. | Người dùng phải xử lý từng mục bằng cách bổ sung dữ liệu hoặc xác nhận dữ liệu đó không có; sau xác nhận trường được phép tiếp tục trống. |
 
-`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata, không thuộc các trường nội dung lõi. Đây là quyết định schema ở tài liệu; chưa có model/parser tương ứng trong Dart.
+`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata, không thuộc các trường nội dung lõi. Schema hiện có `ReportDraft` model/parser trong Dart; dữ liệu vẫn chỉ là draft AI chưa được kết nối hoặc lưu.
 
 ## Công nghệ, hiện trạng và giới hạn
 
 - **Flutter/Dart**, Android-first; Web bật để xem trước giao diện. UI dùng Material 3, `NavigationBar` và `IndexedStack`.
 - Image picker: `image_picker` 1.2.3; yêu cầu resize tối đa 1600×1600, JPEG quality 85 và giới hạn 10 MiB. Không thêm `permission_handler` hoặc quyền storage rộng.
-- Điểm vào app shell: `lib/main.dart`; form: `lib/screens/create_report_screen.dart`; widget tests: `test/widget_test.dart`.
-- Ngày 2 đã thêm nhập mô tả, camera/gallery picker, preview cục bộ, validation đầu vào và thông báo lỗi. Chưa có AI service, report model, parser, lưu trữ cục bộ, dữ liệu lịch sử hoặc màn hình kết quả/chi tiết hoạt động.
+- Điểm vào app shell: `lib/main.dart`; form: `lib/screens/create_report_screen.dart`; tests: `test/widget_test.dart`, `test/report_draft_test.dart`.
+- Ngày 2 đã thêm nhập mô tả, camera/gallery picker, preview cục bộ, validation đầu vào và thông báo lỗi. Task 2 Ngày 3 đã thêm `ReportDraft` model/parser và prompt; chưa có Firebase AI Logic service/request, lưu trữ cục bộ, dữ liệu lịch sử hoặc màn hình kết quả/chi tiết hoạt động.
 - Mô tả nằm trong state của màn hình; ảnh là `XFile` tạm của picker. Chưa gửi qua mạng, chưa lưu thành báo cáo và không đảm bảo giữ sau khi app đóng.
 - **Quyết định Task 1 sau khi đổi hướng:** Firebase AI Logic + Gemini Developer API `gemini-3.8-flash` trên Spark/free tier. Không có Cloud Run backend hoặc Secret Manager do dự án tự quản lý; Gemini key được Firebase proxy giữ phía server.
 - Chủ dự án đã chọn Android/Web trong `flutterfire configure`; Firebase Console báo APIs enabled, AI monitoring enabled và project Spark. `lib/firebase_options.dart`, `firebase.json`, `android/app/google-services.json` xuất hiện trong working tree sau cấu hình.
 - Quota Firebase AI Logic `Generate content requests` đã được đặt 5 RPM cho 10 vùng Asia (per-user/per-region); quota Gemini Developer API free tier vẫn cần kiểm tra khi dùng. Bidi giữ 100 vì app không dùng streaming.
-- **Chưa tích hợp:** `pubspec.yaml` chưa có `firebase_core`, `firebase_ai`, `firebase_app_check`; `lib/main.dart` chưa khởi tạo Firebase; chưa có model/service/parser hoặc request Gemini. App Check cho Android/Web hiện hiển thị `Unregistered`.
+- **Chưa tích hợp:** `pubspec.yaml` chưa có `firebase_core`, `firebase_ai`, `firebase_app_check`; `lib/main.dart` chưa khởi tạo Firebase; chưa có AI service hoặc request Gemini. App Check cho Android/Web hiện hiển thị `Unregistered`.
 - Free-tier request có thể được dùng để cải thiện sản phẩm Google; chỉ thử với fixture tổng hợp, không gửi ảnh/mô tả hiện trường thật. Giới hạn AI Logic: tổng request 20 MB, ảnh inline base64 7 MB; dự kiến cap bytes ảnh gốc gửi đi ở 4 MiB. Form hiện vẫn nhận tới 10 MiB.
 - Không cần Cloud Billing cho Spark/free tier. Paid tier/chi phí USD 5/tháng ở quyết định Cloud Run trước đây đã bị thay thế; nếu cần paid tier sau này phải xác nhận lại billing/ngân sách. Chi tiết và nguồn tại `docs/implement_plan_day3.md`/`docs/AI_WORKLOG.md`.
+- Task 2 có `ReportDraft` model/parser và prompt; 5 model tests đạt, analyzer theo các file Task 2 đạt. `flutter test` toàn bộ đạt 13 tests. `flutter analyze` toàn dự án hiện lỗi vì `lib/firebase_options.dart` import `firebase_core` nhưng package chưa được thêm; dự kiến xử lý khi nối Firebase ở Task 3.
 
 ## Chạy và kiểm chứng
 

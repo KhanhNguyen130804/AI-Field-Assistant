@@ -138,3 +138,27 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - Ảnh Console xác nhận quota `Generate content requests` được đặt **5 RPM** ở 10 vùng Asia (`asia-east1`, `asia-east2`, `asia-northeast1/2/3`, `asia-south1/2`, `asia-southeast1/2/3`). Các dòng `Bidi generate content requests` vẫn 100; app hiện không dùng Bidi/streaming.
 - Đây là quota per-user/per-region của Firebase AI Logic API, áp dụng cho các app trong project; không thay thế các giới hạn riêng của Gemini Developer API free tier. Chưa có request Gemini để kiểm tra 429/usage, và chưa đổi các quota provider khác.
 - Quyết định/preflight Task 1 được xem là hoàn tất: model/provider/Spark, đường proxy/App Check, giới hạn request, quota và free-tier data-use đã được chốt/ghi nhận. App Check SDK/debug provider và kiểm tra quota bằng request synthetic thuộc các task tích hợp sau; chưa có request, build hoặc test.
+
+## 2026-09-26 — Task 2 Ngày 3: ReportDraft schema và prompt
+
+### Công cụ và phạm vi
+
+- **AI coding agent:** OpenCode, model gpt-6-luna.
+- **Yêu cầu:** triển khai Task 2 trong `docs/implement_plan_day3.md`: tạo report model/parser, prompt và tests; chưa nối Firebase AI Logic hoặc gửi request model.
+- **Prompt triển khai tóm tắt:** giữ schema bảy field của `AGENTS.md`; missing/empty values phải hiện rõ trong `needs_confirmation`; `priority` chỉ `low`/`medium`/`high`/`null`; `suggested_action` là đề xuất; summary chỉ nhắc dữ kiện người dùng nêu rõ; output JSON tiếng Việt.
+
+### Kết quả và sửa lỗi
+
+- Thêm `lib/models/report_draft.dart` với `ReportPriority`, strict type/enum parsing, serializer, defaults an toàn cho field thiếu và tự đưa field rỗng/null vào `needs_confirmation`; thiếu cả confirmation list thì yêu cầu review toàn bộ field.
+- Thêm `lib/services/report_draft_prompt.dart`. Prompt chỉ là constant; chưa gửi tới Gemini.
+- Thêm `test/report_draft_test.dart` với 5 tests cho parse/serialize hợp lệ, field thiếu/rỗng, thiếu confirmation list, JSON root sai, type sai và priority/confirmation không hợp lệ.
+- Lần test đầu báo lỗi compile vì Dart final fields được gán trong constructor body. Đổi các field đó sang `late final`, format lại và chạy lại tests thành công.
+
+### Kiểm chứng
+
+- `dart format lib/models/report_draft.dart lib/services/report_draft_prompt.dart test/report_draft_test.dart` — hoàn tất.
+- `flutter test test/report_draft_test.dart` — 5 tests đạt.
+- `flutter test` — 13 tests đạt (5 model + 8 widget).
+- `flutter analyze lib/models/report_draft.dart lib/services/report_draft_prompt.dart test/report_draft_test.dart` — không có vấn đề.
+- `flutter analyze` toàn dự án — thất bại với 5 diagnostics từ `lib/firebase_options.dart`: không tìm thấy `package:firebase_core/firebase_core.dart` và symbol `FirebaseOptions`, do Firebase dependencies chưa được thêm. Khắc phục thuộc Task 3; không ẩn hoặc loại trừ file cấu hình.
+- Không gọi Firebase/Gemini API, không có output model thật, không chạy build.

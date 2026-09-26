@@ -48,7 +48,7 @@ Schema đầu ra:
 - `priority` chỉ nhận `low`, `medium`, `high` hoặc `null`; không mặc định `medium`.
 - Field thiếu căn cứ được để rỗng/null và thêm vào `needs_confirmation`. `issue` có thể rỗng trong draft nhưng bắt buộc trước khi lưu ở bước sau.
 - `suggested_action` là đề xuất, không mô tả việc đã thực hiện. Không bịa nguyên nhân, địa điểm hoặc mức độ hư hỏng.
-- `summary` chỉ tóm tắt dữ kiện có trong đầu vào và bản nháp vẫn phải được người dùng kiểm tra.
+- `summary` chỉ tóm tắt dữ kiện người dùng nêu rõ trong mô tả; thông tin chỉ thấy trong ảnh không được trình bày như dữ kiện đã xác nhận. Nếu không có dữ kiện mô tả rõ, để rỗng và đánh dấu cần xác nhận.
 - Firebase AI Logic proxy giữ Gemini API key phía server. Không lấy key từ Console để dán vào Dart, không log/commit token. `firebase_options.dart` là cấu hình Firebase client đã được FlutterFire tạo; không gửi nội dung file vào chat.
 - Trước CTA cần nói rõ mô tả/ảnh được gửi tới Gemini. Chỉ gửi sau khi người dùng chủ động bấm.
 - Free tier: chỉ dùng fixture và ảnh tổng hợp, không chứa thông tin cá nhân, tòa nhà/khách hàng thật hoặc dữ liệu hiện trường.
@@ -87,20 +87,23 @@ Schema đầu ra:
 
 **Mục tiêu:** định nghĩa hợp đồng output dùng thống nhất ở model, prompt và parser Dart.
 
-**Cần làm:**
+**Trạng thái:** Đã triển khai ngày 2026-09-26; model/prompt chưa được nối vào Firebase AI Logic.
 
-1. Tạo `ReportDraft` với bảy field ở Mục 3; xử lý `priority` nullable/enum rõ ràng.
-2. Viết prompt tiếng Việt trong AI service: chỉ dùng mô tả/ảnh đã gửi, không suy đoán thiếu dữ kiện, `suggested_action` luôn là đề xuất, đánh dấu field cần xác nhận.
-3. Dùng response schema/JSON mode của Firebase AI Logic nếu SDK/model hỗ trợ; vẫn parse và validate trong Dart vì structured output không thay thế kiểm tra ứng dụng.
-4. Quy tắc field thiếu/sai kiểu: không crash; dữ liệu thiếu phải được đánh dấu xác nhận, malformed response trả lỗi an toàn.
+**Đã thực hiện:**
+
+1. Tạo `ReportDraft` với bảy field ở Mục 3 và `ReportPriority` nullable enum rõ ràng.
+2. Viết prompt tiếng Việt trong `lib/services/report_draft_prompt.dart`: chỉ dùng mô tả/ảnh làm căn cứ, không suy đoán thiếu dữ kiện, `suggested_action` là đề xuất, đánh dấu field cần xác nhận.
+3. Thêm Dart JSON parser/serializer strict; field thiếu/rỗng/null được biểu diễn an toàn và đánh dấu trong `needs_confirmation`; sai type/enum/schema báo `FormatException` để service/UI xử lý.
+
+Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI Logic SDK chưa được tích hợp; Task 4 sẽ chuyển schema Dart sang cấu hình Firebase SDK và vẫn giữ parser validation phía app.
 
 **Chuẩn bị:** schema dự án và fixture tổng hợp cho sự cố rõ ràng, thiếu địa điểm, mơ hồ, ảnh không liên quan, chỉ text/chỉ ảnh.
 
-**File dự kiến:** `lib/models/report_draft.dart`, có thể thêm `lib/services/report_prompt.dart`; tests model/schema mới. Không thêm model persistence hoặc repository trong task này.
+**File đã thêm:** `lib/models/report_draft.dart`, `lib/services/report_draft_prompt.dart`, `test/report_draft_test.dart`. Không thêm model persistence hoặc repository trong task này.
 
 **Tránh:** dữ liệu hiện trường thật trong prompt/fixture; mặc định priority; coi JSON model là đáng tin chỉ vì có schema; prompt hoặc key nhạy cảm không được bảo vệ ở client.
 
-**Kiểm thử:** parse JSON hợp lệ; field thiếu, `priority` sai enum/null, kiểu dữ liệu sai, `needs_confirmation` sai; xác nhận summary không thêm dữ kiện ngoài input. Test dùng fixture tổng hợp, không gọi Gemini thật.
+**Kiểm thử đã chạy:** 5 model tests đạt: parse/serialize hợp lệ; field thiếu/rỗng được gắn confirmation; thiếu `needs_confirmation` thì mọi field cần review; JSON root sai; type/priority/confirmation không hợp lệ bị từ chối. Tests chỉ dùng fixture tổng hợp, không gọi Gemini thật. `flutter analyze` theo ba file Task 2 không có vấn đề.
 
 ### Task 3 — Nối Firebase Core và App Check debug provider
 
