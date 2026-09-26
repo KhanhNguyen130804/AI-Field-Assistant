@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 3: Firebase AI Logic và bản nháp báo cáo
 
-> **Trạng thái:** Task 1 đã được điều chỉnh theo lựa chọn Firebase AI Logic trên Spark. Cấu hình Firebase Console/FlutterFire đã thực hiện theo thông tin chủ dự án cung cấp; chưa có SDK trong app, chưa gọi Gemini và chưa kiểm thử/build lại.
+> **Trạng thái (cập nhật 2026-09-26):** Task 1–3 đã hoàn tất. Firebase Console/FlutterFire đã cấu hình; Firebase SDK và App Check debug provider đã được nối vào app, analyze/test/build đạt và khởi tạo Firebase/App Check đã kiểm chứng trên thiết bị Android thật. Chưa gọi Gemini, chưa có UI draft — thuộc Task 4–7.
 >
 > **Quyết định hiện tại:** dùng Firebase AI Logic → Gemini Developer API → `gemini-3.8-flash`, trên Spark/free tier. Không tạo Cloud Run backend và không đưa Gemini API key vào app. Chỉ dùng dữ liệu tổng hợp vì free tier có thể dùng nội dung gửi lên để cải thiện sản phẩm Google.
 
@@ -111,6 +111,8 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 
 **Mục tiêu:** khởi tạo Firebase AI Logic trên Android/Web và giải quyết cấu hình App Check cho local development.
 
+**Trạng thái:** Phần bắt buộc đã hoàn tất ngày 2026-09-26 và kiểm chứng khởi tạo trên thiết bị Android thật. Web debug provider chưa chạy verify (tùy chọn); provider production thuộc bước phát hành. Kết quả chi tiết ở cuối mục này.
+
 **Cần làm:**
 
 1. Thêm dependencies theo Firebase Flutter docs: `firebase_core`, `firebase_ai`, `firebase_app_check`; chạy `flutter pub get`.
@@ -124,6 +126,14 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 **Tránh:** Cloud Run, `http` client gọi Gemini trực tiếp, Gemini API key trong APK, tắt App Check để vượt qua lỗi, commit debug token, thêm Analytics/Firestore không cần thiết.
 
 **Kiểm thử:** `flutter analyze`; app khởi chạy trên Android/Web, Firebase initialize thành công; App Check debug request được chấp nhận, request không có token bị từ chối theo Console. Không gửi dữ liệu thật.
+
+**Kết quả triển khai (2026-09-26):**
+
+- Đã thêm `firebase_core` 4.15.0, `firebase_ai` 4.0.0, `firebase_app_check` 0.4.8 bằng `flutter pub add`; `firebase_auth` 6.7.0 là dependency chuyển tiếp; `pubspec.lock` cập nhật.
+- `lib/main.dart`: `main()` async với `WidgetsFlutterBinding.ensureInitialized()`, `Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)`; trong `kDebugMode` gọi `FirebaseAppCheck.instance.activate(providerAndroid: const AndroidDebugProvider(), providerWeb: WebDebugProvider())`. Đối chiếu source `firebase_app_check` 0.4.8 trong pub cache: tham số enum `androidProvider`/`webProvider` cũ đã deprecated, dùng class provider mới.
+- Kiểm chứng agent: `dart format` không đổi; `flutter analyze` toàn dự án sạch (5 diagnostics cũ từ `lib/firebase_options.dart` đã hết); `flutter test` 13/13 đạt; `flutter build web --release` thành công.
+- Kiểm chứng thiết bị: chủ dự án chạy app debug trên Android thật qua `flutter run`, lấy App Check debug token trong log và tự đăng ký trong Firebase Console (giá trị token không ghi vào tài liệu/source). Agent bắt log cold start bằng `adb logcat` (sau khi force-stop/khởi động lại app cài đặt): `FirebaseInitProvider` báo khởi tạo thành công, `DebugAppCheckProvider` hoạt động và in debug token, không có error/exception/crash nào từ Firebase/App Check/Flutter.
+- Còn chờ các task sau: việc backend chấp nhận token chỉ quan sát được ở request Gemini đầu tiên (Task 4/6); Web debug provider chưa verify; chưa commit thay đổi của Task 3.
 
 ### Task 4 — Tạo Firebase AI Logic service, gọi Gemini và validate
 

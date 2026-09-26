@@ -1,9 +1,24 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'firebase_options.dart';
 import 'screens/create_report_screen.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (kDebugMode) {
+    // Debug provider chỉ dùng cho local; token debug phải được đăng ký trong
+    // Firebase Console (App Check → Apps → Manage debug tokens) trước khi
+    // request được chấp nhận. Provider production thuộc bước phát hành.
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: const AndroidDebugProvider(),
+      providerWeb: WebDebugProvider(),
+    );
+  }
   runApp(const AiFieldAssistantApp());
 }
 

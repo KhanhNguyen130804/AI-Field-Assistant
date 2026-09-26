@@ -162,3 +162,34 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - `flutter analyze lib/models/report_draft.dart lib/services/report_draft_prompt.dart test/report_draft_test.dart` — không có vấn đề.
 - `flutter analyze` toàn dự án — thất bại với 5 diagnostics từ `lib/firebase_options.dart`: không tìm thấy `package:firebase_core/firebase_core.dart` và symbol `FirebaseOptions`, do Firebase dependencies chưa được thêm. Khắc phục thuộc Task 3; không ẩn hoặc loại trừ file cấu hình.
 - Không gọi Firebase/Gemini API, không có output model thật, không chạy build.
+
+## 2026-09-26 — Task 3 Ngày 3: Firebase Core + App Check debug provider
+
+### Công cụ và phạm vi
+
+- **AI coding agent:** ZCode (model GLM); Flutter CLI; `adb logcat` để kiểm tra log thiết bị thật.
+- **Yêu cầu:** thực hiện Task 3 trong `docs/implement_plan_day3.md`: thêm Firebase dependencies, khởi tạo Firebase, cấu hình App Check debug provider cho Android/Web; không gọi Gemini (thuộc Task 4), không tắt App Check.
+
+### Đã làm
+
+- `flutter pub add firebase_core firebase_ai firebase_app_check` → `firebase_core` 4.15.0, `firebase_ai` 4.0.0, `firebase_app_check` 0.4.8; `firebase_auth` 6.7.0 là dependency chuyển tiếp.
+- `lib/main.dart`: chuyển `main()` sang async, thêm `WidgetsFlutterBinding.ensureInitialized()`, `Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)` và trong `kDebugMode` gọi `FirebaseAppCheck.instance.activate(providerAndroid: AndroidDebugProvider(), providerWeb: WebDebugProvider())`.
+- Đối chiếu API trực tiếp với source `firebase_app_check` 0.4.8 trong pub cache: tham số enum cũ `androidProvider`/`webProvider` đã deprecated, dùng class provider mới `providerAndroid`/`providerWeb`. Không copy token hay nội dung file cấu hình Firebase vào worklog này.
+
+### Kiểm chứng agent đã chạy
+
+- `dart format lib/main.dart` — không đổi.
+- `flutter analyze` toàn dự án — **No issues found**; 5 diagnostics cũ từ `lib/firebase_options.dart` đã hết sau khi thêm `firebase_core`.
+- `flutter test` — 13/13 đạt (8 widget + 5 model).
+- `flutter build web --release` — thành công; cảnh báo Cupertino icon font non-blocking, đã có từ Ngày 2.
+
+### Kiểm chứng trên thiết bị thật (cùng chủ dự án)
+
+- Chủ dự án chạy app debug trên điện thoại Android thật (adb không dây), lấy được App Check debug token và tự đăng ký token đó trong Firebase Console (App Check → Apps → Manage debug tokens). Giá trị token không ghi lại ở đây và không đưa vào source/Git.
+- Agent kiểm tra log bằng `adb logcat` sau một lần cold start sạch: `FirebaseInitProvider: FirebaseApp initialization successful`; `DebugAppCheckProvider` hoạt động và in debug token của thiết bị (đã che khi xem); Flutter engine/Dart VM khởi động bình thường; không có error/exception từ Firebase, App Check hay Flutter; không có crash.
+
+### Giới hạn kiểm chứng còn lại
+
+- Token có được backend chấp nhận hay chưa chỉ quan sát được ở request backend đầu tiên (gọi Gemini ở Task 4/6); Console App Check chưa có metric vì app chưa gửi request nào. Nếu gặp 403/unregistered ở Task 4, quay lại kiểm tra đăng ký token thay vì tắt App Check.
+- Web debug provider chưa chạy verify trên Chrome (tùy chọn); provider production (Play Integrity/reCAPTCHA Enterprise) để dành cho bước phát hành, không dùng debug token trong release.
+- Chưa commit thay đổi Task 3 (`lib/main.dart`, `pubspec.yaml`, `pubspec.lock` cùng 2 file Gradle cấu hình google-services và 3 file Firebase config chưa theo dõi).

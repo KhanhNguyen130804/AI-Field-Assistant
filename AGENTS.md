@@ -9,8 +9,7 @@ Xây dựng **AI Field Assistant** trước hết cho nhân viên bảo trì tò
 ## Trạng thái và nguồn yêu cầu
 
 - Đọc `docs/CHALLENGE_VI_ROADMAP.md` trước khi thực hiện thay đổi liên quan phạm vi sản phẩm.
-- Thư mục này có thể còn trống ngoài các tài liệu kế hoạch. Không giả định đã có Flutter project, backend, API key hoặc dịch vụ được cấu hình.
-- Nếu chưa có quyết định công nghệ và Flutter được cài đặt, ưu tiên Flutter để tạo bản Android. Nếu repo đã có công nghệ hoặc người dùng đã chọn công nghệ khác, tiếp tục theo lựa chọn đó thay vì tạo ứng dụng thứ hai.
+- Repo hiện có ứng dụng Flutter (Android-first) đang phát triển theo roadmap 7 ngày trong `docs/CHALLENGE_VI_ROADMAP.md`; không tạo ứng dụng thứ hai hay đổi công nghệ. Trạng thái triển khai mới nhất nằm trong `docs/CONTEXT_SUMMARY.md`; kế hoạch và tiến độ theo từng ngày trong `docs/implement_plan_day*.md`; lịch sử kiểm chứng trong `docs/AI_WORKLOG.md`. Không giả định tính năng đã chạy nếu chưa có bằng chứng trong mã hoặc worklog; không giả định đã có API key hoặc dịch vụ được cấu hình đầy đủ.
 - Nếu môi trường thiếu công cụ cần thiết, báo rõ trở ngại và đề xuất bước tiếp theo; không tạo các tệp giả như thể ứng dụng đã chạy.
 
 ## Thứ tự ưu tiên sản phẩm
