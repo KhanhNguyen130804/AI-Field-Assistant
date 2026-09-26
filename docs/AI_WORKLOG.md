@@ -193,3 +193,50 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - Token có được backend chấp nhận hay chưa chỉ quan sát được ở request backend đầu tiên (gọi Gemini ở Task 4/6); Console App Check chưa có metric vì app chưa gửi request nào. Nếu gặp 403/unregistered ở Task 4, quay lại kiểm tra đăng ký token thay vì tắt App Check.
 - Web debug provider chưa chạy verify trên Chrome (tùy chọn); provider production (Play Integrity/reCAPTCHA Enterprise) để dành cho bước phát hành, không dùng debug token trong release.
 - Chưa commit thay đổi Task 3 (`lib/main.dart`, `pubspec.yaml`, `pubspec.lock` cùng 2 file Gradle cấu hình google-services và 3 file Firebase config chưa theo dõi).
+
+## 2026-09-26 — Task 4 Ngày 3: service gọi Gemini và validate (chưa smoke test thật)
+
+### Công cụ và phạm vi
+
+- **AI coding agent:** ZCode (model GLM); Flutter CLI.
+- **Yêu cầu:** thực hiện Task 4 trong `docs/implement_plan_day3.md`: tạo service gọi Gemini qua Firebase AI Logic, trả về `ReportDraft` an toàn; chưa nối UI (Task 5), chưa smoke test thật (Task 6).
+- **Chuẩn bị:** đối chiếu trực tiếp source `firebase_ai` 4.0.0 trong pub cache (factory `FirebaseAI.googleAI()`, `generativeModel()`, `GenerationConfig(responseMimeType, responseSchema)`, `Schema.object/enumString(nullable)`, `Content.multi/TextPart/InlineDataPart`, các class exception trong `error.dart`, getter `response.text`). Lưu ý API: App Check instance truyền vào `googleAI()` đã deprecated — SDK tự lấy từ app.
+
+### Đã làm
+
+- Thêm `lib/services/gemini_report_service.dart`:
+  - Model `gemini-3.8-flash` (không dùng alias `-latest`), prompt tiếng Việt từ Task 2 đặt làm `systemInstruction`, `responseMimeType: 'application/json'` và `responseSchema` dựng bằng `Schema` với `priority` là `enumString(nullable: true)` — không cho model tự mặc định `medium`.
+  - Seam `ReportDraftRequestSender` (interface mỏng) để unit test inject fake không cần Firebase/network; mặc định lazy tạo `GenerativeModel` từ `FirebaseAI.googleAI()` chỉ khi gửi request đầu tiên.
+  - Hỗ trợ text-only/image-only/multimodal; chặn trước khi gửi: cả hai trống, ảnh rỗng, ảnh > 4 MiB bytes, loại ảnh không nhận diện được (dựa `XFile.mimeType` hoặc signature PNG/JPEG/GIF/BMP/WebP/HEIC).
+  - Timeout client 60 giây qua `Future.timeout`; retry hoàn toàn do người dùng.
+  - Ánh xạ lỗi: `TimeoutException` → timeout; `QuotaExceeded` → quota; `ServiceApiNotEnabled`/`InvalidApiKey`/`UnsupportedUserLocation`/`FirebaseAISdkException` → cấu hình; `FirebaseAIException` có message nhắc App Check → App Check; message "blocked" → phản hồi AI; còn lại (kể cả `ServerException`) → dịch vụ/mạng. Parse `response.text` qua `jsonDecode` + `ReportDraft.fromJson`; JSON sai/rỗng/root không phải object → lỗi phản hồi AI. Thông báo lỗi chỉ mang cấu trúc, không chứa prompt/ảnh/response.
+- Thêm `test/gemini_report_service_test.dart` — 20 tests với fake sender: 4 biến thể đầu vào, MIME sniffing, 4 trường hợp chặn đầu vào, response rỗng/JSON sai/root sai, thiếu `needs_confirmation`, `priority` null, timeout (cả throw lẫn treo thật 50ms), quota, cấu hình, App Check, block, server error.
+
+### Sửa lỗi AI trong lúc triển khai
+
+- Dart 3.13 không chấp nhận `case final Type(subPattern):` (khai báo final với object pattern); sửa thành `case Type(field: final x) when ...:` và bỏ case `ServerException _` dư thừa (đã được `FirebaseAIException _` phủ vì là subtype).
+- Thiếu import `image_picker` cho `XFile`; lint `prefer_initializing_formals` yêu cầu đổi constructor sang initializing formals.
+
+### Kiểm chứng agent đã chạy
+
+- `dart format` — hoàn tất; `flutter analyze` toàn dự án — không có vấn đề; `flutter test` — **33/33 đạt** (13 cũ + 20 service); `flutter build web --release` — thành công.
+- Không gọi Gemini thật, không có response model thật; mọi test dùng fixture tổng hợp.
+
+### Kiểm chứng độc lập lần 2 (cùng ngày, phiên rà soát — ZCode/model GLM)
+
+- Một phiên agent khác rà lại Task 4 theo tiêu chí trong `docs/implement_plan_day3.md` và **chạy lại toàn bộ kiểm chứng**, kết quả trùng khớp: `flutter analyze` — No issues found (5,2s); `flutter test` — 33/33 đạt (8 widget + 5 model + 20 service, đếm tĩnh khớp tuyên bố trong worklog); `dart format --output=none --set-exit-if-changed lib test` — 0 file cần format; `flutter build web --release` — thành công (44s, cảnh báo non-blocking CupertinoIcons font + Wasm dry-run đã có từ Ngày 2); `flutter build apk --debug` — thành công (65,8s).
+- Đối chiếu Git: `lib/services/gemini_report_service.dart` + `test/gemini_report_service_test.dart` untracked, `docs/AI_WORKLOG.md` modified — **Task 4 chưa commit theo yêu cầu của chủ dự án, giữ nguyên trạng thái**.
+- Phát hiện mâu thuẫn tài liệu (đã xử lý ở mục Task 7 nội bộ phiên này): README/CONTEXT_SUMMARY/WALKTHROUGH vẫn ghi "chưa có service gọi Gemini" và "ưu tiên tiếp theo là Task 4" trong khi working tree đã có service; đồng thời ba file cấu hình Firebase (`lib/firebase_options.dart`, `android/app/google-services.json`, `firebase.json`) **đã được commit trong HEAD `5b495d6` (Task 3)** nhưng các tài liệu này vẫn ghi "chưa commit". Tài liệu đã được cập nhật lại trong phiên rà soát.
+
+### Kiểm thử thiết bị thật do chủ dự án thực hiện (26/09/2026, APK debug)
+
+- Chủ dự án cài `app-debug.apk` (bản build của phiên rà soát, copy sang `D:\Download\ai-field-assistant-debug.apk`) và chạy bộ test case thủ công `docs/MANUAL_TESTCASES_APK.md`: **18/20 PASS**.
+- **TC-3.6 quyền:** Thông tin ứng dụng trên điện thoại hiển thị "không có quyền nào được yêu cầu" nhưng camera và chọn ảnh vẫn hoạt động. Xác minh bằng merged manifest của APK (`build/app/intermediates/merged_manifest/debug/processDebugMainManifest/AndroidManifest.xml`): chỉ có `INTERNET`, `ACCESS_NETWORK_STATE`, `READ_GSERVICES`, không có `CAMERA`/`READ_MEDIA_*`. Kết luận: **đúng thiết kế** — `image_picker` mở camera qua Intent hệ thống (`ACTION_IMAGE_CAPTURE`) và ảnh qua Photo Picker của Android, app không cần quyền runtime; các nhánh xử lý permission-denied trong mã giữ lại làm fallback.
+- **TC-3.7 giới hạn 10 MiB:** ảnh 12 MB được chọn thay thế **vẫn hiển thị preview, không có thông báo** — khác kỳ vọng. Nguyên nhân: picker gọi với `maxWidth/maxHeight: 1600, imageQuality: 85` nên ảnh gốc bị resize/nén trước khi trả về; file sau xử lý thường dưới 10 MiB nên nhánh chặn trong `_applySelectedImage` thực tế khó kích hoạt. Mã chặn vẫn đúng và giữ lại; Task 5 phải kiểm tra bytes trước khi gọi service (ngưỡng gửi 4 MiB) và không giả định resize của picker luôn đủ. Ghi nhận thêm vào mục Task 5 của `docs/implement_plan_day3.md`.
+- 18 test case còn lại (khởi động, form, hủy picker, thay ảnh, xem lại đầu vào, điều hướng, giữ state giữa tab) đều đạt; chi tiết kỳ vọng/bước ở `docs/MANUAL_TESTCASES_APK.md`.
+
+### Giới hạn kiểm chứng còn lại
+
+- **Chưa có request Gemini thật:** chất lượng schema/prompt với model thực tế, và việc App Check token được backend chấp nhận, chỉ xác nhận được ở smoke test synthetic (Task 6). Cách ánh xạ lỗi App Check dựa trên đoán message của SDK — cần xác nhận bằng lỗi thật nếu gặp.
+- `Future.timeout` không hủy request đang chạy phía SDK; hành vi khi thiết bị mất mạng giữa request cần xác nhận ở Task 5/6.
+- Service chưa nối vào UI; chưa có loading/error state trên màn hình (Task 5).
