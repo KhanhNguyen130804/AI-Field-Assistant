@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 3: Firebase AI Logic và bản nháp báo cáo
 
-> **Trạng thái (cập nhật 2026-09-26):** Task 1–3 đã hoàn tất. Firebase Console/FlutterFire đã cấu hình; Firebase SDK và App Check debug provider đã được nối vào app, analyze/test/build đạt và khởi tạo Firebase/App Check đã kiểm chứng trên thiết bị Android thật. Chưa gọi Gemini, chưa có UI draft — thuộc Task 4–7.
+> **Trạng thái (cập nhật 2026-09-26, sau Task 4):** Task 1–4 đã hoàn tất phần code và unit test. Firebase Console/FlutterFire đã cấu hình; Firebase SDK và App Check debug provider đã nối vào app; service gọi Gemini đã viết kèm 20 unit test với fake sender (`flutter analyze` sạch, `flutter test` 33/33, build web/APK debug đạt — xác nhận lại hai lần trong cùng ngày). Chưa gọi Gemini thật và chưa nối UI draft — thuộc Task 5–7; thay đổi Task 4 chưa commit theo yêu cầu chủ dự án.
 >
 > **Quyết định hiện tại:** dùng Firebase AI Logic → Gemini Developer API → `gemini-3.8-flash`, trên Spark/free tier. Không tạo Cloud Run backend và không đưa Gemini API key vào app. Chỉ dùng dữ liệu tổng hợp vì free tier có thể dùng nội dung gửi lên để cải thiện sản phẩm Google.
 
@@ -139,23 +139,29 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 
 **Mục tiêu:** gửi text/ảnh qua Firebase proxy và trả về `ReportDraft` an toàn.
 
-**Cần làm:**
+**Trạng thái:** Đã triển khai ngày 2026-09-26; service + unit test hoàn tất, **chưa smoke test Gemini thật** (thuộc Task 6) và **chưa nối UI** (Task 5). Thay đổi chưa commit.
 
-1. Tạo service Dart độc lập UI, dùng `FirebaseAI.googleAI()` với model `gemini-3.8-flash`; model name không dùng alias `-latest`.
-2. Hỗ trợ mô tả, ảnh, cả hai hoặc một trong hai; từ chối nếu cả hai trống. Đọc bytes bằng `XFile.readAsBytes`; kiểm tra loại ảnh và ngưỡng 4 MiB cho request. Nếu cần nén/resize thêm, không làm mất ảnh gốc khi lỗi.
-3. Thiết lập prompt, response MIME `application/json`/response schema phù hợp API. Parse text trả về, validate đủ type/enum/fields và `needs_confirmation`.
-4. Map exception của Firebase AI Logic thành lỗi hiển thị được: invalid input, quota/rate limit, network, timeout, App Check/config và model response lỗi. Timeout client 60 giây, retry thủ công.
-5. Không log prompt, ảnh, response hiện trường hoặc debug token. Mọi live smoke test chỉ dùng dữ liệu tổng hợp.
+**Đã thực hiện:**
 
-**File dự kiến:** `lib/services/gemini_report_service.dart`; có thể thêm interface mỏng để inject fake; model từ Task 2.
+1. Tạo `lib/services/gemini_report_service.dart`: `FirebaseAI.googleAI()` với model `gemini-3.8-flash` (không dùng alias `-latest`); prompt tiếng Việt Task 2 đặt làm `systemInstruction`; `responseMimeType: 'application/json'` và `responseSchema` dựng bằng `Schema` với `priority` là `enumString(nullable: true)` — không cho model tự mặc định `medium`.
+2. Hỗ trợ text-only/image-only/multimodal; từ chối trước khi gửi nếu cả hai trống, ảnh rỗng, ảnh > 4 MiB bytes hoặc loại ảnh không nhận diện được (theo `XFile.mimeType`, fallback sniffing signature PNG/JPEG/GIF/BMP/WebP/HEIC). Chưa có nén tự động — nếu ảnh sau picker vẫn vượt ngưỡng thì báo lỗi giữ nguyên ảnh gốc (việc resize trước gửi xem lại ở Task 5).
+3. Seam `ReportDraftRequestSender` (interface mỏng) để unit test inject fake không cần Firebase/network; `GenerativeModel` tạo lazy chỉ khi request đầu tiên. Parse `response.text` qua `jsonDecode` + `ReportDraft.fromJson`; JSON sai/rỗng/root không phải object → lỗi phản hồi AI.
+4. Map exception thành sealed class `ReportDraftException` với `userMessage` tiếng Việt chỉ mang cấu trúc (không chứa prompt/ảnh/response/token): `TimeoutException` → timeout (client 60 giây qua `Future.timeout`, retry chỉ do người dùng); `QuotaExceeded` → quota; `ServiceApiNotEnabled`/`InvalidApiKey`/`UnsupportedUserLocation`/`FirebaseAISdkException` → cấu hình; `FirebaseAIException` có message nhắc App Check → App Check; message "blocked" → phản hồi AI; còn lại (kể cả `ServerException`) → dịch vụ/mạng.
+5. Không log prompt, ảnh, response hiện trường hoặc debug token; chưa chạy smoke test thật nên chưa tiêu tốn quota.
 
-**Tránh:** tự tạo backend hoặc API key; gọi Gemini bằng HTTP trực tiếp; xem dữ liệu Spark/free là phù hợp cho field data; retry tự động gây gọi lặp/quota.
+**Sai của AI trong lúc triển khai (đã sửa):** Dart 3.13 không chấp nhận `case final Type(subPattern):` — đổi sang `case Type(field: final x) when ...:` và bỏ case `ServerException _` dư thừa; thiếu import `image_picker` cho `XFile`; lint `prefer_initializing_formals` yêu cầu đổi constructor sang initializing formals.
 
-**Kiểm thử:** fake/injected model hoặc test parser cho hợp lệ, field thiếu, JSON sai, network, timeout, quota/App Check failure; text-only/image-only/multimodal; unit test không phụ thuộc Internet hay Firebase project.
+**File đã thêm:** `lib/services/gemini_report_service.dart`, `test/gemini_report_service_test.dart` (20 tests, fake sender). **Cả hai chưa commit.**
+
+**Kiểm chứng đã chạy (ngày 26/09/2026, hai lần — phiên triển khai và phiên rà soát cuối ngày):** `dart format` không đổi; `flutter analyze` toàn dự án — No issues found; `flutter test` — 33/33 đạt (8 widget + 5 model + 20 service); `flutter build web --release` thành công; `flutter build apk --debug` thành công (phiên rà soát). Không gọi Gemini thật; mọi test dùng fixture tổng hợp.
+
+**Giới hạn kiểm chứng còn lại:** chất lượng schema/prompt với model thật và việc App Check token được backend chấp nhận chỉ xác nhận được ở smoke test synthetic (Task 6); cách ánh xạ lỗi App Check dựa trên đoán message SDK — cần xác nhận bằng lỗi thật; `Future.timeout` không hủy request đang chạy phía SDK; hành vi mất mạng giữa request cần xác nhận ở Task 5/6.
 
 ### Task 5 — Nối service với form và hiển thị draft
 
 **Mục tiêu:** người dùng chủ động gửi đầu vào và xem draft chưa xác nhận.
+
+**Trạng thái:** Chưa triển khai — là việc tiếp theo.
 
 **Cần làm:**
 
@@ -170,6 +176,8 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 **Tránh:** nút giả, draft mẫu như thể là Gemini thật, tự lưu hoặc tuyên bố người dùng xác nhận, xoá input khi SDK lỗi.
 
 **Kiểm thử:** widget tests với fake service cho empty input, loading, success, retry, lỗi giữ input; viewport 320×568 không overflow.
+
+**Bổ sung từ kiểm thử thiết bị thật 26/09/2026:** photo picker resize/nén ảnh gốc trước khi trả về (ảnh 12 MB sau xử lý còn dưới 10 MiB nên ngưỡng 10 MiB của form thực tế khó kích hoạt — chi tiết ở `docs/MANUAL_TESTCASES_APK.md` TC-3.7). Task 5 vẫn phải **kiểm tra bytes trước khi gọi service** (chặn 4 MiB) và không giả định resize của picker luôn đủ; cân nhắc resize/nén thêm trước gửi nếu ảnh sau picker vẫn vượt ngưỡng, không làm mất ảnh gốc khi xử lý lỗi.
 
 ### Task 6 — Kiểm thử tự động và smoke test Firebase AI Logic
 
