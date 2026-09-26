@@ -103,7 +103,9 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 
 **Tránh:** dữ liệu hiện trường thật trong prompt/fixture; mặc định priority; coi JSON model là đáng tin chỉ vì có schema; prompt hoặc key nhạy cảm không được bảo vệ ở client.
 
-**Kiểm thử đã chạy:** 5 model tests đạt: parse/serialize hợp lệ; field thiếu/rỗng được gắn confirmation; thiếu `needs_confirmation` thì mọi field cần review; JSON root sai; type/priority/confirmation không hợp lệ bị từ chối. Tests chỉ dùng fixture tổng hợp, không gọi Gemini thật. `flutter analyze` theo ba file Task 2 không có vấn đề.
+**Kiểm thử đã chạy:** 5 model tests đạt: parse/serialize hợp lệ; field thiếu/rỗng được gắn confirmation; thiếu `needs_confirmation` thì mọi field cần review; JSON root sai; type/priority/confirmation không hợp lệ bị từ chối. `flutter test` toàn dự án đạt 13 tests; `flutter analyze lib/models/report_draft.dart lib/services/report_draft_prompt.dart test/report_draft_test.dart` không có vấn đề. Tests chỉ dùng fixture tổng hợp, không gọi Gemini thật.
+
+**Kiểm tra analyzer toàn dự án:** `flutter analyze` hiện thất bại với 5 diagnostics tại `lib/firebase_options.dart`: không tìm thấy `package:firebase_core/firebase_core.dart` và do đó `FirebaseOptions` không được định nghĩa. FlutterFire đã tạo file cấu hình này trước khi `firebase_core` được thêm vào `pubspec.yaml`; phần Firebase dependency/init thuộc Task 3. Lỗi này không phát sinh từ các file Task 2.
 
 ### Task 3 — Nối Firebase Core và App Check debug provider
 
