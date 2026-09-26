@@ -38,7 +38,9 @@ Khi triển khai, luồng mục tiêu là:
 
 ```text
 Mô tả/ảnh
-  → AI service qua backend/proxy phù hợp cho ứng dụng di động
+  → Firebase AI Logic SDK trong Flutter
+  → Firebase-managed proxy + App Check
+  → Gemini Developer API
   → parse và kiểm tra JSON/schema
   → người dùng xem, sửa và xác nhận bản nháp
   → lưu cục bộ
@@ -57,7 +59,7 @@ Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `iss
 | `summary` | Có thể rỗng nếu chưa đủ dữ kiện; nếu có nội dung, chỉ tóm tắt dữ kiện đã xác nhận. | Có thể để trống sau khi người dùng xem lại. |
 | `needs_confirmation` | Danh sách tên các trường cần bổ sung hoặc xác nhận. | Người dùng phải xem từng mục; có thể xác nhận trường không có dữ liệu và giữ trống. |
 
-`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata riêng, không phải trường nội dung cốt lõi. Đây mới là schema thiết kế; chưa có model/parser trong Dart. AI chỉ tạo bản nháp; `suggested_action` không phải hành động đã thực hiện. Hiện chưa chọn nhà cung cấp AI, chưa có prompt chạy trong ứng dụng, backend/proxy, parser hay cơ sở dữ liệu; không có API key trong source code.
+`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata riêng, không phải trường nội dung cốt lõi. Đây mới là schema thiết kế; chưa có model/parser trong Dart. AI chỉ tạo bản nháp; `suggested_action` không phải hành động đã thực hiện. Đã chuyển lựa chọn tích hợp sang Firebase AI Logic trên Spark với Gemini Developer API `gemini-3.8-flash`; hiện app chưa có Firebase AI Logic SDK, prompt chạy trong ứng dụng, parser, màn hình draft hoặc cơ sở dữ liệu.
 
 ## Quyết định kỹ thuật
 
@@ -66,7 +68,11 @@ Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `iss
 - **Material 3, `NavigationBar`, `IndexedStack`:** tạo điều hướng đơn giản, trạng thái chọn tab rõ ràng và chuyển màn hình không cần thư viện ngoài.
 - **`image_picker` 1.2.3:** dùng system picker cho camera/thư viện; preview đọc bytes trong phiên hiện tại. Không thêm `permission_handler` hoặc quyền Android rộng trong bước này.
 - Ảnh được yêu cầu resize tối đa 1600×1600, JPEG quality 85; kiểm tra file nhận được không quá 10 MiB. Đây là ngưỡng hiện tại của prototype.
-- **Bảo vệ thông tin xác thực:** nếu tích hợp AI, không nhúng secret vào APK; dùng backend/proxy hoặc cơ chế dành cho client có giới hạn phù hợp.
+- **AI đã chọn, chưa tích hợp:** Firebase AI Logic trên Spark, Gemini Developer API `gemini-3.8-flash`. Firebase-managed proxy giữ Gemini API key phía server; không có Cloud Run backend hoặc Secret Manager do dự án tự quản lý.
+- Firebase Console đã bật API, AI monitoring và đăng ký app Android/Web; FlutterFire tạo `lib/firebase_options.dart`. App Check hiện vẫn báo **Unregistered** cho hai app; SDK/App Check chưa được nối vào code.
+- Firebase AI Logic quota `Generate content requests` đã được đặt 5 RPM cho từng vùng Asia trong bảng quota (per-user/per-region); quota riêng của Gemini Developer API free tier vẫn có thể thấp hơn. Quota Bidi chưa đổi vì app không dùng streaming.
+- Spark/free tier không cần thẻ hoặc Cloud Billing. Free-tier input có thể được dùng để cải thiện sản phẩm Google, nên chỉ thử bằng mô tả/ảnh tổng hợp, không dùng dữ liệu hiện trường thật. Paid tier và mục tiêu USD 5/tháng chưa áp dụng; việc bật billing sau này cần xác nhận riêng.
+- Firebase AI Logic giới hạn tổng request 20 MB và ảnh inline base64 7 MB. Ngưỡng gửi ảnh dự kiến tối đa 4 MiB bytes gốc để còn chỗ cho base64 overhead; form hiện vẫn cho chọn ảnh đến 10 MiB nên giới hạn gửi AI chưa được triển khai.
 
 ## Chạy ứng dụng
 
@@ -99,13 +105,15 @@ Sau thay đổi Ngày 2, `dart format lib test`, `flutter analyze`, `flutter tes
 ## Hạn chế đã biết và hướng tiếp theo
 
 - Nhập mô tả/chụp/chọn ảnh và xem lại đầu vào đã có; chưa có AI thật, chỉnh sửa/xác nhận báo cáo hay lưu trữ.
+- Firebase AI Logic đã được bật trong Console nhưng Flutter chưa gửi request; chỉ dùng dữ liệu tổng hợp khi tích hợp free tier.
+- App Check Android/Web chưa đăng ký provider (`Unregistered`); cần cấu hình debug provider cho local trước khi gọi AI Logic và provider production trước khi phân phối.
 - Tab Lịch sử luôn rỗng; chưa có model báo cáo hoặc cơ sở dữ liệu cục bộ.
 - Gallery picker và preview đã được chủ dự án thử trên điện thoại thật; camera, từ chối quyền và hủy picker chưa có bằng chứng thử thủ công.
 - Ảnh rỗng/quá lớn/không nhận diện được signature bị từ chối trước khi thay ảnh hiện có; lỗi decode còn lại có fallback hiển thị nhưng chưa được kiểm chứng trên thiết bị.
 - Chưa có kiểm thử lỗi mạng/API, timeout hoặc JSON không hợp lệ vì chưa có AI/network flow.
 - Đầu vào không được lưu sau khi app đóng; Web build thành công nhưng tương tác camera/picker trên trình duyệt chưa được kiểm chứng.
 
-Ưu tiên tiếp theo là hoàn thiện nhập mô tả/ảnh và xác thực đầu vào, tích hợp AI an toàn với schema được kiểm tra, cho người dùng sửa/xác nhận, rồi lưu và đọc lại báo cáo cục bộ. Chỉ cân nhắc voice/GPS sau khi luồng cốt lõi chạy ổn.
+Ưu tiên tiếp theo là nối Firebase Core/AI Logic/App Check vào Flutter, thêm model/prompt/response validation và loading/error/retry, rồi cho người dùng sửa/xác nhận và lưu/đọc lịch sử cục bộ. Chỉ cân nhắc voice/GPS sau khi luồng cốt lõi chạy ổn.
 
 ## Tài liệu dự án
 
@@ -115,3 +123,4 @@ Sau thay đổi Ngày 2, `dart format lib test`, `flutter analyze`, `flutter tes
 - `docs/AI_WORKLOG.md` — nhật ký sử dụng và kiểm chứng AI.
 - `docs/CONTEXT_SUMMARY.md` — tóm tắt trạng thái để bàn giao coding agent.
 - `docs/WALKTHROUGH.md` — hướng dẫn chạy và kiểm tra giao diện hiện tại.
+- `docs/implement_plan_day3.md` — kế hoạch tích hợp Firebase AI Logic và trạng thái Task 1.

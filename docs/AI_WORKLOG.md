@@ -68,3 +68,73 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - `flutter build web --release` — thành công; có cảnh báo không blocking về Cupertino icon font và Wasm dry-run.
 - `flutter build apk --debug` — sau khi đặt `kotlin.incremental=false` trong project config, build thành công. Gradle có cảnh báo non-blocking về restricted Java API.
 - `flutter devices` ở agent chỉ thấy Windows, Chrome và Edge. Chủ dự án gửi hai ảnh từ điện thoại Android thật: một ảnh cuộn của form có mô tả và ảnh đã chọn; ảnh kia là system photo picker. Chủ dự án báo ảnh nguồn lớn hơn 10 MiB; ảnh chụp không cho biết dung lượng file sau resize/compress. Điều này xác nhận gallery selection/preview theo báo cáo chủ dự án, không xác nhận camera hoặc từ chối quyền.
+
+## 2026-09-26 — Task 1 Ngày 3: chọn Gemini và backend (chưa tích hợp)
+
+### Công cụ và yêu cầu
+
+- **AI coding agent:** OpenCode, model gpt-6-luna.
+- **Tra cứu:** web search/fetch tài liệu chính thức của Google AI for Developers, Google One, Google Cloud và Firebase; kiểm tra Git/repo và phiên bản CLI cục bộ.
+- **Yêu cầu:** thực hiện preflight Task 1 trong `docs/implement_plan_day3.md`; không gọi API, tạo project, lưu credential hay deploy khi tài khoản/billing chưa được xác nhận.
+- **Prompt/câu hỏi chính:** đối chiếu model Gemini hiện hành có nhận text+image và structured output, giá/data-use, phương án Cloud Run/Secret Manager/App Check; hỏi chủ dự án về hosting, billing, ngân sách và endpoint protection trước khi chốt.
+
+### Kết quả và quyết định
+
+- Chọn model **`gemini-3.8-flash`**: tài liệu model chính thức ghi stable, nhận Text/Image, hỗ trợ Structured outputs, context input 1,048,576 tokens và output 65,536 tokens; deprecations page chưa công bố ngày shutdown. Chọn vì hợp với phân tích mô tả/ảnh thành schema, không cần model tạo ảnh.
+- Theo pricing page tại ngày tra cứu, paid tier hiện là USD 0.75/1M input tokens và USD 3.75/1M output tokens đến hết 2026-12-31; từ 2027-01-01 là USD 1.50/1M input và USD 7.50/1M output. Free tier đánh dấu dữ liệu có thể được dùng để cải thiện sản phẩm; paid tier đánh dấu không dùng cho mục đích đó. Chủ dự án đồng ý paid tier và **mục tiêu** USD 5/tháng cho Gemini API; đây không phải hard cap đã kiểm chứng.
+- Chọn **Node.js service trên Cloud Run**, secret Gemini trong **Google Cloud Secret Manager**, và **Firebase App Check** xác minh token tại backend. App Check không phải đăng nhập và không thay thế quota/rate limit; Cloud Run có thể được gọi qua HTTPS nhưng request phải qua xác minh App Check.
+- Giới hạn khởi đầu được ghi cho bước triển khai: một ảnh tối đa 10 MiB; timeout Gemini/Cloud Run/client lần lượt 45/60/65 giây; Cloud Run max instances ban đầu 1; đặt Gemini project quota thấp cho kiểm thử thủ công. Các quota thực tế và khả năng kiểm soát USD 5/tháng cần xác minh trong project trước request thật; không coi budget alert là hard cap.
+- Chủ dự án đồng ý Cloud Run/App Check và hiện cho biết chỉ có Google AI Pro, chưa có GCP project/billing. Trang Google AI Pro benefits nêu USD 10/tháng Google Cloud credits qua Google Developer Program Premium khi membership đang hoạt động và liên kết Google Developer profile; chưa xác minh quyền lợi đã được kích hoạt/credit còn lại. Không mặc định Pro subscription bao gồm Gemini Developer API paid billing.
+- Trước request thật/deploy: chủ dự án cần xác nhận Cloud project/credit/billing, Gemini API paid tier và quota; nếu không thể đặt giới hạn sử dụng phù hợp mục tiêu USD 5/tháng thì dừng và hỏi lại. Không yêu cầu/chứa API key.
+- Môi trường: Node.js v24.19.0, npm 11.17.0, Firebase CLI 15.28.1, Google Cloud SDK 581.0.0. Chạy shim PowerShell `npm` bị execution policy chặn; các lệnh `.cmd` tương ứng cho npm/Firebase/gcloud trả phiên bản. Không truy vấn danh sách tài khoản đăng nhập.
+
+### Nguồn chính thức đã tra cứu
+
+- [Gemini 3.8 Flash model](https://ai.google.dev/gemini-api/docs/models/gemini-3.8-flash) và [model lifecycle/deprecations](https://ai.google.dev/gemini-api/docs/deprecations).
+- [Structured outputs](https://ai.google.dev/gemini-api/docs/structured-output), [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing), [API key security](https://ai.google.dev/gemini-api/docs/api-key), [available regions](https://ai.google.dev/gemini-api/docs/available-regions) (Việt Nam được liệt kê).
+- [Google AI Pro benefits](https://support.google.com/googleone/answer/14534406?hl=en), gồm điều kiện liên kết Google Developer Program Premium và Cloud credits.
+- [Cloud Run configuration](https://docs.cloud.google.com/run/docs/configuring) và [Cloud Run secrets](https://docs.cloud.google.com/run/docs/configuring/services/secrets).
+- [Firebase App Check cho custom backend](https://firebase.google.com/docs/app-check/custom-resource-backend).
+
+### Giới hạn kiểm chứng
+
+- Đây là quyết định kỹ thuật dựa trên tài liệu và lựa chọn của chủ dự án; chưa có Gemini API request, chất lượng model chưa được benchmark với dữ liệu thử, chưa cấu hình billing/quota, chưa tạo Secret Manager entry, Firebase project, App Check hoặc Cloud Run service.
+- Không chạy formatter, analyzer, test hay build trong Task 1. Không có đầu ra AI của sản phẩm để đánh giá đúng/sai.
+
+> **Cập nhật sau đó trong cùng ngày:** lựa chọn Cloud Run/Secret Manager/paid-tier ở entry trên đã được chủ dự án thay bằng Firebase AI Logic trên Spark/free tier do chưa thêm được payment method. Xem kết quả hiện tại bên dưới; không dùng Cloud Run entry cũ làm kiến trúc đang chọn.
+
+## 2026-09-26 — Thay phương án bằng Firebase AI Logic trên Spark
+
+### Lý do và quyết định hiện tại
+
+- Chủ dự án gặp lỗi khi thêm payment method cho Google Cloud và yêu cầu hướng khác. Sau khi đối chiếu tài liệu Firebase, phương án được chọn là **Firebase AI Logic + Gemini Developer API Free tier trên Spark**, model `gemini-3.8-flash`; không dựng Cloud Run và không tự quản lý Gemini API key trong Secret Manager.
+- Firebase AI Logic có SDK Flutter, managed proxy giữ Gemini Developer API key server-side, hỗ trợ App Check, multimodal input và structured output. Firebase ghi `gemini-3.8-flash` không cần billing khi dùng Gemini Developer API; Spark không yêu cầu Cloud Billing/payment method.
+- Firebase xếp `gemini-3.8-flash` vào stable nhưng short-term availability; cần kiểm tra lifecycle trước khi duy trì dài hạn và giữ model name có thể đổi.
+- Free-tier input có thể được dùng để cải thiện sản phẩm Google; vì vậy chỉ gửi fixture/ảnh tổng hợp, không gửi dữ liệu hiện trường thật. Paid tier/budget USD 5/tháng không còn là lựa chọn hiện tại; nếu quay lại paid tier phải xác nhận billing/ngân sách mới.
+- Firebase AI Logic docs nêu giới hạn tổng request 20 MB và ảnh inline base64 7 MB. Đặt giới hạn bytes ảnh gốc ban đầu 4 MiB để dành chỗ cho base64 overhead; form hiện tại vẫn cho phép ảnh đến 10 MiB nên phải kiểm tra/nén/giới hạn trước khi gửi.
+- Firebase AI Logic có per-user rate limits mặc định và có thể cấu hình. App Check được enforcement trong setup mới, nhưng ảnh Console hiện tại cho thấy cả Android/Web đang `Unregistered`; chưa gọi Gemini cho tới khi app có debug provider/token hợp lệ.
+
+### Trạng thái setup do chủ dự án báo
+
+- Chủ dự án chạy `firebase.cmd login` (CLI báo đã đăng nhập), `dart pub global activate flutterfire_cli` và `dart pub global run flutterfire_cli:flutterfire configure`; chọn Android/Web cho Firebase project.
+- CLI báo tạo `lib/firebase_options.dart`; Git sau đó thấy thêm `firebase.json`, `android/app/google-services.json`, `lib/firebase_options.dart`. Không đọc nội dung các file Firebase config và không sao chép key/token vào worklog.
+- Ảnh Console cho thấy Gemini Developer API/Firebase AI Logic APIs enabled, AI monitoring enabled, Spark no-cost, hai app Android/Web có trong AI Logic nhưng App Check là `Unregistered`.
+- Đây chưa chứng minh app đã gọi Gemini: `pubspec.yaml` vẫn chưa có Firebase dependencies và `lib/main.dart` chưa khởi tạo Firebase/AI Logic/App Check.
+
+### Nguồn chính thức
+
+- [Firebase AI Logic overview](https://firebase.google.com/docs/ai-logic) và [Get started for Flutter](https://firebase.google.com/docs/ai-logic/get-started).
+- [Firebase AI Logic pricing/free-tier requirements](https://firebase.google.com/docs/ai-logic/pricing), [supported models](https://firebase.google.com/docs/ai-logic/models), [structured output](https://firebase.google.com/docs/ai-logic/generate-structured-output), [App Check](https://firebase.google.com/docs/ai-logic/app-check).
+- [Firebase AI Logic quotas](https://firebase.google.com/docs/ai-logic/quotas), [input file requirements](https://firebase.google.com/docs/ai-logic/input-file-requirements), [Gemini API pricing and data-use](https://ai.google.dev/gemini-api/docs/pricing).
+
+### Giới hạn kiểm chứng
+
+- Chưa cài Firebase SDK dependencies vào app, chưa cấu hình App Check debug provider/token, chưa chọn model trong Dart và chưa gửi request Gemini. Chưa chạy format/analyze/test/build sau `flutterfire configure`.
+- `AI monitoring` đã được bật trong Console; chưa kiểm tra dashboard hoặc có request/usage nào.
+
+### Bổ sung Task 1 — quota Firebase AI Logic
+
+- Chủ dự án lọc `Generate content requests` + `Dimension:region:asia` trong Firebase AI Logic API > Quotas & System Limits.
+- Ảnh Console xác nhận quota `Generate content requests` được đặt **5 RPM** ở 10 vùng Asia (`asia-east1`, `asia-east2`, `asia-northeast1/2/3`, `asia-south1/2`, `asia-southeast1/2/3`). Các dòng `Bidi generate content requests` vẫn 100; app hiện không dùng Bidi/streaming.
+- Đây là quota per-user/per-region của Firebase AI Logic API, áp dụng cho các app trong project; không thay thế các giới hạn riêng của Gemini Developer API free tier. Chưa có request Gemini để kiểm tra 429/usage, và chưa đổi các quota provider khác.
+- Quyết định/preflight Task 1 được xem là hoàn tất: model/provider/Spark, đường proxy/App Check, giới hạn request, quota và free-tier data-use đã được chốt/ghi nhận. App Check SDK/debug provider và kiểm tra quota bằng request synthetic thuộc các task tích hợp sau; chưa có request, build hoặc test.
