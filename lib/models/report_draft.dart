@@ -1,21 +1,6 @@
-enum ReportPriority {
-  low,
-  medium,
-  high;
+import 'report_priority.dart';
 
-  static ReportPriority parse(Object? value) {
-    if (value is! String) {
-      throw FormatException('priority must be a string or null.');
-    }
-
-    return switch (value) {
-      'low' => ReportPriority.low,
-      'medium' => ReportPriority.medium,
-      'high' => ReportPriority.high,
-      _ => throw FormatException('Unsupported priority: $value.'),
-    };
-  }
-}
+export 'report_priority.dart';
 
 /// An unconfirmed AI proposal. Empty or uncertain values are kept explicit
 /// and listed in [needsConfirmation] for the user to review.

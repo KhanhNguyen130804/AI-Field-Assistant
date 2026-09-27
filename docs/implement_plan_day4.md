@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 4: Chỉnh sửa, xác nhận, lưu cục bộ và lịch sử
 
-> **Trạng thái (2026-09-27, sau Task 1):** Task 1 đã hoàn tất preflight và chốt hợp đồng review/model/repository, schema SQLite v1, nền tảng và phương án kiểm chứng. Task 2–8 chưa triển khai. Đã kiểm tra công cụ/thiết bị và resolve dependency bằng dry-run; chưa thêm dependency vào app, chưa có database/editor, chưa chạy format, analyze, test, build hoặc request Gemini trong Task 1. Chi tiết bằng chứng và giới hạn nằm trong kết quả Task 1 bên dưới và `docs/AI_WORKLOG.md`.
+> **Trạng thái (2026-09-27, sau Task 2):** Task 1 đã chốt preflight/hợp đồng; Task 2 đã thêm `Report`, `ReportReview`, dùng chung `ReportPriority` và kiểm thử model/state. `flutter analyze` sạch, `flutter test` 67/67 đạt trong phiên Task 2. Task 3–8 chưa triển khai; chưa có SQLite/repository, sao chép ảnh bền vững, màn editor/lưu, lịch sử hoặc chi tiết. Không chạy build/APK, kiểm thử thiết bị hay request Gemini trong Task 2. Kết quả trước đó và chi tiết phiên nằm trong `docs/AI_WORKLOG.md`.
 >
 > **Phạm vi:** Hoàn thiện MVP Android từ bản nháp AI đến báo cáo đã được người dùng xác nhận, lưu bền vững và mở lại trong lịch sử. Giữ Flutter và Firebase AI Logic hiện có; không thêm đăng nhập, đồng bộ cloud, voice/GPS, push notification hoặc backend mới.
 
@@ -191,7 +191,7 @@ Nguồn maintainer đã đọc trong Task 1: [sqflite 2.4.4](https://pub.dev/pac
 
 **Mục tiêu:** chỉ tạo đối tượng có thể lưu khi điều kiện xác nhận đã đủ.
 
-**Trạng thái:** Chưa thực hiện; phụ thuộc Task 1.
+**Trạng thái:** Hoàn tất ngày 2026-09-27; phụ thuộc hợp đồng Task 1.
 
 **Cần làm:**
 
@@ -207,6 +207,10 @@ Nguồn maintainer đã đọc trong Task 1: [sqflite 2.4.4](https://pub.dev/pac
 **Tránh:** coi `needs_confirmation: []` là đã được người dùng xác nhận; tạo `ReportDraft` mới sau mỗi lần review khiến field trống bị đánh dấu lại; thêm abstraction không có nhu cầu.
 
 **Kiểm thử/tiêu chí hoàn thành:** test field thiếu, issue trống, priority null/không hợp lệ, sửa sau xác nhận, xác nhận trống rồi nhập lại, summary lỗi thời và serialization. Chưa nối nút lưu vào UI ở task này.
+
+**Đã triển khai và xác minh:** `Report` immutable, kiểm tra ID 22 ký tự base64url, issue bắt buộc, đường dẫn ảnh tương đối dưới `report_photos/`, và `confirmedAbsentFields` phải khớp chính xác các field tùy chọn rỗng/null. JSON strict giữ timestamp UTC milliseconds, Unicode và priority null; dữ liệu sai cấu trúc ném `FormatException`. `ReportReview.fromDraft` giữ cờ AI riêng nhưng bắt đầu mọi field ở trạng thái pending; sửa dữ liệu hủy xác nhận field và summary; chỉ chuyển thành `Report` khi mọi field đã review hợp lệ. Tách `ReportPriority` dùng chung và re-export từ `report_draft.dart` để giữ cách import hiện tại. Có unit test model/state trong hai file dự kiến; chưa nối UI hoặc persistence.
+
+Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần rà cuối 0 file cần format), `flutter analyze` — No issues found, `flutter test` — **67/67 đạt**. Các lệnh Flutter được gọi bằng Flutter SDK snapshot do sandbox chặn cache/lock mặc định. Không chạy APK/build, kiểm thử thiết bị hoặc request Gemini.
 
 ### Task 3 — Repository SQLite và ảnh bền vững
 

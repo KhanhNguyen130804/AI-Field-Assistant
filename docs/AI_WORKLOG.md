@@ -381,3 +381,33 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - Kết luận Task 1 hoàn tất ở mức preflight/hợp đồng; Task 2–8 chưa triển khai. Native build/FFI runtime và Android licenses chưa xác minh hoàn toàn, không chuyển các giới hạn này thành tuyên bố đã có persistence.
 - Kiểm tra Git diff: chỉ README, context, worklog và kế hoạch Ngày 4; không có thay đổi mã/test/config/pubspec/lockfile. `git diff --check` đạt; kế hoạch có 8 task, code fences cân bằng, không có trailing whitespace. Rà mẫu credential trong bốn tài liệu không có kết quả; đây không phải audit toàn bộ lịch sử Git.
 - Không chạy lại format/analyze/test/build hoặc request Gemini trong lượt rà tài liệu. Preflight SDK/device/pub resolver vẫn là kết quả của phiên Task 1 trước đó.
+
+## 2026-09-27 — Ngày 4 Task 2: model báo cáo và review state
+
+### Công cụ, yêu cầu và phạm vi
+
+- **AI coding agent:** Codex; PowerShell, Dart formatter, Flutter analyzer và test runner.
+- **Yêu cầu chính:** triển khai Task 2 theo `docs/implement_plan_day4.md`, giữ `ReportDraft` là draft AI, tạo model báo cáo đã xác nhận và review state; chưa nối nút lưu/UI.
+- Kiểm tra Git trước sửa: nhánh `codex/day4-preflight`, working tree sạch ở `846cf96`. Không stage/commit/push.
+- Chỉ làm Task 2. Không thêm dependency, database/repository, UI, request Gemini hoặc build APK.
+
+### Đã triển khai
+
+- Tách `ReportPriority` dùng chung sang `lib/models/report_priority.dart`; `report_draft.dart` re-export enum để giữ cách import hiện có.
+- Thêm `Report` immutable trong `lib/models/report.dart`: ID base64url 22 ký tự từ 16 byte ngẫu nhiên bảo mật, timestamp UTC, status confirmed, sáu field, mô tả gốc, photo path nullable và field đã được xác nhận vắng mặt. Ràng buộc kiểm tra issue không rỗng, photo path tương đối dưới `report_photos/` và danh sách absent khớp chính xác các field tùy chọn rỗng/null. JSON strict giữ timestamp milliseconds, Unicode và priority null; schema lỗi ném `FormatException`.
+- Thêm `ReportReview` trong `lib/models/report_review.dart`: mọi field bắt đầu pending bất kể cờ AI; giữ `aiNeedsReview` riêng; chỉ cho xác nhận vắng mặt với field tùy chọn rỗng/null; sửa giá trị đưa field về pending và hủy xác nhận summary; summary chỉ được xác nhận sau các field khác. Chỉ tạo `Report` khi toàn bộ field đã review hợp lệ.
+- Thêm `test/report_test.dart` và `test/report_review_test.dart`; kiểm tra serialization, trạng thái review, xác nhận trống, sửa dữ kiện, summary và điều kiện issue.
+
+### Kiểm chứng thực sự đã chạy
+
+- `dart format` trên sáu file Dart liên quan — exit 0; lần chạy rà cuối báo 0 file cần format. SDK phát cảnh báo không đọc được cấu hình `flutter_lints` trong Pub Cache do giới hạn sandbox; formatter vẫn hoàn tất.
+- `flutter analyze` — **No issues found!**
+- `flutter test` — **67/67 đạt** (toàn bộ test suite, gồm test model/review mới).
+- Do sandbox chặn đọc Pub Cache và ghi lockfile cache của Flutter SDK, analyze/test được gọi qua `flutter_tools.snapshot` với quyền chạy đã được duyệt; không chỉnh sửa cache hoặc cấu hình dự án.
+- Không chạy `flutter build apk`, không cài/mở app trên thiết bị và không gửi request Gemini. Test service AI dùng seam/fake như trước; không phải kiểm chứng AI E2E mới.
+
+### Kết quả và giới hạn
+
+- Task 2 hoàn tất ở mức model/validation và test. Task 3 (SQLite/ảnh), Task 4 (editor/lưu UI), lịch sử và chi tiết vẫn chưa triển khai.
+- Dependency SQLite vẫn chỉ là kết quả dry-run của Task 1; chưa thêm vào pubspec/lockfile. Build native và FFI runtime chưa được xác minh.
+- Một fixture test ban đầu không đúng với quy tắc constructor tự đánh dấu field rỗng; fixture đã được sửa theo contract, sau đó test liên quan và toàn bộ suite đều đạt. Không có request hoặc dữ liệu hiện trường thật được dùng.
