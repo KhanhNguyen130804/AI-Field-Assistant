@@ -316,3 +316,23 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 
 - Kiểm tra tự động hiện tại đạt. Tiêu chí có ít nhất một request E2E synthetic với App Check hợp lệ được đáp ứng bằng bằng chứng Android thật đã ghi trong Task 5; lời xác nhận của chủ dự án củng cố kết quả kiểm thử thủ công Task 5.
 - Không có benchmark chất lượng model, test Web/App Check production, quota hiện thời hoặc bảng PASS theo từng TC trong hồ sơ. Các giới hạn này vẫn cần giữ rõ trong README/worklog; không suy diễn từ 45 unit/widget/service tests.
+
+## 2026-09-27 — Task 7: rà tài liệu và bàn giao Ngày 3
+
+### Phạm vi và đối chiếu
+
+- Rà `README.md`, `docs/CONTEXT_SUMMARY.md`, `docs/WALKTHROUGH.md`, `docs/implement_plan_day3.md` cùng worklog hiện có; đối chiếu với trạng thái mã nguồn và bằng chứng Task 5–6 đã ghi. Kiểm tra Git trước cập nhật: nhánh `task/day3-firebase-ai-logic`, working tree sạch, HEAD `b7155fd` đồng bộ với `origin`.
+- Không sửa code/config, không chạy build/test và không gửi request Gemini trong Task 7.
+
+### Tài liệu đã đồng bộ
+
+- Cập nhật ưu tiên tiếp theo sang Day 4; phân biệt Task 6 kiểm thử đã hoàn tất và Task 7 rà soát/bàn giao tài liệu.
+- Làm rõ Firebase AI Logic trên Spark là kiến trúc hiện tại; Cloud Run/Secret Manager là phương án cũ, không phải dịch vụ đang chạy.
+- Ghi rõ mô tả/ảnh được gửi tới Gemini khi người dùng chủ động bấm CTA; draft chưa được xác nhận/lưu thành báo cáo.
+- Giữ kết quả 45/45, analyze và format dưới dạng lịch sử Task 6; request Gemini thật và fallback là bằng chứng Task 5. Không gán PASS riêng cho các test case thủ công khi bảng chi tiết chưa được điền.
+- Nêu lại giới hạn: quota hiện tại chưa truy vấn, Web debug/production App Check chưa xác minh, lưu trữ/lịch sử/voice/GPS chưa triển khai; chỉ dùng dữ liệu tổng hợp trên free tier.
+
+### Kết quả và giới hạn
+
+- Đây là lượt cập nhật tài liệu; không xác minh lại trạng thái Firebase Console hoặc chạy kiểm thử phần mềm.
+- Thay đổi Task 7 chưa được commit/push; chủ dự án sẽ tự thực hiện.

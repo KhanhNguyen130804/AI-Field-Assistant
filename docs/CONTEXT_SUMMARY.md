@@ -1,10 +1,12 @@
-# Tóm tắt dự án — sau Task 6 Ngày 3
+# Tóm tắt dự án — sau Task 7 Ngày 3
 
-> Bản tóm tắt này giữ trạng thái triển khai đến Ngày 2 và bổ sung Ngày 3 Task 1–6. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Cập nhật khi quyết định hoặc trạng thái triển khai đổi.
+> Bản tóm tắt này ghi trạng thái đến hết Ngày 3 Task 7. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Cập nhật khi quyết định hoặc trạng thái triển khai đổi.
 
 ## Cập nhật Task 6 (2026-09-27)
 
 Task 6 đã chạy lại kiểm tra format ở chế độ read-only (11 file, 0 thay đổi), `flutter analyze` (No issues) và `flutter test` (45/45 đạt). Bằng chứng request Gemini thật đầu-cuối với App Check hợp lệ đã được ghi ở Task 5; chủ dự án xác nhận bộ kiểm thử thủ công Task 5 đã PASS. Không có kết quả theo từng TC trong bảng thủ công. Phiên này không gửi request Gemini mới vì app đang có ảnh được chọn không rõ nội dung; quota hiện tại cũng chưa được truy vấn từ Console. Chi tiết ở cuối `docs/AI_WORKLOG.md`.
+
+Task 7 chỉ đồng bộ tài liệu và rà Git; không thay đổi mã/config, chạy build/test hoặc tạo request Gemini. Bước sản phẩm kế tiếp là Day 4: chỉnh sửa/xác nhận draft, lưu cục bộ và hiển thị lịch sử.
 
 ## Người dùng và vấn đề
 
@@ -32,7 +34,7 @@ Các trường nội dung lõi: `category`, `location`, `priority`, `issue`, `su
 | `summary` | Có thể rỗng nếu chưa đủ dữ kiện; nếu có thì chỉ tóm tắt dữ kiện đã xác nhận. | Có thể giữ trống sau khi người dùng xem lại. |
 | `needs_confirmation` | Danh sách tên trường đang cần người dùng xem lại. | Người dùng phải xử lý từng mục bằng cách bổ sung dữ liệu hoặc xác nhận dữ liệu đó không có; sau xác nhận trường được phép tiếp tục trống. |
 
-`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata, không thuộc các trường nội dung lõi. Schema hiện có `ReportDraft` model/parser trong Dart và đã được dùng bởi `GeminiReportService` qua `responseSchema` + parse/validate phía app; dữ liệu vẫn chỉ là draft AI chưa gọi thật hoặc lưu.
+`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata, không thuộc các trường nội dung lõi. Schema hiện có `ReportDraft` model/parser trong Dart và được `GeminiReportService` dùng qua `responseSchema` + parse/validate phía app. Request Gemini thật đã được xác minh đầu-cuối trên Android (bằng chứng lịch sử Task 5); draft chưa được xác nhận hoặc lưu thành báo cáo.
 
 ## Công nghệ, hiện trạng và giới hạn
 
@@ -40,9 +42,9 @@ Các trường nội dung lõi: `category`, `location`, `priority`, `issue`, `su
 - Image picker: `image_picker` 1.2.3; yêu cầu resize tối đa 1600×1600, JPEG quality 85 và giới hạn 10 MiB. Không thêm `permission_handler` hoặc quyền storage rộng.
 - Điểm vào app shell: `lib/main.dart`; form: `lib/screens/create_report_screen.dart`; màn draft AI: `lib/screens/report_draft_screen.dart`; widget thông báo: `lib/widgets/status_notice.dart`; model: `lib/models/report_draft.dart`; prompt: `lib/services/report_draft_prompt.dart`; service AI: `lib/services/gemini_report_service.dart`; tests: `test/widget_test.dart`, `test/report_draft_test.dart`, `test/gemini_report_service_test.dart`.
 - Ngày 2 đã thêm nhập mô tả, camera/gallery picker, preview cục bộ, validation đầu vào và thông báo lỗi. Task 2 Ngày 3 đã thêm `ReportDraft` model/parser và prompt. Task 3 Ngày 3 đã nối Firebase Core/App Check vào app. Task 4 Ngày 3 đã thêm `GeminiReportService` với `responseSchema`, seam inject fake, chặn đầu vào và ánh xạ lỗi. **Task 5 Ngày 3 đã nối service vào UI** (CTA/loading/lỗi/retry + màn draft) và **chạy request Gemini thật đầu-cuối trên thiết bị Android** (chi tiết `docs/SESSION_2026-09-26_TASK5.md`). Vẫn chưa có lưu trữ cục bộ, dữ liệu lịch sử hoặc màn hình chỉnh sửa/chi tiết hoạt động.
-- Mô tả nằm trong state của màn hình; ảnh là `XFile` tạm của picker. Chưa gửi qua mạng, chưa lưu thành báo cáo và không đảm bảo giữ sau khi app đóng.
+- Khi người dùng chủ động bấm **Phân tích bằng AI**, mô tả và/hoặc ảnh được gửi tới Gemini; trước thao tác đó form chỉ giữ đầu vào trong state và ảnh picker tạm. Draft trả về chưa được lưu thành báo cáo; đầu vào không đảm bảo còn sau khi app đóng.
 - **Quyết định Task 1 sau khi đổi hướng:** Firebase AI Logic + Gemini Developer API trên Spark/free tier. **Model hiện tại (cập nhật Task 5):** chính `gemini-3.8-flash` (free 20 req/ngày/model, cạn khi test 27/09) + **fallback tự động `gemini-3.5-flash-lite`** (free 500 req/ngày) khi gặp lỗi quota; chất lượng fallback thấp hơn — draft có thể cần xác nhận nhiều hơn. Không có Cloud Run backend hoặc Secret Manager do dự án tự quản lý; Gemini key được Firebase proxy giữ phía server.
-- Chủ dự án đã chọn Android/Web trong `flutterfire configure`; Firebase Console báo APIs enabled, AI monitoring enabled và project Spark. `lib/firebase_options.dart`, `firebase.json`, `android/app/google-services.json` xuất hiện trong working tree sau cấu hình.
+- Chủ dự án đã chọn Android/Web trong `flutterfire configure`; theo worklog, Firebase Console đã bật API/AI monitoring và dùng project Spark. Các cấu hình `lib/firebase_options.dart`, `firebase.json`, `android/app/google-services.json` đã được commit trong Task 3; bản clone dùng Firebase project khác cần cấu hình lại.
 - Quota Firebase AI Logic `Generate content requests` đã được đặt 5 RPM cho 10 vùng Asia (per-user/per-region); quota Gemini Developer API free tier vẫn cần kiểm tra khi dùng. Bidi giữ 100 vì app không dùng streaming.
 - **Firebase đã nối vào app (Task 3, 2026-09-26):** `pubspec.yaml` có `firebase_core` 4.15.0, `firebase_ai` 4.0.0, `firebase_app_check` 0.4.8; `lib/main.dart` khởi tạo Firebase và trong `kDebugMode` kích hoạt App Check debug provider (`AndroidDebugProvider`/`WebDebugProvider`). App Check debug token đã đăng ký trong Console và **được backend chấp nhận ở request Gemini thật** (27/09/2026). Lỗi cài đè/gỡ cài có thể đổi token → 403 "App attestation failed" (app giờ hiển thị đúng thông báo App Check cho lỗi này — bug ánh xạ đã fix ở Task 5). Web debug provider chưa verify; provider production (Play Integrity/reCAPTCHA Enterprise) chưa cấu hình.
 - Build hiện dùng các file cấu hình FlutterFire (`lib/firebase_options.dart`, `firebase.json`, `android/app/google-services.json`) đã được commit từ Task 3; nếu clone sang project Firebase khác thì phải chạy lại `flutterfire configure` và thay `google-services.json`.

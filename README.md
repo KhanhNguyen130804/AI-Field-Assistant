@@ -107,7 +107,7 @@ flutter build web --release
 
 Sau Task 3 Ngày 3 (26/09/2026): `flutter analyze` toàn dự án sạch (hết 5 lỗi thiếu `firebase_core` trước đó), `flutter test` 13/13 đạt, `flutter build web --release` thành công, và app debug đã chạy trên điện thoại Android thật với Firebase khởi tạo thành công, App Check debug provider hoạt động, không error/crash trong log cold start (agent bắt log qua `adb logcat`; điện thoại kết nối adb không dây).
 
-Sau Task 4 Ngày 3 (26/09/2026, xác nhận hai lần trong ngày — phiên triển khai và phiên rà soát): `dart format` không đổi; `flutter analyze` toàn dự án — No issues found; `flutter test` — 33/33 đạt (8 widget + 5 model + 20 service); `flutter build web --release` thành công; `flutter build apk --debug` thành công. Không gọi Gemini thật; mọi test dùng fixture tổng hợp với fake sender. Thay đổi Task 4 chưa commit (2 file mới + worklog) theo yêu cầu chủ dự án.
+Sau Task 4 Ngày 3 (26/09/2026, xác nhận hai lần trong ngày — phiên triển khai và phiên rà soát): `dart format` không đổi; `flutter analyze` toàn dự án — No issues found; `flutter test` — 33/33 đạt (8 widget + 5 model + 20 service); `flutter build web --release` thành công; `flutter build apk --debug` thành công. Không gọi Gemini thật; mọi test dùng fixture tổng hợp với fake sender. **Tại thời điểm ghi nhận Task 4**, thay đổi service/test còn chưa commit; các bước Task 5 và Task 6 được ghi nhận sau đó.
 
 Sau Task 5 Ngày 3 (26–27/09/2026): `dart format` sạch; `flutter analyze` — No issues; `flutter test` — **45/45 đạt** (13 widget + 5 model + 27 service); `flutter build web --release` + `flutter build apk --debug` thành công. **Request Gemini thật đã chạy đầu-cuối trên thiết bị Android** (agent cài APK và lái UI qua adb): nhập mô tả → Phân tích → màn "Bản nháp AI" mở với response thật; mô tả mơ hồ → draft giữ các trường rỗng + `needs_confirmation` (không bịa); fallback quota hoạt động theo log. Task 5 sau đó đã commit tại `c440da4`.
 
@@ -125,7 +125,7 @@ Kiểm thử thiết bị thật Task 4 (26/09/2026, APK debug do phiên rà so�
 - App không khai báo quyền runtime camera/ảnh: camera mở qua Intent hệ thống, ảnh qua Photo Picker (xác minh bằng merged manifest APK). Nhánh xử lý permission-denied trong mã giữ lại làm fallback.
 - Kết quả cụ thể theo từng task trong `docs/AI_WORKLOG.md`; tổng kết phiên Task 5 và các sự cố vận hành ở `docs/SESSION_2026-09-26_TASK5.md`.
 
-Ưu tiên tiếp theo: chạy đủ `docs/MANUAL_TESTCASES_TASK5.md` trên thiết bị thật và hoàn tất Task 6 (smoke test synthetic chính thức), rồi Task 7 rà tài liệu; sau đó Ngày 4 — sửa/xác nhận draft và lưu/đọc lịch sử cục bộ. Chỉ cân nhắc voice/GPS sau khi luồng cốt lõi chạy ổn.
+Task 6 kiểm tra tự động đã hoàn tất ngày 27/09/2026; Task 7 là lượt rà soát tài liệu/bàn giao. **Ưu tiên sản phẩm tiếp theo là Ngày 4:** cho phép người dùng chỉnh sửa và xác nhận draft, lưu báo cáo cục bộ rồi mở lại trong lịch sử. Chưa có kết quả theo từng dòng cho 31 test case Task 5; không suy ra PASS từng case từ xác nhận PASS tổng thể của chủ dự án. Chỉ cân nhắc voice/GPS sau khi luồng cốt lõi chạy ổn.
 
 ## Tài liệu dự án
 
@@ -138,4 +138,4 @@ Kiểm thử thiết bị thật Task 4 (26/09/2026, APK debug do phiên rà so�
 - `docs/MANUAL_TESTCASES_APK.md` — test case thủ công cho APK debug trên thiết bị thật.
 - `docs/MANUAL_TESTCASES_TASK5.md` — test case thủ công cho luồng AI (Task 5) trên thiết bị thật.
 - `docs/SESSION_2026-09-26_TASK5.md` — tổng kết phiên Task 5: triển khai, sự cố App Check/quota, model fallback.
-- `docs/implement_plan_day3.md` — kế hoạch tích hợp Firebase AI Logic và trạng thái Task 1–5.
+- `docs/implement_plan_day3.md` — kế hoạch tích hợp Firebase AI Logic và trạng thái Task 1–7.

@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 3: Firebase AI Logic và bản nháp báo cáo
 
-> **Trạng thái (cập nhật 2026-09-27, sau Task 6):** Task 1–6 đã hoàn tất phần triển khai/kiểm chứng; Task 5 code đã commit trong `c440da4`. Service Gemini nối vào UI; request thật đầu-cuối trên Android, App Check hợp lệ, draft rõ/mơ hồ và fallback quota có bằng chứng ở `docs/SESSION_2026-09-26_TASK5.md`. Chủ dự án xác nhận kiểm thử thủ công Task 5 PASS; bảng theo từng case chưa được điền. Task 6 vừa xác nhận format dry-run 11 file/0 thay đổi, `flutter analyze` sạch và `flutter test` 45/45. Không có request AI mới trong phiên này; chi tiết và giới hạn ở cuối `docs/AI_WORKLOG.md`. Task 7 — rà tài liệu và bàn giao — còn lại.
+> **Trạng thái (cập nhật 2026-09-27, sau Task 7):** Task 1–6 đã hoàn tất phần triển khai/kiểm chứng; Task 5 code đã commit trong `c440da4`. Service Gemini nối vào UI; request thật đầu-cuối trên Android, App Check hợp lệ, draft rõ/mơ hồ và fallback quota có bằng chứng ở `docs/SESSION_2026-09-26_TASK5.md`. Chủ dự án xác nhận kiểm thử thủ công Task 5 PASS; bảng theo từng case chưa được điền. Task 6 ghi nhận format dry-run 11 file/0 thay đổi, `flutter analyze` sạch và `flutter test` 45/45. Task 7 đã rà README, context, walkthrough, worklog và trạng thái Git; không chạy build/test hay gửi request AI mới trong lượt tài liệu này. Các kết quả kiểm thử nêu trên là lịch sử Task 6, không phải vừa chạy lại.
 >
 > **Quyết định hiện tại:** Firebase AI Logic → Gemini Developer API, **2 model: chính `gemini-3.8-flash` + fallback `gemini-3.5-flash-lite`**, trên Spark/free tier. Không tạo Cloud Run backend và không đưa Gemini API key vào app. Chỉ dùng dữ liệu tổng hợp vì free tier có thể dùng nội dung gửi lên để cải thiện sản phẩm Google.
 
@@ -210,6 +210,8 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 **Tránh:** ghi Cloud Run/Secret Manager như kiến trúc đang chọn; nói AI hoạt động nếu chưa có SDK/API test; ghi prompt/output giả hoặc debug token.
 
 **Kiểm thử:** đối chiếu mọi tuyên bố với code/Console/output test. Docs-only không cần chạy lại code tests; nếu có sửa code thì chạy kiểm tra liên quan.
+
+**Trạng thái (2026-09-27):** Đã hoàn tất rà soát chéo và cập nhật tài liệu. Sửa ưu tiên tiếp theo trong README/Context/Walkthrough sang Day 4; làm rõ đầu vào chỉ được gửi khi người dùng bấm CTA, request E2E là bằng chứng Task 5, còn kết quả analyze/test/format là lịch sử Task 6; nêu rõ Spark/free-tier, data-use và giới hạn chưa xác minh. Không sửa mã/cấu hình, không chạy build/test, không gửi request Gemini. Git diff được rà trong phiên; thay đổi chỉ là tài liệu và để chủ dự án tự commit/push.
 
 ## 5. Nghiệm thu Ngày 3
 
