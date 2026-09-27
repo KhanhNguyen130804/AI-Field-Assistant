@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 
 import 'firebase_options.dart';
 import 'screens/create_report_screen.dart';
+import 'services/gemini_report_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,9 +24,10 @@ Future<void> main() async {
 }
 
 class AiFieldAssistantApp extends StatelessWidget {
-  const AiFieldAssistantApp({super.key, this.imagePicker});
+  const AiFieldAssistantApp({super.key, this.imagePicker, this.reportService});
 
   final ImagePicker? imagePicker;
+  final GeminiReportService? reportService;
 
   @override
   Widget build(BuildContext context) {
@@ -48,15 +50,16 @@ class AiFieldAssistantApp extends StatelessWidget {
           ),
         ),
       ),
-      home: _HomeScreen(imagePicker: imagePicker),
+      home: _HomeScreen(imagePicker: imagePicker, reportService: reportService),
     );
   }
 }
 
 class _HomeScreen extends StatefulWidget {
-  const _HomeScreen({this.imagePicker});
+  const _HomeScreen({this.imagePicker, this.reportService});
 
   final ImagePicker? imagePicker;
+  final GeminiReportService? reportService;
 
   @override
   State<_HomeScreen> createState() => _HomeScreenState();
@@ -72,7 +75,10 @@ class _HomeScreenState extends State<_HomeScreen> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          CreateReportScreen(imagePicker: widget.imagePicker),
+          CreateReportScreen(
+            imagePicker: widget.imagePicker,
+            reportService: widget.reportService,
+          ),
           const _HistoryScreen(),
         ],
       ),

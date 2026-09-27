@@ -1,18 +1,30 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_core/firebase_core.dart' show FirebaseException;
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../models/report_draft.dart';
 import 'report_draft_prompt.dart';
 
-const _geminiModelName = 'gemini-3.8-flash';
+/// Primary model: strongest free-tier quality for vision + structured JSON.
+/// Its free-tier cap is low (20 requests/day per project on 27/09/2026).
+const _primaryModelName = 'gemini-3.8-flash';
+
+/// Fallback model: lower quality but a much larger free-tier daily bucket
+/// (500 requests/day). Used only when the primary model is quota-exhausted
+/// so the app keeps working instead of blocking the user.
+const _fallbackModelName = 'gemini-3.5-flash-lite';
 
 const _defaultRequestTimeout = Duration(seconds: 60);
 
-const _defaultMaxImageBytes = 4 * 1024 * 1024;
+/// Maximum original image bytes accepted for an AI request: 4 MiB leaves
+/// room for the base64 overhead under the Firebase AI Logic 7 MB inline limit.
+const maxImageBytesForAi = 4 * 1024 * 1024;
+
+const _defaultMaxImageBytes = maxImageBytesForAi;
 
 final _reportDraftResponseSchema = Schema.object(
   properties: {
@@ -104,7 +116,9 @@ class ReportDraftResponseException extends ReportDraftException {
 }
 
 /// Creates an unconfirmed [ReportDraft] from a description and/or an image
-/// using Firebase AI Logic (`gemini-3.8-flash`) with JSON structured output.
+/// using Firebase AI Logic (`gemini-3.8-flash`, falling back to
+/// `gemini-3.5-flash-lite` when the primary model's daily quota is used up)
+/// with JSON structured output.
 ///
 /// The service never persists or edits the draft: the result is a proposal
 /// for the user to review. Retry is manual — callers surface
@@ -112,20 +126,30 @@ class ReportDraftResponseException extends ReportDraftException {
 class GeminiReportService {
   GeminiReportService({
     this.requestSender,
-    this.modelFactory,
+    this.senderFactory,
     this.requestTimeout = _defaultRequestTimeout,
     this.maxImageBytes = _defaultMaxImageBytes,
   });
 
   final ReportDraftRequestSender? requestSender;
-  final GenerativeModel Function()? modelFactory;
+
+  /// Builds a sender for a named model. The service uses the primary model
+  /// first and only builds the fallback sender when its quota is exhausted,
+  /// so tests can assert which models were actually instantiated.
+  final ReportDraftRequestSender Function(String modelName)? senderFactory;
+
   final Duration requestTimeout;
   final int maxImageBytes;
 
-  ReportDraftRequestSender? _sender;
+  final Map<String, ReportDraftRequestSender> _senders = {};
 
-  ReportDraftRequestSender get _resolvedSender =>
-      _sender ??= requestSender ?? _GenerativeModelSender(modelFactory);
+  ReportDraftRequestSender _senderFor(String modelName) {
+    if (requestSender != null) return requestSender!;
+    return _senders.putIfAbsent(
+      modelName,
+      () => senderFactory?.call(modelName) ?? _GenerativeModelSender(modelName),
+    );
+  }
 
   Future<ReportDraft> createReportDraft({
     String? description,
@@ -145,11 +169,45 @@ class GeminiReportService {
       if (imageData != null) InlineDataPart(imageData.$1, imageData.$2),
     ]);
 
-    final String? responseText;
+    String? responseText;
     try {
-      responseText = await _resolvedSender.send(prompt).timeout(requestTimeout);
-    } catch (error) {
-      throw _mapError(error);
+      responseText = await _senderFor(_primaryModelName)
+          .send(prompt)
+          .timeout(requestTimeout);
+    } on Object catch (error) {
+      final mapped = _mapError(error);
+      if (kDebugMode) {
+        // Diagnosis only: surface the raw SDK error in debug builds so field
+        // issues (App Check rejection, model name, quota) are visible in
+        // logcat. Never log the prompt or image payload.
+        debugPrint('ReportDraft request failed: $error');
+      }
+      if (mapped is! ReportDraftQuotaException) {
+        throw mapped;
+      }
+      // Primary daily bucket exhausted: try the lite model once so the user
+      // is not blocked for the rest of the day. Its quality is lower but the
+      // free-tier daily quota is far larger.
+      try {
+        if (kDebugMode) {
+          debugPrint(
+            'ReportDraft: primary quota exhausted, trying fallback '
+            '($_fallbackModelName)',
+          );
+        }
+        responseText = await _senderFor(_fallbackModelName)
+            .send(prompt)
+            .timeout(requestTimeout);
+      } on Object catch (fallbackError) {
+        if (kDebugMode) {
+          debugPrint('ReportDraft fallback request failed: $fallbackError');
+        }
+        // The fallback quota error is the truthful outcome to report; other
+        // fallback failures must not hide the original quota cause either.
+        throw _mapError(fallbackError) is ReportDraftQuotaException
+            ? mapped
+            : _mapError(fallbackError);
+      }
     }
 
     final draft = _parseDraft(responseText);
@@ -243,6 +301,14 @@ class GeminiReportService {
       case final UnsupportedUserLocation _:
       case final FirebaseAISdkException _:
         return const ReportDraftConfigException();
+      // App Check failures surface as the plugin's FirebaseException (for
+      // example "[firebase_app_check/unknown] … 403 … App attestation
+      // failed."), not as a FirebaseAIException from the AI SDK.
+      case FirebaseException(plugin: final plugin, message: final message)
+          when plugin.contains('app_check') || _mentionsAppCheck(message):
+        return const ReportDraftAppCheckException();
+      case FirebaseException _:
+        return const ReportDraftServiceException();
       case FirebaseAIException(message: final message)
           when _mentionsAppCheck(message):
         return const ReportDraftAppCheckException();
@@ -256,33 +322,36 @@ class GeminiReportService {
     }
   }
 
-  bool _mentionsAppCheck(String message) {
-    final normalized = message.toLowerCase().replaceAll('-', '');
-    return normalized.contains('appcheck') || normalized.contains('app check');
+  bool _mentionsAppCheck(String? message) {
+    if (message == null) return false;
+    final normalized = message
+        .toLowerCase()
+        .replaceAll('-', '')
+        .replaceAll('_', '');
+    return normalized.contains('appcheck') ||
+        normalized.contains('app check') ||
+        normalized.contains('app attestation') ||
+        normalized.contains('attestation failed');
   }
 }
 
 class _GenerativeModelSender implements ReportDraftRequestSender {
-  _GenerativeModelSender(this._modelFactory);
+  _GenerativeModelSender(this.modelName);
 
-  final GenerativeModel Function()? _modelFactory;
+  final String modelName;
   GenerativeModel? _model;
 
   @override
   Future<String?> send(Content prompt) async {
-    _model ??= (_modelFactory ?? _defaultModelFactory)();
-    final response = await _model!.generateContent([prompt]);
-    return response.text;
-  }
-
-  static GenerativeModel _defaultModelFactory() {
-    return FirebaseAI.googleAI().generativeModel(
-      model: _geminiModelName,
+    _model ??= FirebaseAI.googleAI().generativeModel(
+      model: modelName,
       systemInstruction: Content.text(reportDraftPrompt),
       generationConfig: GenerationConfig(
         responseMimeType: 'application/json',
         responseSchema: _reportDraftResponseSchema,
       ),
     );
+    final response = await _model!.generateContent([prompt]);
+    return response.text;
   }
 }

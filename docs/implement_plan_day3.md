@@ -1,8 +1,8 @@
 # Kế hoạch triển khai — Ngày 3: Firebase AI Logic và bản nháp báo cáo
 
-> **Trạng thái (cập nhật 2026-09-26, sau Task 4):** Task 1–4 đã hoàn tất phần code và unit test. Firebase Console/FlutterFire đã cấu hình; Firebase SDK và App Check debug provider đã nối vào app; service gọi Gemini đã viết kèm 20 unit test với fake sender (`flutter analyze` sạch, `flutter test` 33/33, build web/APK debug đạt — xác nhận lại hai lần trong cùng ngày). Chưa gọi Gemini thật và chưa nối UI draft — thuộc Task 5–7; thay đổi Task 4 chưa commit theo yêu cầu chủ dự án.
+> **Trạng thái (cập nhật 2026-09-27, sau Task 5):** Task 1–5 đã hoàn tất phần code và kiểm thử tự động. Service gọi Gemini đã nối vào UI (CTA, loading, lỗi, retry, màn hình draft); đã chạy **request Gemini thật đầu-cuối trên thiết bị Android** (draft mở được, không bịa trường). Hai sự cố vận hành đã chẩn đoán và xử lý: (1) App Check token chưa đăng ký + bug ánh xạ lỗi — đã fix; (2) quota free tier 20 request/ngày của `gemini-3.8-flash` cạn — đã thêm **model fallback tự động** sang `gemini-3.5-flash-lite` (500/ngày). `flutter analyze` sạch, `flutter test` 45/45, build web/APK debug đạt; thay đổi Task 5 chưa commit. Chi tiết phiên ở `docs/SESSION_2026-09-26_TASK5.md`; bộ test case thiết bị thật ở `docs/MANUAL_TESTCASES_TASK5.md`.
 >
-> **Quyết định hiện tại:** dùng Firebase AI Logic → Gemini Developer API → `gemini-3.8-flash`, trên Spark/free tier. Không tạo Cloud Run backend và không đưa Gemini API key vào app. Chỉ dùng dữ liệu tổng hợp vì free tier có thể dùng nội dung gửi lên để cải thiện sản phẩm Google.
+> **Quyết định hiện tại:** Firebase AI Logic → Gemini Developer API, **2 model: chính `gemini-3.8-flash` + fallback `gemini-3.5-flash-lite`**, trên Spark/free tier. Không tạo Cloud Run backend và không đưa Gemini API key vào app. Chỉ dùng dữ liệu tổng hợp vì free tier có thể dùng nội dung gửi lên để cải thiện sản phẩm Google.
 
 ## 1. Mục tiêu Ngày 3
 
@@ -12,7 +12,7 @@ Hoàn thiện lát chức năng có thể kiểm chứng:
 Người dùng nhập mô tả/chọn ảnh và chủ động bấm tạo
   → Flutter Firebase AI Logic SDK
   → Firebase proxy + Firebase App Check
-  → Gemini Developer API (`gemini-3.8-flash`)
+  → Gemini Developer API (`gemini-3.8-flash`, fallback `gemini-3.5-flash-lite` khi hết quota)
   → JSON theo schema, được app parse/validate
   → người dùng xem bản nháp AI chưa xác nhận/chưa lưu
 ```
@@ -161,23 +161,26 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 
 **Mục tiêu:** người dùng chủ động gửi đầu vào và xem draft chưa xác nhận.
 
-**Trạng thái:** Chưa triển khai — là việc tiếp theo.
+**Trạng thái:** Đã triển khai ngày 2026-09-26/27; kiểm chứng tự động 45/45 test và xác minh đầu-cuối trên thiết bị thật. Chưa chạy trọn bộ 31 test case thủ công (`docs/MANUAL_TESTCASES_TASK5.md`); chưa commit.
 
-**Cần làm:**
+**Đã thực hiện:**
 
-1. Thêm CTA tạo bản nháp, chặn mô tả+ảnh rỗng và giới hạn ảnh trước khi gọi SDK.
-2. Nói rõ text/ảnh sẽ được gửi tới Gemini qua Firebase AI Logic; trong Spark/free chỉ dùng dữ liệu tổng hợp.
-3. Hiện loading, khóa gửi lặp, timeout/lỗi/quota dễ hiểu và nút retry thủ công; không mất mô tả/ảnh khi lỗi.
-4. Hiện kết quả có nhãn “Bản nháp AI — cần kiểm tra, chưa lưu”; hiển thị `needs_confirmation`, phân biệt hành động đề xuất.
-5. Chưa thêm lưu/xác nhận trong Task 5; phần đó thuộc ngày sau.
+1. CTA **"Phân tích bằng AI"** trong `lib/screens/create_report_screen.dart`: chặn mô tả+ảnh rỗng và chặn ảnh > 4 MiB **trước khi gọi SDK** (public constant `maxImageBytesForAi`); loading + khóa 4 nút; lỗi hiện thông báo tiếng Việt từ `ReportDraftException`, **giữ nguyên mô tả + ảnh**, retry thủ công bằng bấm lại.
+2. Helper text + khối thông báo ghi rõ mô tả/ảnh sẽ được gửi tới Gemini qua Firebase; trong Spark/free chỉ dùng dữ liệu tổng hợp.
+3. Màn hình **`lib/screens/report_draft_screen.dart`**: nhãn "Bản nháp AI — cần kiểm tra, chưa lưu"; `needs_confirmation` thành khối cảnh báo + badge "Cần xác nhận" từng trường; `suggested_action` kèm dòng "chưa phải việc đã thực hiện"; hiển thị đầu vào gốc kèm draft; **không có lưu/sửa/xác nhận**. Widget `lib/widgets/status_notice.dart` dùng chung cho thông báo.
+4. Sửa bug ánh xạ lỗi App Check: `FirebaseException` (plugin `firebase_app_check`, message "App attestation failed") giờ map đúng `ReportDraftAppCheckException` thay vì lỗi mạng chung — lỗi thật gặp trên thiết bị 27/09/2026.
+5. **Model fallback:** chính `gemini-3.8-flash` (chất lượng cao, free 20 req/ngày); gặp quota thì tự thử `gemini-3.5-flash-lite` (free 500 req/ngày) trong cùng lần bấm; lỗi không phải quota không fallback. Log debug cho từng bước. Lý do và bằng chứng ở `docs/SESSION_2026-09-26_TASK5.md` mục 4–6.
+6. Widget tests với fake service: empty input, success, needs_confirmation, loading khóa nút giữ input, lỗi giữ input + retry, timeout/quota, chặn 4 MiB trước gọi service, viewport 320×568.
 
-**File dự kiến:** sửa `lib/screens/create_report_screen.dart`, thêm `lib/screens/report_draft_screen.dart` hoặc widget tương đương, mở rộng `test/widget_test.dart`.
+**File đã thêm/sửa:** thêm `lib/screens/report_draft_screen.dart`, `lib/widgets/status_notice.dart`; sửa `lib/screens/create_report_screen.dart`, `lib/services/gemini_report_service.dart`, `lib/main.dart` (seam `reportService`), `test/widget_test.dart`, `test/gemini_report_service_test.dart`. **Chưa commit.**
 
-**Tránh:** nút giả, draft mẫu như thể là Gemini thật, tự lưu hoặc tuyên bố người dùng xác nhận, xoá input khi SDK lỗi.
+**Kiểm chứng đã chạy (2026-09-26/27):** `dart format` sạch; `flutter analyze` — No issues; `flutter test` — **45/45** (13 widget + 5 model + 27 service); `flutter build web --release` + `flutter build apk --debug` thành công; APK cài và chạy trên điện thoại thật qua adb.
 
-**Kiểm thử:** widget tests với fake service cho empty input, loading, success, retry, lỗi giữ input; viewport 320×568 không overflow.
+**Kiểm chứng thiết bị thật (agent tự lái qua adb):** luồng nhập mô tả → Phân tích → **màn "Bản nháp AI" mở với response Gemini thật**; mô tả mơ hồ → 6 trường rỗng + needs_confirmation toàn bộ (không bịa); mô tả rõ → draft đúng dữ kiện, priority null + cần xác nhận; back về form giữ input. Fallback quota xác minh hoạt động qua log (3.8-flash 429 → lite trả kết quả).
 
-**Bổ sung từ kiểm thử thiết bị thật 26/09/2026:** photo picker resize/nén ảnh gốc trước khi trả về (ảnh 12 MB sau xử lý còn dưới 10 MiB nên ngưỡng 10 MiB của form thực tế khó kích hoạt — chi tiết ở `docs/MANUAL_TESTCASES_APK.md` TC-3.7). Task 5 vẫn phải **kiểm tra bytes trước khi gọi service** (chặn 4 MiB) và không giả định resize của picker luôn đủ; cân nhắc resize/nén thêm trước gửi nếu ảnh sau picker vẫn vượt ngưỡng, không làm mất ảnh gốc khi xử lý lỗi.
+**Còn lại:** chạy đủ `docs/MANUAL_TESTCASES_TASK5.md` (mục 3–6); case gián đoạn giữa loading (tab/xoay/Home) mới ghi hành vi thật chưa chốt; chưa commit.
+
+**Tránh:** nút giả, draft mẫu như thể là Gemini thật, tự lưu hoặc tuyên bố người dùng xác nhận, xoá input khi SDK lỗi — đều đã tuân thủ.
 
 ### Task 6 — Kiểm thử tự động và smoke test Firebase AI Logic
 

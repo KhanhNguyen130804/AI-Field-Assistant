@@ -6,10 +6,10 @@
 
 Đã có hai khu vực điều hướng bằng tab tiếng Việt:
 
-- **Tạo báo cáo:** nhập mô tả, chụp/chọn một ảnh, xem preview và xem lại đầu vào cục bộ.
+- **Tạo báo cáo:** nhập mô tả, chụp/chọn một ảnh, xem preview, xem lại đầu vào cục bộ và bấm **"Phân tích bằng AI"** để tạo bản nháp.
 - **Lịch sử:** trạng thái rỗng cho báo cáo đã lưu trong tương lai.
 
-Mô tả nằm trong state của màn hình; ảnh dùng `XFile` tạm do picker cung cấp. Đầu vào không gửi qua mạng và chưa được lưu thành báo cáo. Từ Ngày 3 Task 3, app khởi tạo Firebase và App Check debug provider (chế độ debug) khi mở. Từ Ngày 3 Task 4, có sẵn service gọi Gemini (`lib/services/gemini_report_service.dart`) với unit test đầy đủ, nhưng **chưa được nối vào màn hình** — app chưa có nút gọi AI và chưa gửi request Gemini thật. Chưa tích hợp hiển thị/sửa báo cáo AI, lưu trữ, lịch sử có dữ liệu, voice-to-text, GPS, đăng nhập hoặc cloud; app không đảm bảo giữ đầu vào sau khi đóng.
+Từ Ngày 3 Task 3, app khởi tạo Firebase và App Check debug provider (chế độ debug) khi mở. Từ Ngày 3 Task 4, có service gọi Gemini (`lib/services/gemini_report_service.dart`) với unit test đầy đủ. **Từ Ngày 3 Task 5, CTA "Phân tích bằng AI" đã nối thật với Gemini**: gửi mô tả/ảnh qua Firebase AI Logic, hiện loading/khóa nút khi chờ, xử lý lỗi giữ nguyên đầu vào, và mở màn hình **"Bản nháp AI — cần kiểm tra, chưa lưu"** hiển thị draft có `needs_confirmation` và nhãn hành động đề xuất. **Request Gemini thật đã chạy đầu-cuối trên thiết bị Android (27/09/2026).** Draft chỉ xem — chưa có chỉnh sửa/xác nhận/lưu. Chưa tích hợp lưu trữ, lịch sử có dữ liệu, voice-to-text, GPS, đăng nhập hoặc cloud; app không đảm bảo giữ đầu vào sau khi đóng.
 
 ## Kiến trúc hiện tại
 
@@ -18,11 +18,12 @@ Flutter Material 3 app
 └── lib/main.dart
     ├── AiFieldAssistantApp — theme và tên ứng dụng
     └── _HomeScreen — NavigationBar + IndexedStack
-        ├── CreateReportScreen — mô tả, image picker và preview cục bộ
+        ├── CreateReportScreen — mô tả, image picker, preview và CTA "Phân tích bằng AI"
+        │   └── ReportDraftScreen — bản nháp AI chỉ xem (push khi có kết quả)
         └── _HistoryScreen — empty state
 ```
 
-App shell ở `lib/main.dart` — `main()` async khởi tạo Firebase (`DefaultFirebaseOptions.currentPlatform`) và App Check debug provider trong `kDebugMode`. Form nằm trong `lib/screens/create_report_screen.dart`. Schema/parser bản nháp ở `lib/models/report_draft.dart`, prompt ở `lib/services/report_draft_prompt.dart`; service gọi Gemini qua Firebase AI Logic ở `lib/services/gemini_report_service.dart` (chưa nối UI). Widget tests ở `test/widget_test.dart`; model tests ở `test/report_draft_test.dart`; service tests ở `test/gemini_report_service_test.dart`.
+App shell ở `lib/main.dart` — `main()` async khởi tạo Firebase (`DefaultFirebaseOptions.currentPlatform`) và App Check debug provider trong `kDebugMode`. Form nằm trong `lib/screens/create_report_screen.dart`; màn bản nháp AI ở `lib/screens/report_draft_screen.dart`; widget thông báo ở `lib/widgets/status_notice.dart`. Schema/parser bản nháp ở `lib/models/report_draft.dart`, prompt ở `lib/services/report_draft_prompt.dart`; service gọi Gemini qua Firebase AI Logic ở `lib/services/gemini_report_service.dart` (đã nối UI từ Task 5). Widget tests ở `test/widget_test.dart`; model tests ở `test/report_draft_test.dart`; service tests ở `test/gemini_report_service_test.dart`.
 
 ## Luồng màn hình đã chốt
 
@@ -30,21 +31,21 @@ App shell ở `lib/main.dart` — `main()` async khởi tạo Firebase (`Default
 Tạo báo cáo → Xem/chỉnh sửa bản nháp → Lịch sử → Chi tiết báo cáo
 ```
 
-Đây là luồng sản phẩm đã thống nhất cho thiết kế. Hiện **Tạo báo cáo** cho nhập và xem lại đầu vào cục bộ; **Lịch sử** vẫn rỗng. AI draft, màn hình kết quả/chỉnh sửa, lưu và chi tiết chưa được dựng hay giả lập bằng dữ liệu mẫu.
+Đây là luồng sản phẩm đã thống nhất cho thiết kế. Hiện **Tạo báo cáo** cho nhập, xem lại đầu vào và tạo bản nháp AI thật; màn **"Bản nháp AI"** hiển thị draft chưa xác nhận (chỉ xem); **Lịch sử** vẫn rỗng. Chỉnh sửa/xác nhận draft, lưu và chi tiết chưa được dựng hay giả lập bằng dữ liệu mẫu.
 
-## Quy trình AI dự kiến — chưa tích hợp
+## Quy trình AI — đã tích hợp ở mức draft (Task 5 Ngày 3)
 
-Khi triển khai, luồng mục tiêu là:
+Luồng đang chạy trong app:
 
 ```text
 Mô tả/ảnh
+  → CTA "Phân tích bằng AI" (người dùng chủ động bấm)
   → Firebase AI Logic SDK trong Flutter
   → Firebase-managed proxy + App Check
-  → Gemini Developer API
+  → Gemini Developer API (chính `gemini-3.8-flash`; tự fallback `gemini-3.5-flash-lite` khi hết quota)
   → parse và kiểm tra JSON/schema
-  → người dùng xem, sửa và xác nhận bản nháp
-  → lưu cục bộ
-  → hiển thị trong Lịch sử
+  → người dùng xem bản nháp AI chưa xác nhận/chưa lưu
+  → (chưa có) sửa, xác nhận, lưu cục bộ, hiển thị trong Lịch sử
 ```
 
 Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `issue`, `suggested_action`, `summary` và `needs_confirmation`. Quy tắc giá trị trống:
@@ -59,7 +60,7 @@ Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `iss
 | `summary` | Có thể rỗng nếu chưa đủ dữ kiện; nếu có nội dung, chỉ tóm tắt dữ kiện đã xác nhận. | Có thể để trống sau khi người dùng xem lại. |
 | `needs_confirmation` | Danh sách tên các trường cần bổ sung hoặc xác nhận. | Người dùng phải xem từng mục; có thể xác nhận trường không có dữ liệu và giữ trống. |
 
-`created_at`, đường path ảnh và trạng thái báo cáo là metadata riêng, không phải trường nội dung cốt lõi. `ReportDraft` Dart model/parser và prompt đã được tạo và đã được nối vào `GeminiReportService` (Task 4 Ngày 3) với `responseSchema` ở phía SDK — nhưng service chưa gọi Gemini thật và chưa nối UI. Prompt yêu cầu summary chỉ tóm tắt dữ kiện người dùng nêu rõ. AI chỉ được phép tạo bản nháp, `suggested_action` không phải hành động đã thực hiện. Đã chọn Firebase AI Logic trên Spark với Gemini Developer API `gemini-3.8-flash`; Firebase Core/App Check đã được nối vào app (Task 3 Ngày 3); service + unit test đã có (Task 4 Ngày 3) nhưng chưa có màn hình draft, chưa có request thật và chưa có cơ sở dữ liệu.
+`created_at`, đường path ảnh và trạng thái báo cáo là metadata riêng, không phải trường nội dung cốt lõi. `ReportDraft` Dart model/parser và prompt đã được tạo và đã được nối vào `GeminiReportService` (Task 4 Ngày 3) với `responseSchema` ở phía SDK. Prompt yêu cầu summary chỉ tóm tắt dữ kiện người dùng nêu rõ. AI chỉ được phép tạo bản nháp, `suggested_action` không phải hành động đã thực hiện. Kiến trúc AI hiện tại: Firebase AI Logic trên Spark với Gemini Developer API, **model chính `gemini-3.8-flash` + fallback tự động `gemini-3.5-flash-lite`** khi gặp lỗi quota (chi tiết `docs/SESSION_2026-09-26_TASK5.md`); Firebase Core/App Check đã nối (Task 3); service + 27 service test (Task 4) đã nối UI (Task 5) và request Gemini thật đã chạy đầu-cuối trên thiết bị. Chưa có màn hình chỉnh sửa draft, lưu, lịch sử hoặc cơ sở dữ liệu.
 
 ## Quyết định kỹ thuật
 
@@ -68,13 +69,13 @@ Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `iss
 - **Material 3, `NavigationBar`, `IndexedStack`:** tạo điều hướng đơn giản, trạng thái chọn tab rõ ràng và chuyển màn hình không cần thư viện ngoài.
 - **`image_picker` 1.2.3:** dùng system picker cho camera/thư viện; preview đọc bytes trong phiên hiện tại. Không thêm `permission_handler` hoặc quyền Android rộng trong bước này.
 - Ảnh được yêu cầu resize tối đa 1600×1600, JPEG quality 85; kiểm tra file nhận được không quá 10 MiB. Đây là ngưỡng hiện tại của prototype.
-- **AI đã chọn, chưa tích hợp:** Firebase AI Logic trên Spark, Gemini Developer API `gemini-3.8-flash`. Firebase-managed proxy giữ Gemini API key phía server; không có Cloud Run backend hoặc Secret Manager do dự án tự quản lý.
-- Task 2 đã thêm `ReportDraft` schema/parser và prompt; Task 4 đã thêm service Firebase AI Logic với `responseSchema`, seam inject fake, chặn đầu vào (rỗng/ảnh > 4 MiB/loại lạ), timeout 60 giây và ánh xạ lỗi; smoke test với model thật chưa chạy.
+- **AI đã tích hợp (Task 4–5):** Firebase AI Logic trên Spark, Gemini Developer API. **Model chính `gemini-3.8-flash` (free 20 req/ngày) + fallback tự động `gemini-3.5-flash-lite` (free 500 req/ngày) khi gặp lỗi quota** — chất lượng fallback thấp hơn nên draft có thể cần xác nhận nhiều hơn. Firebase-managed proxy giữ Gemini API key phía server; không có Cloud Run backend hoặc Secret Manager do dự án tự quản lý.
+- Task 2 đã thêm `ReportDraft` schema/parser và prompt; Task 4 đã thêm service Firebase AI Logic với `responseSchema`, seam inject fake, chặn đầu vào (rỗng/ảnh > 4 MiB/loại lạ), timeout 60 giây và ánh xạ lỗi; **Task 5 đã nối CTA/loading/lỗi/retry/màn draft và chạy request Gemini thật đầu-cuối trên thiết bị Android (27/09/2026)**, kèm sửa bug ánh xạ lỗi App Check (`FirebaseException` plugin `firebase_app_check` → `ReportDraftAppCheckException`).
 - **Firebase trong app (Task 3):** `firebase_core` 4.15.0, `firebase_ai` 4.0.0, `firebase_app_check` 0.4.8 (`firebase_auth` 6.7.0 là dependency chuyển tiếp). `main()` async khởi tạo Firebase và kích hoạt App Check debug provider trong `kDebugMode`; API `firebase_app_check` 0.4.8 dùng class provider mới (`providerAndroid`/`providerWeb`), tham số enum cũ đã deprecated.
 - Firebase Console đã bật API, AI monitoring và đăng ký app Android/Web; FlutterFire tạo `lib/firebase_options.dart`. App Check debug token của thiết bị Android thử nghiệm đã được đăng ký trong Console và khởi tạo đã kiểm chứng sạch trên thiết bị thật; Web chưa verify và provider production (Play Integrity/reCAPTCHA Enterprise) chưa cấu hình nên trang Apps của Console vẫn có thể hiển thị `Unregistered`.
-- Firebase AI Logic quota `Generate content requests` đã được đặt 5 RPM cho từng vùng Asia trong bảng quota (per-user/per-region); quota riêng của Gemini Developer API free tier vẫn có thể thấp hơn. Quota Bidi chưa đổi vì app không dùng streaming.
+- Firebase AI Logic quota `Generate content requests` đã được đặt 5 RPM cho từng vùng Asia trong bảng quota (per-user/per-region). **Thứ chặn thực tế trong phiên Task 5 là quota ngày của Gemini Developer API free tier: `gemini-3.8-flash` 20 request/ngày (cạn khi test 27/09), `gemini-3.5-flash-lite` 500 request/ngày**; reset ~midnight Pacific (≈14:00–15:00 giờ VN); request 429 cũng bị đếm. Model fallback tự động là giải pháp hiện tại; dòng "Request limit per model per day" trong Cloud Console có thể Edit khi cần. Quota Bidi chưa đổi vì app không dùng streaming.
 - Spark/free tier không cần thẻ hoặc Cloud Billing. Free-tier input có thể được dùng để cải thiện sản phẩm Google, nên chỉ thử bằng mô tả/ảnh tổng hợp, không dùng dữ liệu hiện trường thật. Paid tier và mục tiêu USD 5/tháng chưa áp dụng; việc bật billing sau này cần xác nhận riêng.
-- Firebase AI Logic giới hạn tổng request 20 MB và ảnh inline base64 7 MB. Ngưỡng gửi ảnh dự kiến tối đa 4 MiB bytes gốc để còn chỗ cho base64 overhead; form hiện vẫn cho chọn ảnh đến 10 MiB nên giới hạn gửi AI chưa được triển khai.
+- Firebase AI Logic giới hạn tổng request 20 MB và ảnh inline base64 7 MB. Ngưỡng gửi ảnh là **4 MiB bytes gốc** để còn chỗ cho base64 overhead — được kiểm tra ở cả form (trước khi gọi service) và service; form vẫn cho chọn ảnh đến 10 MiB để xem lại cục bộ.
 
 ## Chạy ứng dụng
 
@@ -108,20 +109,21 @@ Sau Task 3 Ngày 3 (26/09/2026): `flutter analyze` toàn dự án sạch (hết 
 
 Sau Task 4 Ngày 3 (26/09/2026, xác nhận hai lần trong ngày — phiên triển khai và phiên rà soát): `dart format` không đổi; `flutter analyze` toàn dự án — No issues found; `flutter test` — 33/33 đạt (8 widget + 5 model + 20 service); `flutter build web --release` thành công; `flutter build apk --debug` thành công. Không gọi Gemini thật; mọi test dùng fixture tổng hợp với fake sender. Thay đổi Task 4 chưa commit (2 file mới + worklog) theo yêu cầu chủ dự án.
 
+Sau Task 5 Ngày 3 (26–27/09/2026): `dart format` sạch; `flutter analyze` — No issues; `flutter test` — **45/45 đạt** (13 widget + 5 model + 27 service); `flutter build web --release` + `flutter build apk --debug` thành công. **Request Gemini thật đã chạy đầu-cuối trên thiết bị Android** (agent cài APK và lái UI qua adb): nhập mô tả → Phân tích → màn "Bản nháp AI" mở với response thật; mô tả mơ hồ → draft giữ các trường rỗng + `needs_confirmation` (không bịa); fallback quota hoạt động theo log. Thay đổi Task 5 chưa commit.
+
 Kiểm thử thiết bị thật Task 4 (26/09/2026, APK debug do phiên rà soát build): chủ dự án chạy 20 test case thủ công (`docs/MANUAL_TESTCASES_APK.md`), 18/20 PASS; app không khai báo quyền runtime nào (camera qua Intent hệ thống, ảnh qua Photo Picker — đúng thiết kế); ảnh 12 MB sau resize của picker còn dưới 10 MiB nên ngưỡng 10 MiB của form thực tế khó kích hoạt (chi tiết TC-3.6/TC-3.7). Trước đó, sau thay đổi Ngày 2, `dart format lib test`, `flutter analyze`, `flutter test`, `flutter build web --release` và `flutter build apk --debug` đã thành công; chủ dự án cung cấp ảnh chụp xác nhận photo picker/chọn ảnh trên Android thật (ảnh nguồn trên 10 MiB vẫn hiện preview sau xử lý, không hiện số byte trước/sau).
 
 ## Hạn chế đã biết và hướng tiếp theo
 
-- Nhập mô tả/chụp/chọn ảnh và xem lại đầu vào đã có; service Gemini đã viết và pass unit test nhưng chưa nối UI, chưa gọi model thật, chưa có chỉnh sửa/xác nhận báo cáo hay lưu trữ.
-- Firebase AI Logic đã được bật trong Console nhưng Flutter chưa gửi request; chỉ dùng dữ liệu tổng hợp khi tích hợp free tier.
-- App Check: debug provider Android đã cấu hình và debug token đã đăng ký/verify khởi tạo trên thiết bị thật; cần xác nhận token được backend chấp nhận ở request Gemini đầu tiên (Task 6). Web debug provider chưa verify; provider production (Play Integrity/reCAPTCHA Enterprise) chưa cấu hình trước khi phân phối, không dùng debug token trong release.
+- Nhập mô tả/chụp/chọn ảnh, xem lại đầu vào và **tạo bản nháp AI thật** đã có; màn "Bản nháp AI" chỉ xem — **chưa có chỉnh sửa/xác nhận draft, lưu trữ, lịch sử có dữ liệu**.
+- Model fallback tự động: khi `gemini-3.8-flash` hết quota ngày (20), app dùng `gemini-3.5-flash-lite` (500/ngày) có chất lượng thấp hơn — draft có thể cần xác nhận nhiều hơn; demo quan trọng nên chạy khi model chính còn quota.
+- App Check: debug token đã được backend chấp nhận ở request Gemini thật (27/09/2026). Cài đè/gỡ cài app có thể đổi token → 403 "App attestation failed" (app hiển thị đúng thông báo App Check); đăng ký lại token trong Console. Web debug provider chưa verify; provider production (Play Integrity/reCAPTCHA Enterprise) chưa cấu hình trước khi phân phối, không dùng debug token trong release.
 - Tab Lịch sử luôn rỗng; chưa có lưu trữ cục bộ hoặc dữ liệu lịch sử.
-- `GeminiReportService` có trong mã với 20 unit test, nhưng chưa được gọi bởi bất kỳ màn hình nào; chưa có dữ liệu draft thực từ Gemini.
-- Form cho phép ảnh tới 10 MiB nhưng kiểm thử thiết bị thật cho thấy picker resize/nén ảnh trước khi trả về nên ngưỡng này thực tế khó kích hoạt; giới hạn gửi AI là 4 MiB và sẽ được kiểm tra tại service (Task 5 phải giữ nhánh chặn này).
+- Form cho phép ảnh tới 10 MiB nhưng picker resize/nén trước khi trả về nên ngưỡng này thực tế khó kích hoạt; giới hạn gửi AI 4 MiB được kiểm tra ở cả form và service (Task 5).
 - App không khai báo quyền runtime camera/ảnh: camera mở qua Intent hệ thống, ảnh qua Photo Picker (xác minh bằng merged manifest APK). Nhánh xử lý permission-denied trong mã giữ lại làm fallback.
-- Lỗi `flutter analyze` thiếu `firebase_core` sau khi FlutterFire tạo `lib/firebase_options.dart` đã được xử lý ở Task 3; analyze toàn dự án hiện sạch. Kết quả cụ thể theo từng task trong `docs/AI_WORKLOG.md`.
+- Kết quả cụ thể theo từng task trong `docs/AI_WORKLOG.md`; tổng kết phiên Task 5 và các sự cố vận hành ở `docs/SESSION_2026-09-26_TASK5.md`.
 
-Ưu tiên tiếp theo là Task 5 Ngày 3: nối `GeminiReportService` vào form/màn hình draft (CTA, loading/error/retry, nhãn "Bản nháp AI — cần kiểm tra, chưa lưu", giới hạn ảnh 4 MiB trước khi gửi), rồi Task 6 smoke test synthetic; sau đó là lưu/đọc lịch sử cục bộ (Ngày 4). Chỉ cân nhắc voice/GPS sau khi luồng cốt lõi chạy ổn.
+Ưu tiên tiếp theo: chạy đủ `docs/MANUAL_TESTCASES_TASK5.md` trên thiết bị thật và hoàn tất Task 6 (smoke test synthetic chính thức), rồi Task 7 rà tài liệu; sau đó Ngày 4 — sửa/xác nhận draft và lưu/đọc lịch sử cục bộ. Chỉ cân nhắc voice/GPS sau khi luồng cốt lõi chạy ổn.
 
 ## Tài liệu dự án
 
@@ -132,4 +134,6 @@ Kiểm thử thiết bị thật Task 4 (26/09/2026, APK debug do phiên rà so�
 - `docs/CONTEXT_SUMMARY.md` — tóm tắt trạng thái để bàn giao coding agent.
 - `docs/WALKTHROUGH.md` — hướng dẫn chạy và kiểm tra giao diện hiện tại.
 - `docs/MANUAL_TESTCASES_APK.md` — test case thủ công cho APK debug trên thiết bị thật.
-- `docs/implement_plan_day3.md` — kế hoạch tích hợp Firebase AI Logic và trạng thái Task 1–4.
+- `docs/MANUAL_TESTCASES_TASK5.md` — test case thủ công cho luồng AI (Task 5) trên thiết bị thật.
+- `docs/SESSION_2026-09-26_TASK5.md` — tổng kết phiên Task 5: triển khai, sự cố App Check/quota, model fallback.
+- `docs/implement_plan_day3.md` — kế hoạch tích hợp Firebase AI Logic và trạng thái Task 1–5.

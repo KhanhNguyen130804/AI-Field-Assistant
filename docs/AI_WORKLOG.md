@@ -240,3 +240,56 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - **Chưa có request Gemini thật:** chất lượng schema/prompt với model thực tế, và việc App Check token được backend chấp nhận, chỉ xác nhận được ở smoke test synthetic (Task 6). Cách ánh xạ lỗi App Check dựa trên đoán message của SDK — cần xác nhận bằng lỗi thật nếu gặp.
 - `Future.timeout` không hủy request đang chạy phía SDK; hành vi khi thiết bị mất mạng giữa request cần xác nhận ở Task 5/6.
 - Service chưa nối vào UI; chưa có loading/error state trên màn hình (Task 5).
+
+## 2026-09-26/27 — Task 5 Ngày 3: nối UI, request Gemini thật đầu tiên, fallback model
+
+### Công cụ và phạm vi
+
+- **AI coding agent:** ZCode (model GLM); Flutter CLI; `adb` (logcat, input, uiautomator dump) để lái UI điện thoại thật từ xa.
+- **Yêu cầu:** thực hiện Task 5 trong `docs/implement_plan_day3.md`: CTA tạo draft, loading/lỗi/retry giữ input, màn "Bản nháp AI — cần kiểm tra, chưa lưu" với `needs_confirmation`; chưa lưu/xác nhận. Sau đó chẩn đoán 2 sự cố chủ dự án gặp khi test trên điện thoại và cập nhật docs.
+
+### Đã làm (code)
+
+- `lib/screens/report_draft_screen.dart` (mới): màn draft chỉ xem — tiêu đề "Bản nháp AI — cần kiểm tra, chưa lưu"; chỉ hiện trường có nội dung; `needs_confirmation` thành khối cảnh báo + badge "Cần xác nhận" từng trường; `suggested_action` kèm dòng "Đây là hành động đề xuất, chưa phải việc đã thực hiện."; hiển thị đầu vào gốc; không có nút lưu/sửa.
+- `lib/widgets/status_notice.dart` (mới): thông báo dùng chung, trích từ `_StatusNotice` cục bộ.
+- `lib/screens/create_report_screen.dart`: CTA "Phân tích bằng AI" — chặn input rỗng, chặn ảnh > 4 MiB trước gọi service (`maxImageBytesForAi` public); loading + khóa 4 nút; lỗi giữ mô tả + ảnh, retry bấm lại; helper text + khối thông báo ghi rõ dữ liệu gửi tới Gemini.
+- `lib/main.dart`: seam `reportService` qua app widget cho test.
+- `lib/services/gemini_report_service.dart`: log chẩn đoán debug-only tại điểm bắt lỗi (`ReportDraft request failed: …`, không log prompt/ảnh); fix ánh xạ lỗi App Check; model fallback (chi tiết bên dưới); seam `senderFactory(String)` thay `modelFactory`.
+- Tests: widget_test.dart +8 (luồng AI, `_FakeReportService` extend service override `createReportDraft`); gemini_report_service_test.dart +4 (FirebaseException App Check thật + 3 fallback) → tổng **45/45**.
+
+### Sự cố 1 — "Không thể phân tích lúc này" dù có mạng (đã fix)
+
+- **Tái hiện:** agent build APK có log chẩn đoán, cài qua adb, lái UI (`input tap/text`), bắt logcat: `ReportDraft request failed: [firebase_app_check/unknown] Error returned from API. code: 403 body: App attestation failed.` kèm `DebugAppCheckProvider: Failed to exchange debug token (4ce5d93c-…)`.
+- **Nguyên nhân:** (a) App Check debug token của lần cài hiện tại chưa đăng ký trong Console (cài đè/gỡ cài có thể đổi token); (b) bug ánh xạ: exception là `FirebaseException` của plugin `firebase_app_check` (không phải `FirebaseAIException`), message chứa `app_check`/`App attestation` nhưng `_mentionsAppCheck` cũ chỉ tìm `appcheck`/`app check` → rơi vào nhánh lỗi mạng, gây hiểu nhầm.
+- **Fix:** `_mapError` thêm case `FirebaseException(plugin/message)` → `ReportDraftAppCheckException`; `_mentionsAppCheck` nhận nullable, normalize cả `-`/`_`, nhận diện "app attestation". Chủ dự án đăng ký token trong Console; xác minh sau fix: lỗi hiển thị đúng thông báo App Check; khi token hợp lệ request đi được.
+- **Bài học:** "điện thoại có internet" không loại trừ lỗi phía Firebase; log chẩn đoán debug-only là công cụ quyết định — giữ lại vĩnh viễn.
+
+### Sự cố 2 — "Đã đạt giới hạn số lần phân tích" (quota, đã xử lý bằng fallback)
+
+- **Tái hiện:** bấm Phân tích nhiều lần → thông báo quota (ánh xạ đúng lỗi 429 thật). Log một lần thành công giữa các lần chờ xác nhận request thật đi được đầu-cuối (màn "Bản nháp AI" mở, draft trả đủ 6 trường rỗng + needs_confirmation cho mô tả vô nghĩa "Mayg" — AI không bịa dữ kiện).
+- **Bằng chứng Console (screenshot chủ dự án):** quota chặn là **"Request limit per model per day for a project in the free tier" — `gemini-3.8-flash`, limit 20, usage 24 (100%)**; các dòng RPM vùng Asia đều Unlimited. Kết luận: chặn thực tế là **quota ngày theo model** của Gemini Developer API free tier, không phải RPM Firebase AI Logic đã hạ ở Task 1; request 429 cũng bị đếm usage; không thể sửa từ mã.
+- **Giải pháp — model fallback tự động:** chính `gemini-3.8-flash` (chất lượng tốt nhất, 20/ngày); gặp quota → tự thử `gemini-3.5-flash-lite` (500/ngày) trong cùng lần bấm; lỗi không phải quota (blocked/App Check/500/timeout) không fallback; fallback cũng 429 → báo quota. Log debug từng bước. Mỗi model một `_GenerativeModelSender` tạo lười; seam `senderFactory`.
+- **Xác minh trên thiết bị (log 27/09 04:24):** `limit: 20, model: gemini-3.8-flash` → `trying fallback (gemini-3.5-flash-lite)` → màn draft mở với response thật từ lite model.
+- **Trade-off ghi nhận:** fallback chất lượng thấp hơn (draft có badge cần xác nhận nhiều hơn); demo quan trọng nên chạy khi 3.8-flash còn quota (reset midnight Pacific ≈ 14:00–15:00 giờ VN) hoặc chủ dự án Edit quota "Request limit per model per day" trong Console (Adjustable: Yes).
+
+### Kiểm chứng agent đã chạy
+
+- `dart format lib test` — sạch; `flutter analyze` — No issues; `flutter test` — **45/45 đạt** (13 widget + 5 model + 27 service); `flutter build web --release` + `flutter build apk --debug` thành công (lặp lại nhiều lần trong phiên sau mỗi fix).
+- **Request Gemini thật đầu-cuối trên thiết bị Android (2026-09-26/27, agent tự lái qua adb):** nhập mô tả → Phân tích → màn "Bản nháp AI" mở. Case mô tả rõ ("Máy lạnh ở khu vực lễ tân không hoạt động"): draft Sự cố/Địa điểm/Hành động đề xuất đúng, priority null + needs_confirmation (không tự mặc định). Case mô tả mơ hồ/ vô nghĩa: 6 trường rỗng + needs_confirmation toàn bộ, không bịa. Back về form giữ input. Đây là bằng chứng "backend chấp nhận App Check token" mà Task 3/4 để dành — **một phần tiêu chí Task 6 đã có bằng chứng thật**.
+- Chủ dự án xác nhận riêng: cùng ảnh đầu vào, `gemini-3.8-flash` nhận đúng sự cố/danh mục/hành động đề xuất, `gemini-3.5-flash-lite` kém hơn rõ — cơ sở chọn fallback thay vì đổi hẳn model.
+
+### Sửa lỗi AI trong lúc triển khai
+
+- `FirebaseException.message` nullable — `_mentionsAppCheck` phải nhận `String?`.
+- `GenerativeModel` là final class — không mock implements được; đổi seam sang `senderFactory(String)` trả `ReportDraftRequestSender`.
+- `_FakeReportService` ban đầu `implements GeminiReportService` lỗi vì private member — đổi sang `extends`.
+- Widget test sau push route: form nguồn offstage — kiểm tra giữ input phải trước khi bấm hoặc sau pageBack.
+- `responseText` final không gán được trong catch của fallback — đổi khai báo biến.
+- `Candidate`/`GenerateContentResponse` constructor positional 5/2 tham số (đối chiếu source firebase_ai 4.0.0 trong pub cache).
+- Lưu ý adb: `input text` không gõ dấu cách — dùng `%s`; logcat buffer điện thoại test 256 KiB trôi nhanh — cần streaming.
+
+### Giới hạn kiểm chứng còn lại
+
+- Chưa chạy đủ 31 test case trong `docs/MANUAL_TESTCASES_TASK5.md`; case gián đoạn giữa loading (tab/xoay/Home) mới ghi hành vi thật, chưa chốt chuẩn.
+- Chất lượng prompt với 3.8-flash trên đầu vào ảnh thật: chỉ có nhận định chủ dự án (tốt hơn lite rõ rệt), chưa có bộ benchmark.
+- Chưa commit Task 5 (code + docs) theo yêu cầu chủ dự án; Web debug provider và provider production vẫn như Task 3.

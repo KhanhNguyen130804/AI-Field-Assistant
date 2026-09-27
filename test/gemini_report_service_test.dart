@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:ai_field_assistant/models/report_draft.dart';
 import 'package:ai_field_assistant/services/gemini_report_service.dart';
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -299,6 +300,36 @@ void main() {
     );
   });
 
+  test(
+    'FirebaseException 403 App attestation failed: ánh xạ thành lỗi App Check',
+    () async {
+      // Lỗi thật gặp trên thiết bị 27/09/2026: firebase_app_check ném
+      // FirebaseException (không phải FirebaseAIException) với message
+      // "App attestation failed" — trước đây rơi vào nhánh lỗi mạng.
+      final sender = _FakeSender(
+        error: FirebaseException(
+          plugin: 'firebase_app_check',
+          code: 'unknown',
+          message:
+              'Error returned from API. code: 403 body: '
+              'App attestation failed.',
+        ),
+      );
+      final service = buildService(sender);
+
+      await expectLater(
+        service.createReportDraft(description: 'Điều hòa hỏng.'),
+        throwsA(
+          isA<ReportDraftAppCheckException>().having(
+            (error) => error.userMessage,
+            'userMessage',
+            contains('App Check'),
+          ),
+        ),
+      );
+    },
+  );
+
   test('response bị block: ánh xạ thành lỗi phản hồi AI', () async {
     final sender = _FakeSender(
       error: FirebaseAIException('Response was blocked due to SAFETY'),
@@ -319,6 +350,72 @@ void main() {
       service.createReportDraft(description: 'Điều hòa hỏng.'),
       throwsA(isA<ReportDraftServiceException>()),
     );
+  });
+
+  test(
+    'model chính hết quota: tự thử model dự phòng trong cùng lần gọi',
+    () async {
+      final spy = _SenderFactorySpy();
+      final primary = _RecordingSender(
+        'gemini-3.8-flash',
+        error: QuotaExceeded('[429 RESOURCE_EXHAUSTED] per-day request limit'),
+      );
+      final fallback = _RecordingSender(
+        'gemini-3.5-flash-lite',
+        responseText: _validDraftJson,
+      );
+      spy.senders[primary.modelName] = primary;
+      spy.senders[fallback.modelName] = fallback;
+
+      final service = GeminiReportService(senderFactory: spy.call);
+      final draft = await service.createReportDraft(
+        description: 'Điều hòa hỏng.',
+      );
+
+      expect(draft.issue, 'Điều hòa không hoạt động');
+      expect(primary.callCount, 1);
+      expect(fallback.callCount, 1);
+      expect(spy.senders.keys.toSet(), {
+        'gemini-3.8-flash',
+        'gemini-3.5-flash-lite',
+      });
+    },
+  );
+
+  test('lỗi không phải quota: KHÔNG fallback, báo lỗi như thường', () async {
+    final spy = _SenderFactorySpy();
+    spy.senders['gemini-3.8-flash'] = _RecordingSender(
+      'gemini-3.8-flash',
+      error: FirebaseAIException('Response was blocked due to SAFETY'),
+    );
+
+    final service = GeminiReportService(senderFactory: spy.call);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+    expect(spy.senders, hasLength(1));
+  });
+
+  test('model dự phòng cũng hết quota: ánh xạ thành lỗi quota', () async {
+    final spy = _SenderFactorySpy();
+    spy.senders['gemini-3.8-flash'] = _RecordingSender(
+      'gemini-3.8-flash',
+      error: QuotaExceeded('429 RESOURCE_EXHAUSTED quota exceeded.'),
+    );
+    spy.senders['gemini-3.5-flash-lite'] = _RecordingSender(
+      'gemini-3.5-flash-lite',
+      error: QuotaExceeded('429 RESOURCE_EXHAUSTED quota exceeded.'),
+    );
+
+    final service = GeminiReportService(senderFactory: spy.call);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftQuotaException>()),
+    );
+    expect(spy.senders, hasLength(2));
   });
 }
 
@@ -344,4 +441,29 @@ class _HangingSender implements ReportDraftRequestSender {
 
   @override
   Future<String?> send(Content prompt) => _never.future;
+}
+
+class _RecordingSender implements ReportDraftRequestSender {
+  _RecordingSender(this.modelName, {this.responseText, this.error});
+
+  final String modelName;
+  final String? responseText;
+  final Object? error;
+  int callCount = 0;
+  Content? lastPrompt;
+
+  @override
+  Future<String?> send(Content prompt) async {
+    callCount++;
+    lastPrompt = prompt;
+    if (error != null) throw error!;
+    return responseText;
+  }
+}
+
+class _SenderFactorySpy {
+  final Map<String, _RecordingSender> senders = {};
+
+  ReportDraftRequestSender call(String modelName) =>
+      senders.putIfAbsent(modelName, () => _RecordingSender(modelName));
 }
