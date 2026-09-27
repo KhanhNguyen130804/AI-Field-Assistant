@@ -293,3 +293,26 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - Chưa chạy đủ 31 test case trong `docs/MANUAL_TESTCASES_TASK5.md`; case gián đoạn giữa loading (tab/xoay/Home) mới ghi hành vi thật, chưa chốt chuẩn.
 - Chất lượng prompt với 3.8-flash trên đầu vào ảnh thật: chỉ có nhận định chủ dự án (tốt hơn lite rõ rệt), chưa có bộ benchmark.
 - Chưa commit Task 5 (code + docs) theo yêu cầu chủ dự án; Web debug provider và provider production vẫn như Task 3.
+
+## 2026-09-27 — Task 6: kiểm thử tự động và xác nhận bằng chứng E2E
+
+### Xác nhận phạm vi và bằng chứng Task 5
+
+- Chủ dự án xác nhận Task 5 đã được kiểm thử thủ công và PASS. Không có bảng kết quả theo từng TC, model/Android version hoặc số request được cung cấp; vì vậy đây là xác nhận tổng thể của chủ dự án, không tự điền PASS cho từng hàng trong `docs/MANUAL_TESTCASES_TASK5.md`.
+- Đối chiếu mã hiện tại với bằng chứng lịch sử trong mục Task 5 phía trên: UI gọi `GeminiReportService`; tài liệu ghi request Gemini thật trên Android với App Check hợp lệ, input mô tả rõ và mơ hồ, giữ input khi Back, và fallback sau quota. Task 5 cũng ghi `flutter test` 45/45 cùng `flutter analyze` sạch.
+- Khi khảo sát thiết bị hiện tại, app đã cài trên Android 16 (model PKG110), đang chạy nền và form còn một ảnh đã chọn không rõ nội dung. Không gửi lại ảnh đó, không xóa trạng thái trong app và không tạo request Gemini mới. Smoke test E2E dùng input tổng hợp đã có bằng chứng ngày 26–27/09 ở phần Task 5; không coi đó là request vừa chạy hôm nay.
+
+### Kiểm tra vừa chạy trong phiên này
+
+- `dart format --output=none --set-exit-if-changed lib test` — exit 0; 11 file được kiểm tra, 0 file cần format.
+- `flutter analyze` — No issues found (5,0 giây).
+- `flutter test` — **45/45 đạt**: 5 model, 27 service, 13 widget. Bao gồm parse/validate schema, giới hạn ảnh/input, lỗi timeout/quota/App Check, fallback model và UI loading/lỗi/retry.
+- `adb devices -l` — ban đầu không có thiết bị trong phiên ADB mới; sau đó thiết bị Android 16 đã tự xuất hiện qua kết nối ADB Wi‑Fi. Đã mở app xem UI tree, không đọc/chia sẻ token hoặc gửi request; app foreground ban đầu được khôi phục, UI dump tạm do phiên tạo đã xóa, AVD phụ đã tắt.
+- Không chạy build trong Task 6 vì không nằm trong bước kiểm chứng của Task 6 và không có sửa mã. Không gửi request mới; quota hiện tại không được truy vấn từ Firebase Console. Không bật billing.
+- Thử `dart format lib test` ở chế độ ghi bị auto-review từ chối do lệnh có thể sửa tệp trong bối cảnh trước đó yêu cầu chỉ khảo sát; dry-run read-only đã xác nhận không có thay đổi định dạng. Git vẫn được kiểm tra sau các lệnh.
+- Git trước khi cập nhật worklog đang sạch tại `c440da4`; sau Task 6 chỉ các tài liệu ghi nhận/plan được sửa, không sửa mã nguồn hay cấu hình.
+
+### Kết luận Task 6
+
+- Kiểm tra tự động hiện tại đạt. Tiêu chí có ít nhất một request E2E synthetic với App Check hợp lệ được đáp ứng bằng bằng chứng Android thật đã ghi trong Task 5; lời xác nhận của chủ dự án củng cố kết quả kiểm thử thủ công Task 5.
+- Không có benchmark chất lượng model, test Web/App Check production, quota hiện thời hoặc bảng PASS theo từng TC trong hồ sơ. Các giới hạn này vẫn cần giữ rõ trong README/worklog; không suy diễn từ 45 unit/widget/service tests.

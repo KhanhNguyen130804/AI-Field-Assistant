@@ -1,6 +1,10 @@
-# Tóm tắt dự án — sau Task 5 Ngày 3
+# Tóm tắt dự án — sau Task 6 Ngày 3
 
-> Bản tóm tắt này giữ trạng thái triển khai đến Ngày 2 và bổ sung Ngày 3 Task 1–5. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Cập nhật khi quyết định hoặc trạng thái triển khai đổi.
+> Bản tóm tắt này giữ trạng thái triển khai đến Ngày 2 và bổ sung Ngày 3 Task 1–6. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Cập nhật khi quyết định hoặc trạng thái triển khai đổi.
+
+## Cập nhật Task 6 (2026-09-27)
+
+Task 6 đã chạy lại kiểm tra format ở chế độ read-only (11 file, 0 thay đổi), `flutter analyze` (No issues) và `flutter test` (45/45 đạt). Bằng chứng request Gemini thật đầu-cuối với App Check hợp lệ đã được ghi ở Task 5; chủ dự án xác nhận bộ kiểm thử thủ công Task 5 đã PASS. Không có kết quả theo từng TC trong bảng thủ công. Phiên này không gửi request Gemini mới vì app đang có ảnh được chọn không rõ nội dung; quota hiện tại cũng chưa được truy vấn từ Console. Chi tiết ở cuối `docs/AI_WORKLOG.md`.
 
 ## Người dùng và vấn đề
 
@@ -65,7 +69,7 @@ Sau Task 5 (26–27/09/2026): `dart format` sạch; `flutter analyze` — No iss
 
 Sau Task 4, chủ dự án đã cài APK debug và chạy 20 test case thủ công (`docs/MANUAL_TESTCASES_APK.md`) trên Android thật: 18/20 PASS. TC-3.6 xác nhận app không xin quyền runtime nào nhưng camera/ảnh vẫn dùng được (đúng thiết kế — Intent camera + Photo Picker); TC-3.7 xác nhận ảnh 12 MB sau resize của picker còn dưới 10 MiB nên ngưỡng form không kích hoạt (mã chặn giữ lại; Task 5 đã thêm chặn bytes 4 MiB trước gọi service). Kiểm chứng Task 3 (thiết bị thật, `adb logcat`, Firebase/App Check init sạch) vẫn giữ giá trị.
 
-Sau Task 5, agent tạo bộ test case thủ công riêng cho luồng AI: `docs/MANUAL_TESTCASES_TASK5.md` (31 case). Chủ dự án test trên thiết bị thật đã gặp và xử lý xong 2 sự cố vận hành (App Check token, quota 20/ngày — chi tiết `docs/AI_WORKLOG.md` và `docs/SESSION_2026-09-26_TASK5.md`); một số case PASS có bằng chứng (TC-5.2.1, TC-5.2.5, fallback quota); bộ case còn lại chờ chủ dự án chạy đủ.
+Sau Task 5, agent tạo bộ test case thủ công riêng cho luồng AI: `docs/MANUAL_TESTCASES_TASK5.md` (31 case). Chủ dự án xác nhận đã kiểm thử Task 5 và toàn bộ đạt PASS. Bảng trong file vẫn chưa có kết quả theo từng TC, thiết bị/model và số request nên không tự suy ra trạng thái riêng của từng case. Hai sự cố vận hành (App Check token, quota 20/ngày) cùng một số kết quả E2E đã được ghi trong `docs/AI_WORKLOG.md` và `docs/SESSION_2026-09-26_TASK5.md`.
 
 Trong Windows workspace này, Kotlin incremental cache từng lỗi khi project ở ổ `D:` và Pub Cache ở ổ `C:`. `android/gradle.properties` hiện đặt `kotlin.incremental=false`; build chuẩn `flutter build apk --debug` đã thành công. Kotlin compile có thể chậm hơn do không dùng incremental cache.
 

@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 3: Firebase AI Logic và bản nháp báo cáo
 
-> **Trạng thái (cập nhật 2026-09-27, sau Task 5):** Task 1–5 đã hoàn tất phần code và kiểm thử tự động. Service gọi Gemini đã nối vào UI (CTA, loading, lỗi, retry, màn hình draft); đã chạy **request Gemini thật đầu-cuối trên thiết bị Android** (draft mở được, không bịa trường). Hai sự cố vận hành đã chẩn đoán và xử lý: (1) App Check token chưa đăng ký + bug ánh xạ lỗi — đã fix; (2) quota free tier 20 request/ngày của `gemini-3.8-flash` cạn — đã thêm **model fallback tự động** sang `gemini-3.5-flash-lite` (500/ngày). `flutter analyze` sạch, `flutter test` 45/45, build web/APK debug đạt; thay đổi Task 5 chưa commit. Chi tiết phiên ở `docs/SESSION_2026-09-26_TASK5.md`; bộ test case thiết bị thật ở `docs/MANUAL_TESTCASES_TASK5.md`.
+> **Trạng thái (cập nhật 2026-09-27, sau Task 6):** Task 1–6 đã hoàn tất phần triển khai/kiểm chứng; Task 5 code đã commit trong `c440da4`. Service Gemini nối vào UI; request thật đầu-cuối trên Android, App Check hợp lệ, draft rõ/mơ hồ và fallback quota có bằng chứng ở `docs/SESSION_2026-09-26_TASK5.md`. Chủ dự án xác nhận kiểm thử thủ công Task 5 PASS; bảng theo từng case chưa được điền. Task 6 vừa xác nhận format dry-run 11 file/0 thay đổi, `flutter analyze` sạch và `flutter test` 45/45. Không có request AI mới trong phiên này; chi tiết và giới hạn ở cuối `docs/AI_WORKLOG.md`. Task 7 — rà tài liệu và bàn giao — còn lại.
 >
 > **Quyết định hiện tại:** Firebase AI Logic → Gemini Developer API, **2 model: chính `gemini-3.8-flash` + fallback `gemini-3.5-flash-lite`**, trên Spark/free tier. Không tạo Cloud Run backend và không đưa Gemini API key vào app. Chỉ dùng dữ liệu tổng hợp vì free tier có thể dùng nội dung gửi lên để cải thiện sản phẩm Google.
 
@@ -161,7 +161,7 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 
 **Mục tiêu:** người dùng chủ động gửi đầu vào và xem draft chưa xác nhận.
 
-**Trạng thái:** Đã triển khai ngày 2026-09-26/27; kiểm chứng tự động 45/45 test và xác minh đầu-cuối trên thiết bị thật. Chưa chạy trọn bộ 31 test case thủ công (`docs/MANUAL_TESTCASES_TASK5.md`); chưa commit.
+**Trạng thái khi kết thúc phiên Task 5:** Đã triển khai ngày 2026-09-26/27; kiểm chứng tự động 45/45 test và xác minh đầu-cuối trên thiết bị thật. Tại thời điểm đó chưa chạy trọn bộ 31 test case thủ công (`docs/MANUAL_TESTCASES_TASK5.md`); chủ dự án xác nhận đã hoàn tất và PASS sau đó trong Task 6.
 
 **Đã thực hiện:**
 
@@ -178,7 +178,7 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 
 **Kiểm chứng thiết bị thật (agent tự lái qua adb):** luồng nhập mô tả → Phân tích → **màn "Bản nháp AI" mở với response Gemini thật**; mô tả mơ hồ → 6 trường rỗng + needs_confirmation toàn bộ (không bịa); mô tả rõ → draft đúng dữ kiện, priority null + cần xác nhận; back về form giữ input. Fallback quota xác minh hoạt động qua log (3.8-flash 429 → lite trả kết quả).
 
-**Còn lại:** chạy đủ `docs/MANUAL_TESTCASES_TASK5.md` (mục 3–6); case gián đoạn giữa loading (tab/xoay/Home) mới ghi hành vi thật chưa chốt; chưa commit.
+**Còn lại ở thời điểm kết thúc phiên Task 5:** chạy đủ `docs/MANUAL_TESTCASES_TASK5.md` (mục 3–6); case gián đoạn giữa loading (tab/xoay/Home) mới ghi hành vi thật chưa chốt; chưa commit. Chủ dự án xác nhận tổng thể Task 5 PASS ở phần cập nhật Task 6; bảng theo từng case chưa có kết quả.
 
 **Tránh:** nút giả, draft mẫu như thể là Gemini thật, tự lưu hoặc tuyên bố người dùng xác nhận, xoá input khi SDK lỗi — đều đã tuân thủ.
 
@@ -198,6 +198,8 @@ Firebase `responseSchema`/JSON mode chưa được cấu hình vì Firebase AI L
 **Tránh:** ảnh, mô tả hoặc tài sản của hiện trường thật; gửi debug token; đánh đồng test fake với Gemini E2E.
 
 **Kiểm thử/tiêu chí hoàn thành:** các test tự động đạt; một synthetic end-to-end request chạy với App Check hợp lệ; không khẳng định chức năng hoạt động nếu chưa chạy request thật.
+
+**Trạng thái (2026-09-27):** Đã hoàn thành kiểm tra tự động trong phiên: format dry-run 11 file/0 thay đổi; `flutter analyze` sạch; `flutter test` 45/45 đạt. Tiêu chí request Gemini thật + App Check hợp lệ có bằng chứng đầu-cuối trên Android trong Task 5 (mô tả rõ/mơ hồ và fallback quota); chủ dự án xác nhận bộ test thủ công Task 5 PASS. Không phát sinh request Gemini thứ hai trong phiên này vì thiết bị đang giữ một ảnh đã chọn không rõ nội dung và không được gửi khi chưa xác nhận là dữ liệu tổng hợp. Quota hiện thời không được truy vấn Console. Chi tiết kiểm chứng và giới hạn ghi ở `docs/AI_WORKLOG.md`.
 
 ### Task 7 — Rà tài liệu và bàn giao Ngày 3
 

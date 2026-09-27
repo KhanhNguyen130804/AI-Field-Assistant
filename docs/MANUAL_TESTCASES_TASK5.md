@@ -218,6 +218,8 @@ Ký hiệu expectation: chuỗi thông báo trong **đậm** phải khớp **ngu
 
 ## Bảng ghi kết quả
 
+> Cập nhật 2026-09-27: Chủ dự án xác nhận toàn bộ kiểm thử thủ công Task 5 đã PASS. Bảng dưới chưa được điền theo từng TC; không suy ra model, thời gian, số request hoặc trạng thái riêng của từng case từ xác nhận tổng thể này. Chi tiết đối chiếu được ghi trong `docs/AI_WORKLOG.md`.
+
 | TC | Kết quả (PASS/FAIL/Blocked) | Ghi chú (model máy, Android version, chuỗi lỗi thật, số request, thời gian chờ) |
 |---|---|---|
 | 5.0.1 | | |
