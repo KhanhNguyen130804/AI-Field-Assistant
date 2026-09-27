@@ -25,6 +25,14 @@ Flutter Material 3 app
 
 App shell ở `lib/main.dart` — `main()` async khởi tạo Firebase (`DefaultFirebaseOptions.currentPlatform`) và App Check debug provider trong `kDebugMode`. Form nằm trong `lib/screens/create_report_screen.dart`; màn bản nháp AI ở `lib/screens/report_draft_screen.dart`; widget thông báo ở `lib/widgets/status_notice.dart`. Schema/parser bản nháp ở `lib/models/report_draft.dart`, prompt ở `lib/services/report_draft_prompt.dart`; service gọi Gemini qua Firebase AI Logic ở `lib/services/gemini_report_service.dart` (đã nối UI từ Task 5). Widget tests ở `test/widget_test.dart`; model tests ở `test/report_draft_test.dart`; service tests ở `test/gemini_report_service_test.dart`.
 
+## Quyết định Ngày 4 Task 1 — chưa triển khai persistence
+
+Đã chốt lưu báo cáo bằng SQLite trên Android và lưu bản sao ảnh trong thư mục application support; database giữ đường dẫn tương đối. `ReportDraft` tiếp tục là đề xuất AI; state review và model báo cáo đã xác nhận sẽ tách riêng. Mọi field cần người dùng xem lại, `issue` bắt buộc có nội dung; trường tùy chọn có thể trống sau xác nhận không có thông tin. Sửa dữ kiện sẽ yêu cầu xem lại summary.
+
+Bộ dependency dự kiến đã resolve bằng dry-run: `sqflite 2.4.4`, `path_provider 2.1.6`, `path 1.9.1`; `sqflite_common_ffi 2.4.3` là dev-only cho test SQLite thật trên Windows. Chưa thêm vào `pubspec`/lockfile và chưa có repository/database/editor. Web tiếp tục preview UI; persistence Web không nằm trong Ngày 4, thao tác lưu sẽ được khóa với thông báo rõ khi UI lưu được triển khai. Không tuyên bố offline AI, mã hóa/backup hoặc giữ dữ liệu sau gỡ app.
+
+Chi tiết hợp đồng model/review, schema SQLite v1, API repository, retry/ảnh và kết quả preflight tại `docs/implement_plan_day4.md` (Task 1). Preflight thấy Android 16 qua adb; `flutter doctor` còn báo Android license status unknown và thiếu Windows C++ workload. Chưa kiểm chứng build native hoặc SQLite FFI runtime của bộ dependency mới. Bước tiếp theo là **Task 2 Ngày 4: model và validation review**.
+
 ## Luồng màn hình đã chốt
 
 ```text
@@ -139,3 +147,4 @@ Task 6 kiểm tra tự động đã hoàn tất ngày 27/09/2026; Task 7 là lư
 - `docs/MANUAL_TESTCASES_TASK5.md` — test case thủ công cho luồng AI (Task 5) trên thiết bị thật.
 - `docs/SESSION_2026-09-26_TASK5.md` — tổng kết phiên Task 5: triển khai, sự cố App Check/quota, model fallback.
 - `docs/implement_plan_day3.md` — kế hoạch tích hợp Firebase AI Logic và trạng thái Task 1–7.
+- `docs/implement_plan_day4.md` — task chỉnh sửa/xác nhận, persistence, lịch sử/chi tiết; Task 1 đã chốt hợp đồng, Task 2–8 chưa triển khai.

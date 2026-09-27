@@ -336,3 +336,48 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 
 - Đây là lượt cập nhật tài liệu; không xác minh lại trạng thái Firebase Console hoặc chạy kiểm thử phần mềm.
 - Thay đổi Task 7 chưa được commit/push; chủ dự án sẽ tự thực hiện.
+
+## 2026-09-27 — Ngày 4 Task 1: preflight và chốt hợp đồng lưu cục bộ
+
+### Công cụ, yêu cầu và phạm vi
+
+- **AI coding agent:** Codex; PowerShell/Git, Flutter/Dart CLI, adb và tra cứu tài liệu maintainer trên pub.dev.
+- **Prompt chính:** chủ dự án yêu cầu “bắt đầu thực hiện task 1 day 4”, theo `docs/implement_plan_day4.md`; chỉ preflight/chốt contract và quyết định storage, chưa thực hiện Task 2–8.
+- Git đầu phiên: nhánh `task/day3-firebase-ai-logic`, HEAD `d4e6cc1`; `docs/implement_plan_day4.md` untracked từ phiên lập kế hoạch, không có thay đổi tracked. Giữ nguyên file và không stage/commit/push/reset/checkout/stash.
+
+### Quyết định đã chốt
+
+- Tách `ReportDraft` (AI), `ReportReview` (giá trị đang sửa + pending/confirmedValue/confirmedAbsent) và `Report` immutable đã xác nhận. Review tất cả field; issue bắt buộc, field trống tùy chọn cần xác nhận riêng. Sửa dữ kiện hủy xác nhận summary; xác nhận ngữ nghĩa vẫn do người dùng.
+- SQLite schema v1 lưu sáu field, ID, thời gian UTC, trạng thái confirmed, mô tả gốc, photo path tương đối và JSON danh sách field xác nhận không có thông tin. SQL mới là hợp đồng, chưa execute.
+- Repository tối thiểu save/list/findById/close; snapshot có ID/thời gian ổn định, retry không replace/ghi đè record; copy ảnh vào application support trước commit, cleanup chỉ khi biết rollback và không xóa ảnh của record đã commit. DB/filesystem không có chung transaction.
+- Chọn Android persistence, Web preview với capability thông báo không hỗ trợ lưu; không thêm Web database/RAM fallback. Test repository dự kiến SQLite thật qua FFI với root tạm inject, còn plugin/restart kiểm chứng Android.
+- Bộ phiên bản chốt theo dry-run: `sqflite 2.4.4`, `path_provider 2.1.6`, `path 1.9.1`; dev-only `sqflite_common_ffi 2.4.3`. Đợi Task 3 sử dụng mới thêm vào app; không tạo dependency chưa được dùng trong Task 1.
+- Nguồn đã đọc: [sqflite](https://pub.dev/packages/sqflite/versions/2.4.4), [path_provider](https://pub.dev/packages/path_provider/versions/2.1.6), [path](https://pub.dev/packages/path/versions/1.9.1), [sqflite_common_ffi](https://pub.dev/packages/sqflite_common_ffi/versions/2.4.3); đối chiếu source pubspec/Android Gradle của package đã tải trong Pub Cache và Flutter SDK.
+
+### Kiểm tra thực sự đã chạy
+
+- `flutter --version`: Flutter 3.47.1 stable; `dart --version`: Dart 3.13.1.
+- `flutter doctor -v`: Android SDK 36.0.0, Android Studio Java runtime 25.0.2; cảnh báo Android license status unknown và thiếu Visual Studio Desktop C++ workload. Không chấp nhận licenses hoặc cài toolchain trong phiên này.
+- `flutter devices`/`adb devices -l`: thấy PKG110 Android 16/API 36 qua Wi-Fi, cùng Windows/Chrome/Edge; `adb version`: 1.0.41, platform-tools 37.0.1. Chỉ kiểm tra inventory, không mở app hoặc đọc log/token.
+- `flutter pub add --help`: xác nhận hỗ trợ dry-run; `flutter pub add --dry-run 'sqflite:^2.4.4' 'path_provider:^2.1.6' 'path:^1.9.1' 'dev:sqflite_common_ffi:^2.4.3'`: exit 0, “Would change 33 dependencies”, FFI resolve `sqlite3 3.5.2`. Không sửa pubspec/lockfile; đã kiểm tra bằng Git diff.
+- Yêu cầu SDK/config từ source package phù hợp Flutter 3.47.1/Dart 3.13.1, AGP 9.1.0, target Java 17 và minSdk Flutter 24. Resolver/config compatibility không thay bằng chứng build plugin hoặc FFI runtime.
+
+### Lỗi thao tác và cách xử lý
+
+- Lệnh Flutter ban đầu trong sandbox không trả output; adb và đọc file package vừa tải bị Access denied. Dừng session treo do task tạo, chạy lại các kiểm tra cần thiết ngoài sandbox sau automatic approval, thành công. Không dừng/xóa process hoặc dữ liệu của người dùng.
+- Đường dẫn tra cứu pub.dev dạng `/versions/<version>/versions` không mở được; dùng trang version của maintainer và source package cục bộ để đối chiếu. Không dùng lỗi tra cứu để kết luận package thiếu hỗ trợ.
+
+### Kết quả và giới hạn
+
+- Cập nhật kế hoạch Ngày 4, README và context; chỉ tài liệu, không sửa mã/config/dependency. Task 1 hoàn tất preflight/hợp đồng; Task 2–8 chưa triển khai.
+- Không chạy format/analyze/test/build/Gemini hoặc truy vấn Firebase Console/quota. Kết quả test/build Ngày 3 vẫn là lịch sử, không phải kết quả phiên này.
+- SQLite FFI 2.4.x dùng sqlite3 v3/native hooks; runtime DLL/toolchain cần xác minh ở Task 3. Nếu bị chặn thì ghi blocker hoặc test repository thực trên Android, không tự coi fake là database test.
+- Android licenses cần xử lý nếu build báo chặn; thiết bị nhìn thấy không chứng minh app/persistence chạy được. Bước tiếp theo là Task 2: model/validation review.
+
+## 2026-09-27 — Rà cuối Task 1 Ngày 4 trước commit
+
+- **Yêu cầu của chủ dự án:** kiểm tra Task 1 đã hoàn tất, sau đó tạo nhánh Ngày 4, commit và push. Công cụ: Codex, PowerShell/Git.
+- Đối chiếu đủ bảy việc của Task 1 với kết quả A–E trong kế hoạch: preflight, phân tách draft/review/report, schema v1, ID/timestamp/ảnh, API repository, dependency và test storage thực, factory Android/Web đều có quyết định và bằng chứng phù hợp phạm vi.
+- Kết luận Task 1 hoàn tất ở mức preflight/hợp đồng; Task 2–8 chưa triển khai. Native build/FFI runtime và Android licenses chưa xác minh hoàn toàn, không chuyển các giới hạn này thành tuyên bố đã có persistence.
+- Kiểm tra Git diff: chỉ README, context, worklog và kế hoạch Ngày 4; không có thay đổi mã/test/config/pubspec/lockfile. `git diff --check` đạt; kế hoạch có 8 task, code fences cân bằng, không có trailing whitespace. Rà mẫu credential trong bốn tài liệu không có kết quả; đây không phải audit toàn bộ lịch sử Git.
+- Không chạy lại format/analyze/test/build hoặc request Gemini trong lượt rà tài liệu. Preflight SDK/device/pub resolver vẫn là kết quả của phiên Task 1 trước đó.

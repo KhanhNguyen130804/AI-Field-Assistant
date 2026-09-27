@@ -1,6 +1,14 @@
-# Tóm tắt dự án — sau Task 7 Ngày 3
+# Tóm tắt dự án — sau Task 1 Ngày 4
 
-> Bản tóm tắt này ghi trạng thái đến hết Ngày 3 Task 7. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Cập nhật khi quyết định hoặc trạng thái triển khai đổi.
+> Bản tóm tắt này ghi trạng thái đến hết Ngày 4 Task 1. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Cập nhật khi quyết định hoặc trạng thái triển khai đổi.
+
+## Cập nhật Ngày 4 Task 1 (2026-09-27)
+
+Đã chốt hợp đồng `ReportReview`/`Report`, SQLite schema v1, repository lưu/list/findById, ID ổn định khi retry và bản sao ảnh trong application support. Chi tiết nằm trong `docs/implement_plan_day4.md`. Đây là quyết định thiết kế; **chưa có model review/report, database, editor hoặc lịch sử thực**.
+
+Dry-run pub resolver chấp nhận `sqflite 2.4.4`, `path_provider 2.1.6`, `path 1.9.1` và dev-only `sqflite_common_ffi 2.4.3`; chưa thêm dependency vào app. Android là nền tảng persistence; Web chỉ preview UI, không có RAM fallback giả như lưu bền vững. Test repository dự kiến dùng SQLite FFI thật trên Windows rồi kiểm chứng plugin/restart trên Android.
+
+Trong Task 1 vừa chạy `flutter --version` (3.47.1), `dart --version` (3.13.1), `flutter doctor -v`, `flutter devices`, `adb version/devices` và pub add dry-run. Thấy PKG110 Android 16/API 36 qua Wi-Fi; doctor báo licenses Android chưa xác định và thiếu Windows Desktop C++ workload. Pub resolve/source requirements phù hợp SDK/config, chưa chứng minh build native hoặc FFI runtime. Không chạy format/analyze/test/build hay request Gemini; kết quả 45/45 ở phần dưới vẫn là lịch sử. Bước kế tiếp: **Task 2 Ngày 4 — model và validation review**.
 
 ## Cập nhật Task 6 (2026-09-27)
 
@@ -88,3 +96,4 @@ Trong Windows workspace này, Kotlin incremental cache từng lỗi khi project 
 - `docs/SESSION_2026-09-26_TASK5.md` — tổng kết phiên triển khai Task 5, sự cố App Check/quota và model fallback.
 - `docs/implement_plan_day2.md` — phạm vi và tiêu chí triển khai Ngày 2.
 - `docs/implement_plan_day3.md` — kế hoạch Ngày 3 theo Firebase AI Logic và trạng thái Task 1–5.
+- `docs/implement_plan_day4.md` — hợp đồng đã chốt ở Task 1 và kế hoạch Task 2–8.
