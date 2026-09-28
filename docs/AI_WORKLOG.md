@@ -495,3 +495,55 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - Không gửi request Gemini; không kiểm tra mạng/App Check/quota hiện tại.
 - APK hiện có repository SQLite trong source nhưng chưa nối vào UI. Cài/mở APK không chứng minh `sqflite`/`path_provider` chạy trên Android, và chưa thể tạo/đọc report qua giao diện. Đây vẫn là phần kiểm chứng storage Android còn thiếu; test FFI host trong Task 3 là bằng chứng riêng.
 - Không chạy `flutter analyze` hoặc `flutter test` trong lượt này; chỉ build APK và test ADB nêu trên.
+
+## 2026-09-28 — Ngày 4 Task 4: editor, review và lưu báo cáo
+
+### Yêu cầu và phạm vi
+
+- **AI coding agent:** Codex; PowerShell, Dart/Flutter CLI.
+- **Yêu cầu:** triển khai Day 4 Task 4 theo `docs/implement_plan_day4.md`: editor/review draft, xác nhận người dùng trước lưu, gọi repository đã có, giữ dữ liệu khi lỗi và xử lý Back.
+- Chỉ làm trong checkout hiện tại; không stage/commit/push và không build APK/chạy thiết bị hay gửi Gemini request.
+
+### Thực hiện
+
+- Chuyển `ReportDraftScreen` từ màn chỉ xem thành editor cho sáu trường. Review người dùng được tách khỏi `needs_confirmation` của AI; field tùy chọn có thể xác nhận chưa có thông tin; `issue` phải có nội dung; sau khi dữ kiện đổi cần review lại `summary`.
+- Thêm xác nhận lưu, khóa thao tác trong lúc save, retry cùng `Report` ID, xử lý kết quả lưu không chắc chắn bằng `findById`, cảnh báo Back khi review đã đổi, và chỉ xóa form nguồn sau save thành công. Inject repository từ app shell vào form/editor; nếu lưu xong, báo thành công và nêu rõ tab Lịch sử chưa hiển thị báo cáo.
+- `_analyzeWithAi` khóa thao tác trước điểm async và bắt lỗi đọc kích thước ảnh trong ranh giới xử lý lỗi, giữ đầu vào khi thất bại.
+- Bổ sung widget tests với fake repository cho save thành công, nội dung/ảnh và optional absence, `issue` rỗng, lỗi/retry cùng ID, kết quả mơ hồ, Back, double-tap và viewport hẹp/bàn phím. Các lượt kiểm tra đầu phát hiện expectation cũ của empty state, test chưa review `summary`, thao tác Back khi bàn phím còn mở và control tràn trên viewport hẹp; cập nhật test/layout trước khi chạy toàn suite.
+- Cập nhật README, context summary, walkthrough, kế hoạch Ngày 4 và ghi chú phạm vi của manual test APK cũ để không hiểu nhầm chúng là kết quả kiểm chứng Task 4.
+
+### Kiểm chứng vừa chạy trong phiên
+
+- `dart format lib/main.dart lib/screens/create_report_screen.dart lib/screens/report_draft_screen.dart test/widget_test.dart` — hoàn tất, exit 0.
+- `flutter analyze` — **No issues found!**
+- `flutter test` — **85/85 đạt** (`+85: All tests passed!`). Lưu qua UI được test bằng fake repository; SQLite FFI thật trên Windows 10/10 là bằng chứng Task 3, không chạy lại trong Task 4.
+- Không chạy `flutter build apk --debug`, `flutter build web --release`, ADB/device test hoặc request Gemini trong phiên này. APK/ADB được ghi ở entry trước là trước thay đổi Task 4; plugin SQLite/path_provider và persistence trên Android vẫn chưa kiểm chứng.
+
+### Giới hạn còn lại
+
+- Tab Lịch sử chưa truy vấn repository và màn chi tiết chưa triển khai; điều hướng/refresh sau lưu phụ thuộc Task 5–6.
+- Cần Task 7 build/cài phiên bản source mới, xác minh `sqflite`/`path_provider`, save thật, đọc lại ảnh/báo cáo sau force-stop/mở lại và ghi kết quả từng test case. Không suy ra persistence Android từ widget tests hoặc SQLite FFI host test.
+
+## 2026-09-28 — Task 4: build và cài APK qua Wireless debugging
+
+- **Yêu cầu:** build APK Task 4 mới và cài lên điện thoại Android đang kết nối Wireless debugging để chủ dự án tự chạy các manual test case.
+- **Môi trường/cách chọn thiết bị:** `adb` không có trong `PATH`; dùng Android SDK Platform Tools tại `C:\Users\khanh\AppData\Local\Android\Sdk\platform-tools\adb.exe`. ADB báo một thiết bị online; serial có dạng mDNS Wireless debugging. Không ghi serial hoặc thông tin ghép đôi vào worklog.
+- **Build:** `flutter build apk --debug` — exit 0, tạo `build\app\outputs\flutter-apk\app-debug.apk`. Gradle có cảnh báo restricted Java native access và các Firebase plugins đang dùng Kotlin Gradle Plugin; build vẫn thành công. APK 178,580,797 bytes, SHA-256 `0821D28C488C77B9C3EB2419A47F835341C3320452E00BC7EFC6D4F3FA5686F8`.
+- **Cài/mở:** `adb install -r` trả `Success` (cài đè, không gỡ app hoặc xóa dữ liệu); mở bằng `adb shell monkey -p com.example.ai_field_assistant 1`; xác nhận process chạy và activity foreground. Không đọc logcat, không gửi Gemini request và không thao tác editor/save thay chủ dự án.
+- Cập nhật `docs/testcase_task4_day4.txt`: ADB-D4-01, ADB-D4-03, ADB-D4-04 được đánh dấu PASS theo bằng chứng vừa quan sát; các UI/editor/save/persistence case còn lại chưa chạy. APK mở được không xác minh plugin SQLite hoặc dữ liệu đọc lại sau restart.
+- `flutter analyze` và `flutter test` không chạy lại trong lượt build/cài; bằng chứng 85/85 và analyzer sạch thuộc lượt triển khai Task 4 trước đó. Build APK không thay thế Task 7 test lưu/đọc Android đầu-cuối.
+
+## 2026-09-29 — ADB kiểm thử Task 4 qua Wireless debugging
+
+- **Yêu cầu:** chạy các test case Wireless debugging trong `docs/testcase_task4_day4.txt`; giữ nguyên dữ liệu app và không thay chủ dự án lưu report.
+- **Môi trường:** Android SDK `adb.exe` dùng trực tiếp từ `C:\Users\khanh\AppData\Local\Android\Sdk\platform-tools\adb.exe` vì không có trong `PATH`. Xác nhận một thiết bị Wireless mDNS online; model PKG110, Android 16/API 36. Không ghi serial, IP hoặc thông tin ghép đôi.
+- **APK:** file debug có sẵn, 178,580,797 bytes, SHA-256 `0821D28C488C77B9C3EB2419A47F835341C3320452E00BC7EFC6D4F3FA5686F8`; hash/size đối chiếu được với build lịch sử. Cài đè bằng `adb install -r`, rồi mở app bằng `monkey`; process và foreground được xác nhận. `flutter build apk --debug` không chạy lại trong lượt này.
+- **Case vừa kiểm chứng:** ADB-D4-01–06 PASS: kết nối một thiết bị, môi trường, APK/cài đặt, launch, validation input rỗng và một lần Gemini draft thành công (editor mở, dấu hiệu mô tả gốc còn hiển thị). ADB-D4-09 chỉ PASS giới hạn: 1.500 dòng logcat gần nhất không có match `FATAL EXCEPTION` hoặc nhóm lỗi SQLite/plugin; đây không phải xác minh save.
+- **Chưa chạy:** ADB-D4-07–08, 10–11. Lượt nhập thử đầu bị app rời form khi ẩn bàn phím; sau khi mở lại, nhập lại dữ liệu tổng hợp và gửi đúng một request, editor draft mở. Không review/save/force-stop/ngắt kết nối. Wireless debugging vẫn được giữ kết nối, draft tổng hợp đang mở để chủ dự án tiếp tục kiểm tra.
+- **Kết quả cập nhật:** testcase ghi PASS/NOT RUN theo từng ADB case, giữ lại ghi chú của lần thử đầu trong ngày khi chưa có thiết bị; README và worklog trỏ tới đúng tên `.txt`. Không chạy Flutter test/analyze/build trong lượt kiểm thử ADB này.
+## 2026-09-29 — Chốt Task 4 và kiểm tra trước khi xuất bản
+
+- **Phạm vi:** hoàn tất Day 4 Task 4; cập nhật code editor/review/save, test, README/context/walkthrough/plan và test case theo trạng thái thực tế. Chủ dự án xác nhận PHONE-D4-01–14 PASS trên thiết bị thật.
+- **Kiểm tra vừa chạy:** `dart format --set-exit-if-changed lib/main.dart lib/screens/create_report_screen.dart lib/screens/report_draft_screen.dart test/widget_test.dart` — exit 0, 0 file đổi; `flutter analyze` — No issues found; `flutter test` — **85/85 đạt**.
+- **ADB và giới hạn:** ADB-D4-01–06 PASS, ADB-D4-09 là lọc log giới hạn; một request Gemini tổng hợp mở draft. ADB-D4-07–08, 10–11 chưa chạy; không lưu qua ADB, force-stop hoặc ngắt kết nối. Đọc lại report/ảnh từ SQLite Android sau restart chưa được xác minh độc lập. Không chạy APK/Web build trong lượt chốt này; APK hiện tại là artifact đã build ngày 28/09 và cài lại ngày 29/09.
+- **Bàn giao:** Task 4 được chốt. Task 5 (Lịch sử), Task 6 (chi tiết) và Task 7 (kiểm chứng persistence Android đầu-cuối) còn lại. Không đưa credential/token/serial vào tài liệu.

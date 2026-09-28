@@ -1,6 +1,7 @@
 # Test case thủ công — Task 5: luồng "Phân tích bằng AI" trên thiết bị Android thật
 
 > Áp dụng cho bản build **Task 5** (code chưa commit ở thời điểm viết). Bản APK cũ `D:\Download\ai-field-assistant-debug.apk` (build trước Task 5) **không có nút "Phân tích bằng AI"** — phải build lại APK mới trước khi test.
+> Bộ test và kỳ vọng draft chỉ xem bên dưới mô tả APK Task 5 trước khi có Day 4 Task 4. Chủ dự án xác nhận các PHONE case Task 4 PASS trên thiết bị thật; qua ADB đã chạy tới mở draft tổng hợp nhưng chưa review/save. Các case trong file này vẫn là bằng chứng lịch sử, không thay thế kết quả từng dòng tại `docs/testcase_task4_day4.txt`.
 > Bản test này bổ sung phần AI cho `docs/MANUAL_TESTCASES_APK.md` (mục 5 của file đó ghi "chưa có nút gọi AI" — hết đúng cho bản Task 5; các TC 1.x–4.x trong file cũ vẫn dùng lại được làm regression).
 > **Chỉ dùng dữ liệu tổng hợp** (mô tả/ảnh tự tạo, không có thông tin tòa nhà/khách hàng thật): Firebase AI Logic free tier có thể dùng input để cải thiện sản phẩm Google.
 
@@ -208,7 +209,7 @@ Ký hiệu expectation: chuỗi thông báo trong **đậm** phải khớp **ngu
 
 | Hạng mục | Lý do |
 |---|---|
-| Sửa từng trường draft, xác nhận, lưu báo cáo, lịch sử | Chưa triển khai (Ngày 4). Draft chỉ xem. |
+| Sửa từng trường draft, xác nhận, lưu báo cáo, lịch sử | Tại thời điểm viết bộ test Task 5: chưa triển khai (Ngày 4); draft chỉ xem. Đây là ghi nhận lịch sử trước Task 4. |
 | Voice-to-text, GPS | Chưa triển khai. |
 | Web (Chrome) | App Check Web debug chưa verify; bản test này là APK Android. |
 | App Check production (Play Integrity/reCAPTCHA) | Thuộc bước phát hành. |

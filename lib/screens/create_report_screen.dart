@@ -5,18 +5,28 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/report.dart';
+import '../repositories/report_repository.dart';
 import '../services/gemini_report_service.dart';
 import '../widgets/status_notice.dart';
 import 'report_draft_screen.dart';
 
 class CreateReportScreen extends StatefulWidget {
-  const CreateReportScreen({super.key, this.imagePicker, this.reportService});
+  const CreateReportScreen({
+    super.key,
+    this.imagePicker,
+    this.reportService,
+    required this.reportRepository,
+  });
 
   @visibleForTesting
   final ImagePicker? imagePicker;
 
   @visibleForTesting
   final GeminiReportService? reportService;
+
+  @visibleForTesting
+  final ReportRepository reportRepository;
 
   static const maxImageBytes = 10 * 1024 * 1024;
 
@@ -266,26 +276,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   }
 
   Future<void> _analyzeWithAi() async {
-    if (_isAnalyzing) return;
+    if (_isAnalyzing || _isPickingImage) return;
 
     final description = _descriptionController.text.trim();
     if (description.isEmpty && _selectedImage == null) {
       _showFeedback('Nhập mô tả hoặc chọn ảnh trước khi phân tích.');
       return;
-    }
-
-    // The service re-checks the 4 MiB send limit, but the service error keeps
-    // the message about the form limit ambiguous — surface a precise one here
-    // and avoid starting a request that would be rejected anyway.
-    if (_selectedImage != null) {
-      final fileLength = await _selectedImage!.length();
-      if (fileLength > maxImageBytesForAi) {
-        _showFeedback(
-          'Ảnh vượt quá giới hạn 4 MiB để gửi phân tích. '
-          'Hãy chọn ảnh nhỏ hơn hoặc chụp lại.',
-        );
-        return;
-      }
     }
 
     FocusManager.instance.primaryFocus?.unfocus();
@@ -295,20 +291,62 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     });
 
     try {
+      final image = _selectedImage;
+      // The service re-checks the 4 MiB send limit, but the service error
+      // keeps the form limit ambiguous. Check it here too, after locking the
+      // form and inside the error boundary so picker I/O failures are safe.
+      if (image != null) {
+        final int fileLength;
+        try {
+          fileLength = await image.length();
+        } on Object {
+          _showFeedback(
+            'Không thể đọc ảnh đã chọn. Mô tả và ảnh vẫn được giữ nguyên.',
+          );
+          return;
+        }
+        if (fileLength > maxImageBytesForAi) {
+          _showFeedback(
+            'Ảnh vượt quá giới hạn 4 MiB để gửi phân tích. '
+            'Hãy chọn ảnh nhỏ hơn hoặc chụp lại.',
+          );
+          return;
+        }
+      }
+
       final draft = await _reportService.createReportDraft(
         description: description.isEmpty ? null : description,
-        image: _selectedImage,
+        image: image,
       );
       if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute<void>(
+      final savedReport = await Navigator.of(context).push<Report>(
+        MaterialPageRoute<Report>(
           builder: (context) => ReportDraftScreen(
             draft: draft,
             description: description,
             imageBytes: _selectedImageBytes,
+            repository: widget.reportRepository,
           ),
         ),
       );
+      if (savedReport != null && mounted) {
+        setState(() {
+          _descriptionController.clear();
+          _selectedImage = null;
+          _selectedImageBytes = null;
+          _previousSelectedImage = null;
+          _previousSelectedImageBytes = null;
+          _imageGeneration++;
+          _feedbackMessage = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Đã lưu trên thiết bị. Lịch sử chưa hiển thị báo cáo ở bước này.',
+            ),
+          ),
+        );
+      }
     } on InvalidReportDraftInputException catch (error) {
       _showFeedback(error.userMessage);
     } on ReportDraftException catch (error) {

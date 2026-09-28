@@ -1,0 +1,104 @@
+# Test case — Day 4 Task 4: editor, xác nhận và lưu báo cáo
+
+> Tài liệu này là kế hoạch kiểm thử; các ô chưa chạy để trống. Source Task 4 đã qua widget tests và test suite tổng thể 85/85. Ngày 28/09 APK mới đã được build, cài qua Wireless debugging và mở foreground; chưa chạy thao tác review/save bằng tay. APK/ADB evidence trong tài liệu cũ vẫn là bản trước Task 4.
+
+## Chuẩn bị chung
+
+- Dùng điện thoại Android và mô tả/ảnh tổng hợp, không dùng dữ liệu sự cố, vị trí hay ảnh hiện trường thật.
+- Ví dụ mô tả: `Điều hòa khu vực lễ tân không làm mát; nhân viên phát hiện khi kiểm tra.` Ảnh thử, nếu cần, nên là ảnh thiết bị giả lập hoặc ảnh tự tạo không chứa người/biển tên.
+- Bấm **Phân tích bằng AI** sẽ gửi nội dung tới Gemini và có thể tính quota. Ghi số request thực tế; không bấm lặp để lấy phản hồi khác nếu lần đầu thành công.
+- Khi có thể, dùng bản cài đặt dành riêng cho kiểm thử. Không gỡ ứng dụng, không chạy `pm clear`, không xóa database/ảnh và không cố làm đầy bộ nhớ để tạo lỗi lưu.
+- Tab **Lịch sử** chưa đọc repository và màn chi tiết chưa có. Vì vậy, snackbar sau save chứng minh UI nhận kết quả thành công, nhưng chưa chứng minh đọc lại dữ liệu sau khi khởi động lại. Phần kiểm tra persistence đầu-cuối vẫn cần Task 5–7.
+- Kết quả mỗi case ghi `PASS`, `FAIL`, `BLOCKED` hoặc `NOT RUN`, kèm ngày/giờ, model Android/API, phiên bản/hash APK và ghi chú ngắn. Không ghi pairing code, debug token, serial ADB hoặc dữ liệu nhạy cảm.
+
+## 1. Test case thực hiện trực tiếp trên máy Android thật
+
+> PHONE-D4-01–PHONE-D4-14 được đánh dấu PASS theo xác nhận của chủ dự án trong hội thoại; ngày chạy và bằng chứng riêng từng case chưa được cung cấp.
+
+### 1.1 Điều kiện trước khi bắt đầu
+
+1. Từ source hiện tại, build APK debug mới bằng `flutter build apk --debug` và cài đè lên app kiểm thử nếu chữ ký cho phép. APK cũ không có editor Task 4.
+2. Mở app, xác nhận thấy tab **Tạo báo cáo** và **Lịch sử**. Không xóa dữ liệu app có sẵn; nếu đang có dữ liệu người dùng cần giữ, dùng thiết bị/emulator kiểm thử khác.
+3. Khi kiểm tra luồng AI, chuẩn bị mạng/App Check hợp lệ và chấp nhận rằng request có thể tiêu quota. Có thể đánh dấu case phụ thuộc AI là `BLOCKED` nếu dịch vụ từ chối request.
+
+### 1.2 Danh sách case
+
+| ID | Thao tác trên điện thoại | Kết quả mong đợi | Kết quả thực tế / bằng chứng |
+|---|---|---|---|
+| PHONE-D4-01 | Khởi chạy APK Task 4 mới. Chưa nhập dữ liệu, quan sát trạng thái ban đầu. | App mở không crash; không tự gửi Gemini request; thấy hai tab tiếng Việt. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-02 | Để mô tả và ảnh trống, bấm **Phân tích bằng AI**. | Hiện validation yêu cầu mô tả hoặc ảnh; không vào loading, không gọi AI, không mất nội dung khác. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-03 | Nhập mô tả tổng hợp ở phần chuẩn bị; bấm **Phân tích bằng AI** một lần. | Có trạng thái loading và khóa thao tác liên quan; khi thành công mở editor draft, giữ mô tả gốc, hiển thị đề xuất AI và nhãn `suggested_action` là đề xuất. Ghi một Gemini request. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-04 | Trong editor, kiểm tra trạng thái từng trường trước khi xác nhận. | Cả sáu trường cần được người dùng review dù AI không gắn cờ `needs_confirmation`; trạng thái review của người dùng phân biệt với badge AI. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-05 | Sửa một trường, sau đó xác nhận lại trường đó. Quan sát `summary`. | Khi sửa, xác nhận trường đó bị hủy; `summary` trở về cần review sau thay đổi dữ kiện. Nút lưu không cho qua khi còn trường chưa review. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-06 | Để trống một trường tùy chọn như `location` hoặc `suggested_action`, chọn xác nhận trường không có thông tin. Để `priority` ở `null` nếu chưa xác định. | Có thể xác nhận field tùy chọn vắng mặt; không tự điền `medium`. `issue` không được xác nhận là vắng mặt. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-07 | Xóa nội dung `issue`, thử xác nhận trường hoặc lưu. | Báo lỗi gần `issue`, không thể xác nhận/lưu báo cáo khi `issue` rỗng. Nội dung các trường khác vẫn còn. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-08 | Hoàn tất review, bấm **Xác nhận và lưu báo cáo**, rồi chọn hủy trong hộp thoại cuối. | Quay lại editor; không hiện thành công và không rời editor do thao tác lưu bị hủy. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-09 | Hoàn tất review đủ sáu trường, điền `issue`, rồi xác nhận lưu. Nếu kiểm tra ảnh, tạo draft từ một ảnh tổng hợp. | Trong lúc lưu, nút bị khóa để tránh ghi lặp. Nếu repository trả thành công, quay về form, hiện thông báo **Đã lưu trên thiết bị** và form nguồn được xóa. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-10 | Trước khi lưu một draft tổng hợp, bấm Back. Chọn ở lại; lặp lại rồi chọn bỏ phần đã review. | Lần đầu giữ nguyên editor. Lần chọn bỏ quay về form; dữ liệu form nguồn không bị xóa. Draft chưa lưu không được hứa giữ sau khi đóng process. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-11 | Quan sát tab **Lịch sử** sau khi lưu thành công. | App báo Lịch sử chưa tích hợp; không được hiểu empty state này là bằng chứng database rỗng hay save thất bại. Chưa có chi tiết để mở. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-12 | Nếu có thể tái hiện lỗi lưu bằng cách an toàn trên môi trường kiểm thử riêng, thử lưu rồi retry. | Khi lỗi, editor giữ nội dung và cho retry; kết quả lưu không chắc chắn cần **Kiểm tra kết quả lưu** trước để tránh tạo bản ghi trùng. Nếu không có phương án gây lỗi an toàn, ghi `NOT RUN`; không làm đầy bộ nhớ hoặc phá database. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-13 | Thu nhỏ bàn phím và thử cuộn tới nút review/lưu trên màn hình nhỏ hoặc khi bàn phím mở. | Các control còn truy cập được; không có tràn ngang hoặc nút bị bàn phím che khiến không thể hoàn tất. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+| PHONE-D4-14 | Sau khi đã lưu dữ liệu tổng hợp và không còn draft chưa lưu, đóng/mở lại app. | App mở lại không crash. Lịch sử hiện vẫn chưa tích hợp nên case này **không xác minh được** report/ảnh đã đọc lại; đánh dấu giới hạn và để kiểm chứng persistence qua Task 5–7. | PASS — Chủ dự án xác nhận trong hội thoại; ngày chạy chưa ghi nhận. |
+
+## 2. Test case khi kết nối Wireless debugging với máy tính
+
+### 2.1 Kết nối an toàn bằng ADB
+
+1. Bật **Developer options → Wireless debugging** trên điện thoại, đảm bảo máy tính và điện thoại ở mạng tin cậy.
+2. Trên máy tính Windows mở PowerShell. Trong màn hình **Pair device with pairing code**, chạy lệnh rồi nhập mã trực tiếp vào prompt; không lưu hoặc chụp mã:
+
+   ```powershell
+   adb pair <IP-điện-thoại>:<cổng-pairing>
+   ```
+
+3. Dùng địa chỉ/cổng kết nối hiển thị ở màn Wireless debugging (cổng này khác cổng pairing):
+
+   ```powershell
+   adb connect <IP-điện-thoại>:<cổng-wireless-debugging>
+   adb devices -l
+   ```
+
+4. Chỉ tiếp tục khi đúng thiết bị đang ở trạng thái `device`. Không ghi serial, IP công khai, pairing code hoặc token vào báo cáo kiểm thử.
+5. Các lệnh dưới đây giả định đang ở thư mục gốc repo. Chúng không gỡ app hoặc xóa dữ liệu. Nếu cài APK báo lỗi chữ ký/phiên bản, dừng và ghi lỗi; không `uninstall` để vượt qua.
+
+### 2.2 Danh sách case
+
+| ID | Thao tác/lệnh trên máy tính | Kết quả mong đợi | Kết quả thực tế / bằng chứng |
+|---|---|---|---|
+| ADB-D4-01 | Kiểm tra `adb devices -l` sau khi ghép đôi/kết nối. | Chỉ đúng điện thoại kiểm thử xuất hiện với trạng thái `device`; không chạy lệnh lên thiết bị khác. | PASS — 2026-09-29: đúng 1 thiết bị Wireless mDNS, state `device`; không lưu serial. |
+| ADB-D4-02 | Ghi nhận thông tin môi trường bằng `adb shell getprop ro.product.model`, `adb shell getprop ro.build.version.release`, `adb shell getprop ro.build.version.sdk`. | Ghi model Android/API, không ghi serial hoặc thông tin nhận dạng cá nhân. | PASS — 2026-09-29: PKG110, Android 16, API 36; serial không lưu. |
+| ADB-D4-03 | Kiểm tra file APK mới trước khi cài: `Test-Path '.\build\app\outputs\flutter-apk\app-debug.apk'`. Nếu chưa build source Task 4, chạy `flutter build apk --debug`; sau đó chạy `adb install -r '.\build\app\outputs\flutter-apk\app-debug.apk'`. | `Test-Path` trả `True`, build exit 0 nếu cần và `adb install -r` trả `Success`. Đây phải là APK sau Task 4; không dùng hash APK cũ trong manual testcase trước đó. | PASS — APK cùng SHA-256 và kích thước được xác minh lại ngày 2026-09-29; cài đè bằng `adb install -r` và package vẫn mở được. Build không chạy lại trong lượt này; build exit 0 là bằng chứng lịch sử 2026-09-28. |
+| ADB-D4-04 | Mở app: `adb shell monkey -p com.example.ai_field_assistant 1`. Xác minh foreground bằng output `adb shell dumpsys activity activities`; kiểm tra `mResumedActivity` hoặc `topResumedActivity`. | Package/app mở ở foreground; không phát sinh crash lúc khởi chạy. | PASS — xác minh lại 2026-09-29: process chạy và app foreground sau khi mở bằng `monkey`. |
+| ADB-D4-05 | Trên điện thoại đang kết nối, chạy thao tác PHONE-D4-02 (đầu vào rỗng). Sau đó kiểm tra process bằng `adb shell pidof com.example.ai_field_assistant`. | Validation hoạt động; app process còn chạy; không có request AI cho input rỗng. | PASS — 2026-09-29: bấm nút khi mô tả/ảnh rỗng hiện validation; không loading, process vẫn chạy và app foreground. Không gửi request AI. |
+| ADB-D4-06 | Trên điện thoại đang kết nối, chạy một lần PHONE-D4-03 bằng dữ liệu tổng hợp. | Draft editor mở và giữ input gốc; ghi nhận tối đa số request thực sự đã gửi. Không lặp chỉ để tạo lại draft nếu đã thành công. | PASS — 2026-09-29: một lần bấm phân tích; editor mở, các dấu hiệu mô tả gốc còn hiển thị. Ghi nhận 1 Gemini request; không thử lại. |
+| ADB-D4-07 | Hoàn tất PHONE-D4-04 đến PHONE-D4-10 trên điện thoại; sau mỗi bước có thể xác nhận app vẫn foreground bằng lệnh `dumpsys activity` ở ADB-D4-04. | Các trạng thái review/save/Back đúng như phần 1; ADB chỉ hỗ trợ điều khiển/quan sát app, không tự chứng minh dữ liệu đã commit vào SQLite. | NOT RUN — draft editor đã mở, nhưng không thao tác review/save qua ADB trong lượt này. |
+| ADB-D4-08 | Sau thao tác save thành công, kiểm tra process: `adb shell pidof com.example.ai_field_assistant`. | Process còn chạy và UI đã trở về form với thông báo thành công. Không truy cập DB riêng tư bằng `run-as`, không kéo database/ảnh ra khỏi app. | NOT RUN — không thực hiện save bằng ADB. |
+| ADB-D4-09 | Khi không còn draft chưa lưu, kiểm tra lỗi gần đây bằng lệnh lọc dưới đây; chỉ xem output trên máy kiểm thử và che thông tin nhạy cảm trước khi chia sẻ. | Không có crash `FATAL EXCEPTION` hoặc lỗi SQLite/plugin liên quan lần save. Nếu thấy lỗi, lưu phần tối thiểu đã khử nhạy cảm, không gửi toàn bộ logcat. | PASS giới hạn — 2026-09-29: kiểm tra 1.500 dòng logcat gần nhất; 0 match `FATAL EXCEPTION` và 0 match nhóm lỗi SQLite/plugin. Đây không phải kiểm chứng save. |
+| ADB-D4-10 | Sau một lần save thành công và khi không còn nội dung chưa lưu, chạy `adb shell am force-stop com.example.ai_field_assistant`, rồi `adb shell monkey -p com.example.ai_field_assistant 1`. | App cold-start lại không crash. Vì chưa có Lịch sử/chi tiết, lần chạy này không chứng minh report được đọc lại; persistence content/photo cần được kiểm tra khi Task 5–7 hoàn tất. | NOT RUN — không có save được xác minh bằng ADB làm điều kiện trước; không force-stop app. |
+| ADB-D4-11 | Ngắt kết nối bằng `adb disconnect <IP-điện-thoại>:<cổng-wireless-debugging>` sau khi đã ghi kết quả. | ADB ngắt phiên điều khiển; thao tác này không gỡ ứng dụng hoặc xóa dữ liệu trên điện thoại. | NOT RUN — giữ Wireless debugging đang kết nối để bạn tiếp tục sử dụng. |
+
+PowerShell log filter (không xóa buffer bằng `adb logcat -c`):
+
+```powershell
+adb logcat -d -t 1500 | Select-String -Pattern 'FATAL EXCEPTION|SQLiteException|DatabaseException|sqflite|path_provider|ReportStorageException'
+```
+
+ADB chỉ cung cấp bằng chứng về cài đặt, launch, process và log quan sát được. Test suite/widget tests với fake repository không thay thế xác minh SQLite plugin trên Android. Không tuyên bố persistence sau restart đạt cho đến khi có luồng đọc từ Lịch sử/chi tiết và kiểm chứng theo Task 7.
+
+### 2.3 Ghi nhận phiên kiểm thử
+
+Lượt thử đầu ngày 2026-09-29: `adb devices -l` trả 0 thiết bị và `adb mdns services` không phát hiện endpoint; đây là lần thử lịch sử trước khi kết nối lại. Sau đó thiết bị đã kết nối và chạy các case được ghi ở mục tiếp theo.
+
+| Trường | Ghi nhận |
+|---|---|
+| Ngày/giờ và tester | 2026-09-29 — Codex chạy ADB cases; giờ chính xác không ghi nhận |
+| Model / Android / API | PKG110 / Android 16 / API 36 (2026-09-29) |
+| APK source revision / version / SHA-256 | `codex/day4-preflight` tại `f23feef` + thay đổi Task 4 chưa commit / version chưa truy vấn / `0821D28C488C77B9C3EB2419A47F835341C3320452E00BC7EFC6D4F3FA5686F8` |
+| Kích thước APK | 178,580,797 bytes |
+| Trạng thái Wireless debugging | Một thiết bị Wireless mDNS duy nhất, state `device`; serial không lưu; kết nối được giữ mở |
+| Số Gemini request phát sinh | 1 — ADB-D4-06 (dữ liệu tổng hợp) |
+| Case PASS / FAIL / BLOCKED / NOT RUN | PASS: ADB-D4-01–06 và ADB-D4-09 (09 chỉ kiểm tra log, không xác minh save); NOT RUN: ADB-D4-07–08, 10–11. Lần thử trước đó cùng ngày bị chặn do chưa có thiết bị; kết nối sau đó đã được khôi phục. |
+| Lỗi đã khử nhạy cảm / đường dẫn bằng chứng | Không có crash/error match trong logcat đã lọc; APK tại `build\app\outputs\flutter-apk\app-debug.apk` |
+
+
+Lượt ADB ngày 2026-09-29 không chạy lại `flutter build apk --debug`; hash/kích thước APK được đối chiếu với bằng chứng build lịch sử. ADB-D4-06 tạo 1 Gemini request và mở editor draft bằng dữ liệu tổng hợp. Không lưu report, force-stop, gỡ app hoặc ngắt kết nối. Bản nháp tổng hợp còn mở trên điện thoại để chủ dự án tự tiếp tục kiểm tra.

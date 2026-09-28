@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'firebase_options.dart';
+import 'repositories/report_repository.dart';
+import 'repositories/report_repository_factory.dart';
 import 'screens/create_report_screen.dart';
 import 'services/gemini_report_service.dart';
 
@@ -24,10 +26,16 @@ Future<void> main() async {
 }
 
 class AiFieldAssistantApp extends StatelessWidget {
-  const AiFieldAssistantApp({super.key, this.imagePicker, this.reportService});
+  const AiFieldAssistantApp({
+    super.key,
+    this.imagePicker,
+    this.reportService,
+    this.reportRepository,
+  });
 
   final ImagePicker? imagePicker;
   final GeminiReportService? reportService;
+  final ReportRepository? reportRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -50,16 +58,25 @@ class AiFieldAssistantApp extends StatelessWidget {
           ),
         ),
       ),
-      home: _HomeScreen(imagePicker: imagePicker, reportService: reportService),
+      home: _HomeScreen(
+        imagePicker: imagePicker,
+        reportService: reportService,
+        reportRepository: reportRepository,
+      ),
     );
   }
 }
 
 class _HomeScreen extends StatefulWidget {
-  const _HomeScreen({this.imagePicker, this.reportService});
+  const _HomeScreen({
+    this.imagePicker,
+    this.reportService,
+    this.reportRepository,
+  });
 
   final ImagePicker? imagePicker;
   final GeminiReportService? reportService;
+  final ReportRepository? reportRepository;
 
   @override
   State<_HomeScreen> createState() => _HomeScreenState();
@@ -67,6 +84,13 @@ class _HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<_HomeScreen> {
   int _selectedIndex = 0;
+  late final ReportRepository _reportRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _reportRepository = widget.reportRepository ?? createReportRepository();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -78,6 +102,7 @@ class _HomeScreenState extends State<_HomeScreen> {
           CreateReportScreen(
             imagePicker: widget.imagePicker,
             reportService: widget.reportService,
+            reportRepository: _reportRepository,
           ),
           const _HistoryScreen(),
         ],
@@ -136,7 +161,7 @@ class _HistoryScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               Text(
-                'Chưa có báo cáo',
+                'Lịch sử chưa được tích hợp',
                 textAlign: TextAlign.center,
                 style: textTheme.titleLarge?.copyWith(
                   color: const Color(0xFF17211F),
@@ -145,8 +170,8 @@ class _HistoryScreen extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Các báo cáo đã lưu sẽ xuất hiện tại đây khi tính năng '
-                'lưu trữ được tích hợp.',
+                'Màn hình Lịch sử chưa được tích hợp. Báo cáo đã lưu trên '
+                'thiết bị hiện chưa hiển thị tại đây.',
                 textAlign: TextAlign.center,
                 style: textTheme.bodyMedium?.copyWith(
                   color: const Color(0xFF65716E),

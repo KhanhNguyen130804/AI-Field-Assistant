@@ -1,6 +1,7 @@
 # Test case thủ công — APK debug trên Android thật
 
 > Bộ test này dành cho APK debug hiện tại. Ngày 28/09/2026, chủ dự án xác nhận PHONE-01–PHONE-13 đã PASS trên máy thật; chưa có ghi chú/bằng chứng tách riêng từng case. Phần B ghi kết quả ADB thực sự chạy trong phiên hiện tại.
+> **Mốc phiên bản:** các kết quả, APK hash và kỳ vọng UI bên dưới ghi nhận APK được build trước khi triển khai Day 4 Task 4. APK Task 4 mới đã được build/cài/mở qua Wireless debugging, nhưng chưa chạy các case UI/save. Bảng dưới vẫn là kết quả bản cũ; không dùng để suy ra kiểm chứng save flow mới.
 >
 > APK sau khi build: `build\app\outputs\flutter-apk\app-debug.apk` trong thư mục dự án. Package Android: `com.example.ai_field_assistant`; version lấy từ `pubspec.yaml`/APK khi build.
 
@@ -11,7 +12,7 @@
 - Dùng mô tả/ảnh tổng hợp, không dùng tên người, vị trí hay dữ liệu sự cố của tòa nhà thật. Gemini được gọi khi bấm **Phân tích bằng AI**; số request có thể bị tính vào quota hiện hành.
 - Cần điện thoại Android, Wi-Fi/mạng ổn định cho case AI, đủ dung lượng cài APK và quyền cài ứng dụng từ trình quản lý tệp nếu Android hỏi.
 - Nếu Firebase App Check từ chối request, chủ dự án kiểm tra/đăng ký debug token trong Firebase Console bằng kênh riêng. Không đưa token vào ảnh chụp, log gửi đi, worklog hoặc Git.
-- Draft hiện chỉ để xem. Chỉnh sửa, xác nhận, lưu vào SQLite và lịch sử chưa được nối vào UI; các thao tác đó không phải tiêu chí PASS của APK hiện tại.
+- Các kết quả trong bảng này thuộc APK cũ và chỉ xem draft. Với APK Task 4, chủ dự án xác nhận bộ PHONE-D4-01–14 PASS; ADB-D4-06 mở được draft tổng hợp nhưng các case ADB review/save chưa chạy. Lịch sử vẫn chưa nối repository; xem `docs/testcase_task4_day4.txt` để biết bằng chứng theo từng case.
 - Không dùng `adb uninstall`, `pm clear` hoặc xóa dữ liệu ứng dụng trong buổi kiểm tra. Cài đè bằng `adb install -r` để giữ dữ liệu cấu hình hiện có.
 
 ### Ghi nhận môi trường

@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 4: Chỉnh sửa, xác nhận, lưu cục bộ và lịch sử
 
-> **Trạng thái (2026-09-28):** Task 1 chốt hợp đồng, Task 2 thêm model/state review, Task 3 hoàn tất repository SQLite Android và bản sao ảnh app-owned theo tiêu chí task. `flutter analyze` sạch; repository FFI test 10/10 và toàn suite 77/77 đạt trong Task 3. APK/Web build đã thành công; ngày 28/09 APK debug được build lại/cài đè qua ADB trên PKG110 (Android 16/API 36), app mở foreground và smoke checks UI/lifecycle cơ bản đạt. ADB-03 còn partial; không gửi request Gemini. Plugin SQLite/path_provider và persistence Android chưa được kiểm chứng; repository chưa nối vào UI, việc kiểm tra đầu-cuối vẫn thuộc Task 7. Task 4–8 chưa triển khai. Lịch sử từng task nằm trong `docs/AI_WORKLOG.md`.
+> **Trạng thái (2026-09-29):** Task 1 chốt hợp đồng, Task 2 thêm model/state review, Task 3 thêm repository SQLite Android, Task 4 hoàn tất editor/review và đường lưu từ luồng AI. Lượt chốt chạy formatter check (4 file, 0 đổi), `flutter analyze` sạch và `flutter test` **85/85**. Chủ dự án xác nhận PHONE-D4-01–14 PASS trên thiết bị thật. ADB Wireless debugging xác minh 01–06 và 09; một request Gemini tổng hợp mở draft. ADB review/save, force-stop và disconnect chưa chạy. APK được build 28/09, cài/mở lại 29/09; chưa có xác minh độc lập đọc lại SQLite sau restart. Task 5–8 còn lại.
 >
 > **Phạm vi:** Hoàn thiện MVP Android từ bản nháp AI đến báo cáo đã được người dùng xác nhận, lưu bền vững và mở lại trong lịch sử. Giữ Flutter và Firebase AI Logic hiện có; không thêm đăng nhập, đồng bộ cloud, voice/GPS, push notification hoặc backend mới.
 
@@ -24,12 +24,12 @@ Không thêm sửa/xóa báo cáo đã lưu trong phạm vi bắt buộc. Nếu 
 
 ## 2. Hiện trạng và quyết định đã có
 
-- `lib/main.dart` khởi tạo Firebase, kích hoạt App Check trong debug, có hai tab qua `NavigationBar`/`IndexedStack`. `_HistoryScreen` hiện là empty state cố định.
+- `lib/main.dart` khởi tạo Firebase, kích hoạt App Check trong debug, có hai tab qua `NavigationBar`/`IndexedStack`, tạo một repository và inject vào màn tạo báo cáo. `_HistoryScreen` hiện thông báo chưa tích hợp.
 - `lib/screens/create_report_screen.dart` nhập mô tả, chọn/chụp một ảnh, preview, xem lại đầu vào và gọi `GeminiReportService`; thành công push `ReportDraftScreen`.
-- `lib/screens/report_draft_screen.dart` chỉ xem: draft chưa xác nhận/chưa lưu, danh sách `needs_confirmation`, nhãn hành động đề xuất và mô tả/ảnh gốc.
+- `lib/screens/report_draft_screen.dart` cho sửa sáu trường, review riêng từng trường, xác nhận trường tùy chọn trống, giữ `issue` bắt buộc và yêu cầu review lại summary sau khi dữ kiện đổi; hiển thị draft AI, danh sách `needs_confirmation`, nhãn hành động đề xuất và mô tả/ảnh gốc.
 - `ReportDraft` có parser/serializer cho sáu trường nội dung và `needs_confirmation`. Constructor tự thêm trường rỗng/null vào danh sách này; không dùng trực tiếp nó để biểu diễn báo cáo đã xác nhận không có thông tin.
-- Task 3 đã thêm repository/database SQLite và path ảnh bền vững; repository chưa được nối vào UI. Chưa có chỉnh sửa/xác nhận từ màn draft, thao tác lưu hoặc lịch sử có dữ liệu. Đầu vào/draft trên UI vẫn không bảo đảm còn sau khi process bị đóng.
-- Luồng Gemini thật, App Check Android debug và fallback quota có **bằng chứng lịch sử Task 5**. Task 3 đã xác minh analyze sạch, test toàn suite 77/77 và APK/Web build thành công. Ngày 28/09 có thêm ADB smoke test cài/mở APK và kiểm tra validation/tab/lifecycle; plugin/restart persistence vẫn chưa kiểm tra.
+- Task 3 đã thêm repository/database SQLite và path ảnh bền vững; Task 4 nối repository vào luồng lưu. Lưu yêu cầu người dùng xác nhận cuối, khóa thao tác trong lúc ghi, giữ nội dung/retry cùng ID khi lỗi, và chỉ xóa form nguồn sau khi lưu thành công. Lịch sử chưa truy vấn repository; chi tiết chưa có. Chưa xác minh persistence bằng plugin SQLite trên Android.
+- Luồng Gemini thật, App Check Android debug và fallback quota có **bằng chứng lịch sử Task 5**. Task 3 đã xác minh test SQLite FFI 10/10, toàn suite 77/77 và APK/Web build thành công. ADB smoke ngày 28/09 dùng APK trước Task 4, cài/mở app và kiểm tra validation/tab/lifecycle; không xác minh repository. Task 4 vừa đạt `flutter analyze` sạch và toàn suite 85/85; không có build/device/Gemini request mới.
 - Git đầu Task 3 sạch, nhánh `codex/day4-preflight`, HEAD `155c223`. Kiểm tra lại trước mỗi task; không reset/restore/clean/stash hoặc ghi đè thay đổi mới của người dùng.
 
 **Quyết định Task 1:** SQLite qua `sqflite` cho báo cáo có cấu trúc; ảnh lưu riêng trong thư mục application support qua `path_provider`, database giữ đường dẫn tương đối và dùng `path` để ghép/kiểm tra đường dẫn. Các phiên bản `sqflite 2.4.4`, `path_provider 2.1.6`, `path 1.9.1` và dev dependency `sqflite_common_ffi 2.4.3` được chốt bằng dry-run ở Task 1, sau đó đã thêm/resolve ở Task 3. APK/Web build và SQLite FFI test Windows thành công; plugin/restart trên Android chưa xác minh.
@@ -239,15 +239,15 @@ Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần
 
 **Kiểm chứng vừa chạy trong Task 3:** `dart format lib/repositories test/local_report_repository_test.dart` — 6 file đã xét, 0 file cần format ở lần rà cuối; `flutter analyze` — No issues found; `flutter test test/local_report_repository_test.dart` — 10/10 đạt; `flutter test` — 77/77 đạt. Test FFI dùng database và support root trong thư mục tạm. `flutter build apk --debug` và `flutter build web --release` đều thành công. APK build cảnh báo Firebase plugins dùng Kotlin Gradle Plugin; Web build có cảnh báo Cupertino icon font/Wasm dry-run. Không cài/mở app hoặc kiểm chứng persistence/plugin qua restart trên Android, không gọi Gemini. Các lệnh Flutter cần quyền ngoài sandbox để đọc Pub Cache/lock; dependency resolution và kiểm tra đều thành công.
 
-**Giới hạn còn lại:** repository chưa được nối vào UI; màn draft chưa lưu được và lịch sử vẫn rỗng. Chưa có kiểm chứng storage qua `sqflite`/`path_provider` Android. Có thể còn file ảnh mồ côi nếu process dừng giữa copy file và commit DB; Task 3 chưa có cơ chế quét/dọn mồ côi.
+**Giới hạn tại thời điểm kết thúc Task 3:** repository chưa được nối vào UI; màn draft chưa lưu được và lịch sử vẫn rỗng. Chưa có kiểm chứng storage qua `sqflite`/`path_provider` Android. Có thể còn file ảnh mồ côi nếu process dừng giữa copy file và commit DB; Task 3 chưa có cơ chế quét/dọn mồ côi.
 
-**Kiểm chứng bổ sung sau Task 3 (2026-09-28):** APK debug được build lại, cài đè qua ADB không dây, package/version xác nhận (`0.1.0`, code 1), app mở foreground trên PKG110/Android 16/API 36. Input rỗng bị chặn, empty state Lịch sử, giữ mô tả khi chuyển tab, không có app fatal exception trong crash buffer; input thử chưa lưu mất sau force-stop/mở lại. ADB-03 còn partial vì không lặp picker/camera/ảnh lớn/mất mạng/AI. Không gửi Gemini request. Các phép thử này xác nhận APK/app shell, không gọi repository; Task 7 vẫn cần kiểm chứng plugin SQLite/path_provider và persistence trên Android sau khi UI lưu/history được nối.
+**Kiểm chứng bổ sung sau Task 3 (2026-09-28):** APK debug được build lại, cài đè qua ADB không dây, package/version xác nhận (`0.1.0`, code 1), app mở foreground trên PKG110/Android 16/API 36. Input rỗng bị chặn, empty state Lịch sử, giữ mô tả khi chuyển tab, không có app fatal exception trong crash buffer; input thử chưa lưu mất sau force-stop/mở lại. ADB-03 còn partial vì không lặp picker/camera/ảnh lớn/mất mạng/AI. Không gửi Gemini request. Các phép thử này dùng APK trước Task 4 nên chưa gọi luồng repository/lưu mới; Task 7 vẫn cần build phiên bản hiện tại và kiểm chứng plugin SQLite/path_provider cùng persistence sau khi các màn History/detail sẵn sàng.
 
 ### Task 4 — Editor, xác nhận và thao tác lưu từ luồng AI
 
 **Mục tiêu:** người dùng sửa/xác nhận rồi lưu draft bằng thao tác thật, có loading/lỗi/retry.
 
-**Trạng thái:** Chưa thực hiện; phụ thuộc Task 2–3.
+**Trạng thái:** Đã triển khai editor/review/luồng lưu và xác minh qua widget tests; lưu Android runtime cùng luồng nối sang Lịch sử/chi tiết sau lưu còn chờ các Task 5–7.
 
 **Cần làm:**
 
@@ -255,7 +255,7 @@ Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần
 2. Cho sửa từng field, chọn priority hoặc chưa xác định; có control xác nhận rõ ràng và thông báo lỗi gần field.
 3. Cho xác nhận không có dữ liệu ở field được phép; `issue` luôn yêu cầu bổ sung. Hiển thị tiến độ review, không chỉ dựa vào badge AI.
 4. Thêm CTA lưu: validate → xác nhận cuối → loading khóa thao tác gây lưu lặp → gọi repository. Lỗi giữ nguyên nội dung/review và có retry; thành công trả ID báo cáo về app shell.
-5. Sau lưu thành công, thông báo “Đã lưu trên thiết bị”, mở chi tiết hoặc chuyển Lịch sử và refresh. Chỉ xóa input nguồn sau khi lưu đã xác nhận thành công; Back/cancel/lỗi không xóa input.
+5. Sau lưu thành công, thông báo “Đã lưu trên thiết bị” và trả `Report` về form nguồn; chỉ xóa input nguồn sau khi lưu đã xác nhận thành công. Điều hướng/làm mới Lịch sử và chi tiết sẽ nối cùng Task 5–6 vì các màn đó hiện chưa triển khai.
 6. Back khỏi editor chưa lưu cần xác nhận bỏ thay đổi nếu có chỉnh sửa/review; chọn ở lại giữ state. Không hứa draft chưa lưu còn sau khi process đóng.
 7. Inject repository cho test; không khởi tạo Firebase trong widget test và không dùng draft fixture ở đường chạy production.
 8. Sửa nhỏ tại `_analyzeWithAi()` nếu cần để bảo đảm bước đọc size ảnh nằm trong xử lý lỗi và khóa thao tác trước điểm `await`; lỗi file giữ input, không tạo nhiều request do tap lặp. Không gộp đổi model/quota hoặc tái cấu trúc toàn service vào task này.
@@ -265,6 +265,8 @@ Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần
 **Tránh:** chỉ thêm nút “Lưu” nhưng không persistence; tự đánh dấu mọi field đã xác nhận; mất dữ liệu khi lỗi; reset form sau khi mở draft; gọi Gemini lại khi lưu.
 
 **Kiểm thử/tiêu chí hoàn thành:** widget tests với fake repository cho edit/review, chặn lưu chưa đủ, issue bắt buộc, xác nhận trống hợp lệ, lưu đúng nội dung, double-tap, lỗi/retry, Back và viewport 320×568/bàn phím. Test lỗi đọc file trước AI bằng nguồn lỗi có kiểm soát. Có luồng thật lưu vào repository Task 3 trên Android ở Task 7.
+
+**Bằng chứng Task 4 (2026-09-28):** `dart format lib/main.dart lib/screens/create_report_screen.dart lib/screens/report_draft_screen.dart test/widget_test.dart` exit 0; `flutter analyze` — No issues found; `flutter test` — **85/85 đạt**. Widget tests dùng fake repository, gồm xác nhận field, lưu đúng nội dung/ảnh, field tùy chọn rỗng, `issue` bắt buộc, retry cùng ID, kết quả lưu mơ hồ, Back, double-tap và viewport 320×568/bàn phím. `flutter build apk --debug` thành công; `adb install -r` trả `Success`; app mở và process/foreground được xác nhận qua ADB Wireless debugging.** Cập nhật 2026-09-29:** chốt lại format check (0 file đổi), `flutter analyze` sạch, `flutter test` 85/85; chủ dự án báo PHONE-D4-01–14 PASS. ADB-D4-01–06 và 09 được xác minh, gồm một request Gemini tổng hợp mở draft; ADB review/save, force-stop và disconnect chưa chạy. Không có xác minh độc lập SQLite/path_provider hoặc đọc lại persistence Android sau restart. Task 7 vẫn cần kiểm tra persistence đầu-cuối.
 
 ### Task 5 — Lịch sử từ dữ liệu cục bộ
 
