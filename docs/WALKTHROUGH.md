@@ -32,7 +32,7 @@ flutter analyze
 flutter test
 ```
 
-Widget tests bao gồm điều hướng, validation đầu vào rỗng, xem lại mô tả/ảnh, camera/gallery source, hủy picker, permission error, ảnh quá lớn/không hợp lệ và viewport 320×568. Từ Task 4 Ngày 3, service tests ở `test/gemini_report_service_test.dart` (fake sender, không cần Firebase/network): parse draft, MIME sniffing, chặn đầu vào, timeout/quota/App Check/config/block/server error. Từ Task 5 Ngày 3, widget_test.dart thêm 8 test luồng AI và service tests thêm ánh xạ App Check thật + 3 test model fallback. Toàn bộ hiện **45/45 đạt**.
+Widget tests bao gồm điều hướng, validation đầu vào rỗng, xem lại mô tả/ảnh, camera/gallery source, hủy picker, permission error, ảnh quá lớn/không hợp lệ và viewport 320×568. Service tests ở `test/gemini_report_service_test.dart` dùng fake sender, không cần Firebase/network. `test/local_report_repository_test.dart` kiểm tra repository bằng SQLite FFI thật trên Windows. Kết quả mới nhất ghi ở Task 3 Ngày 4: `flutter analyze` sạch, repository tests **10/10**, toàn bộ test suite **77/77** (27/09/2026). Các con số 45/45 bên dưới là kết quả lịch sử Task 5–6 Ngày 3.
 
 ## 4. Build APK debug
 
@@ -75,9 +75,9 @@ Debug build in log chẩn đoán `ReportDraft request failed: <lỗi SDK>` qua `
 
 ## Giới hạn kiểm chứng và bước tiếp theo
 
-Các kết quả `flutter analyze`, `flutter test` 45/45 và format dry-run dưới đây là lịch sử được xác nhận ở Task 6 ngày 27/09/2026; không phải lệnh vừa chạy khi đọc walkthrough. Task 6 không tạo request Gemini mới; request Android thật và fallback quota được dẫn chiếu từ Task 5. Chủ dự án xác nhận kiểm thử thủ công Task 5 PASS tổng thể, nhưng bảng 31 case chưa có kết quả riêng từng dòng. Quota hiện tại chưa được truy vấn lại; Web debug provider và App Check production chưa xác minh.
+Các kết quả `flutter analyze`, `flutter test` 77/77 và formatter ở Task 3 Ngày 4 được ghi nhận ngày 27/09/2026; chúng không phải lệnh vừa chạy khi đọc walkthrough. `flutter build apk --debug` và `flutter build web --release` cũng thành công trong Task 3. Không tạo request Gemini mới. SQLite FFI đã được kiểm tra trên Windows; plugin `sqflite`/`path_provider` và restart trên Android chưa kiểm chứng. Request Android thật và fallback quota được dẫn chiếu từ Task 5. Chủ dự án xác nhận kiểm thử thủ công Task 5 PASS tổng thể, nhưng bảng 31 case chưa có kết quả riêng từng dòng. Quota hiện tại chưa được truy vấn lại; Web debug provider và App Check production chưa xác minh.
 
-Task 7 là rà tài liệu/bàn giao. Bước sản phẩm kế tiếp là Day 4: chỉnh sửa/xác nhận draft, lưu cục bộ và hiển thị lịch sử. Voice-to-text và GPS chưa triển khai.
+Task 3 Ngày 4 hoàn tất theo tiêu chí repository và SQLite FFI tests. Ngày 28/09 APK debug được build lại/cài đè qua ADB; smoke test xác nhận app mở, validation input rỗng, tab Lịch sử và lifecycle input. ADB-03 còn partial. Việc này chưa xác minh plugin SQLite/path_provider hoặc persistence Android; repository vẫn chưa nối vào UI, nên app chưa có thao tác lưu và Lịch sử vẫn rỗng. Bước tiếp theo là Task 4: editor, xác nhận và lưu draft. Voice-to-text và GPS chưa triển khai.
 
 ### Kết quả kiểm tra/build đã ghi nhận
 

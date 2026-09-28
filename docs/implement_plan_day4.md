@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 4: Chỉnh sửa, xác nhận, lưu cục bộ và lịch sử
 
-> **Trạng thái (2026-09-27, sau Task 2):** Task 1 đã chốt preflight/hợp đồng; Task 2 đã thêm `Report`, `ReportReview`, dùng chung `ReportPriority` và kiểm thử model/state. `flutter analyze` sạch, `flutter test` 67/67 đạt trong phiên Task 2. Task 3–8 chưa triển khai; chưa có SQLite/repository, sao chép ảnh bền vững, màn editor/lưu, lịch sử hoặc chi tiết. Không chạy build/APK, kiểm thử thiết bị hay request Gemini trong Task 2. Kết quả trước đó và chi tiết phiên nằm trong `docs/AI_WORKLOG.md`.
+> **Trạng thái (2026-09-28):** Task 1 chốt hợp đồng, Task 2 thêm model/state review, Task 3 hoàn tất repository SQLite Android và bản sao ảnh app-owned theo tiêu chí task. `flutter analyze` sạch; repository FFI test 10/10 và toàn suite 77/77 đạt trong Task 3. APK/Web build đã thành công; ngày 28/09 APK debug được build lại/cài đè qua ADB trên PKG110 (Android 16/API 36), app mở foreground và smoke checks UI/lifecycle cơ bản đạt. ADB-03 còn partial; không gửi request Gemini. Plugin SQLite/path_provider và persistence Android chưa được kiểm chứng; repository chưa nối vào UI, việc kiểm tra đầu-cuối vẫn thuộc Task 7. Task 4–8 chưa triển khai. Lịch sử từng task nằm trong `docs/AI_WORKLOG.md`.
 >
 > **Phạm vi:** Hoàn thiện MVP Android từ bản nháp AI đến báo cáo đã được người dùng xác nhận, lưu bền vững và mở lại trong lịch sử. Giữ Flutter và Firebase AI Logic hiện có; không thêm đăng nhập, đồng bộ cloud, voice/GPS, push notification hoặc backend mới.
 
@@ -28,12 +28,11 @@ Không thêm sửa/xóa báo cáo đã lưu trong phạm vi bắt buộc. Nếu 
 - `lib/screens/create_report_screen.dart` nhập mô tả, chọn/chụp một ảnh, preview, xem lại đầu vào và gọi `GeminiReportService`; thành công push `ReportDraftScreen`.
 - `lib/screens/report_draft_screen.dart` chỉ xem: draft chưa xác nhận/chưa lưu, danh sách `needs_confirmation`, nhãn hành động đề xuất và mô tả/ảnh gốc.
 - `ReportDraft` có parser/serializer cho sáu trường nội dung và `needs_confirmation`. Constructor tự thêm trường rỗng/null vào danh sách này; không dùng trực tiếp nó để biểu diễn báo cáo đã xác nhận không có thông tin.
-- Chưa có repository/database, model báo cáo đã lưu, đường dẫn ảnh bền vững, chỉnh sửa/xác nhận hoặc lịch sử có dữ liệu. State hiện tại không bảo đảm còn sau khi process bị đóng.
-- Luồng Gemini thật, App Check Android debug và fallback quota có **bằng chứng lịch sử Task 5**. Task 6 ghi analyze sạch, format dry-run không đổi và 45/45 test; đây không phải kiểm chứng vừa chạy trong phiên lập kế hoạch.
-- Đếm tĩnh ở phiên khảo sát: 45 khai báo test gồm **16 widget + 5 model + 24 service**, khác phân bổ 13 + 5 + 27 trong tài liệu cũ. Không dùng số khai báo để suy ra kết quả chạy test hiện tại.
-- Git lúc bắt đầu lập kế hoạch sạch, nhánh `task/day3-firebase-ai-logic`, HEAD `d4e6cc1`. Kiểm tra lại trước mỗi task; không reset/restore/clean/stash hoặc ghi đè thay đổi mới của người dùng.
+- Task 3 đã thêm repository/database SQLite và path ảnh bền vững; repository chưa được nối vào UI. Chưa có chỉnh sửa/xác nhận từ màn draft, thao tác lưu hoặc lịch sử có dữ liệu. Đầu vào/draft trên UI vẫn không bảo đảm còn sau khi process bị đóng.
+- Luồng Gemini thật, App Check Android debug và fallback quota có **bằng chứng lịch sử Task 5**. Task 3 đã xác minh analyze sạch, test toàn suite 77/77 và APK/Web build thành công. Ngày 28/09 có thêm ADB smoke test cài/mở APK và kiểm tra validation/tab/lifecycle; plugin/restart persistence vẫn chưa kiểm tra.
+- Git đầu Task 3 sạch, nhánh `codex/day4-preflight`, HEAD `155c223`. Kiểm tra lại trước mỗi task; không reset/restore/clean/stash hoặc ghi đè thay đổi mới của người dùng.
 
-**Quyết định Task 1:** SQLite qua `sqflite` cho báo cáo có cấu trúc; ảnh lưu riêng trong thư mục application support qua `path_provider`, database giữ đường dẫn tương đối và dùng `path` để ghép/kiểm tra đường dẫn. Bộ phiên bản đã resolve bằng dry-run: `sqflite 2.4.4`, `path_provider 2.1.6`, `path 1.9.1`; dev dependency `sqflite_common_ffi 2.4.3` cho test SQLite thật trên Windows. Chỉ thêm dependency lúc Task 3 bắt đầu sử dụng; resolver thành công chưa phải bằng chứng plugin build hoặc FFI chạy được.
+**Quyết định Task 1:** SQLite qua `sqflite` cho báo cáo có cấu trúc; ảnh lưu riêng trong thư mục application support qua `path_provider`, database giữ đường dẫn tương đối và dùng `path` để ghép/kiểm tra đường dẫn. Các phiên bản `sqflite 2.4.4`, `path_provider 2.1.6`, `path 1.9.1` và dev dependency `sqflite_common_ffi 2.4.3` được chốt bằng dry-run ở Task 1, sau đó đã thêm/resolve ở Task 3. APK/Web build và SQLite FFI test Windows thành công; plugin/restart trên Android chưa xác minh.
 
 **Web:** giữ khả năng preview UI và test qua repository inject; persistence Android là tiêu chí bắt buộc. Nếu lựa chọn SQLite không hỗ trợ Web trong cấu hình này, hiển thị rõ giới hạn và vô hiệu hóa thao tác lưu trên Web, không tự lưu vào RAM rồi báo thành công. Không mở rộng sang backend lưu Web để hoàn thành Ngày 4.
 
@@ -112,7 +111,7 @@ Không thêm sửa/xóa báo cáo đã lưu trong phạm vi bắt buộc. Nếu 
 
 #### B. SQLite schema version 1
 
-Database `reports.db` trong thư mục application support của app, bảng `reports`; schema được tạo tại Task 3 qua `onCreate`, không có migration cho phiên bản chưa tồn tại. SQL sau là hợp đồng thiết kế, **chưa được execute**:
+Database `reports.db` trong thư mục application support của app, bảng `reports`; schema version 1 được tạo qua `onCreate`. SQL sau là hợp đồng được triển khai ở Task 3:
 
 ```sql
 CREATE TABLE reports (
@@ -164,14 +163,14 @@ abstract interface class ReportRepository {
 |---|---|---|
 | `sqflite` | 2.4.4 | SQLite Android production, transaction và schema version. |
 | `path_provider` | 2.1.6 | `getApplicationSupportDirectory()` cho DB/ảnh. |
-| `path` | 1.9.1 | Ghép/kiểm tra path; hiện là transitive, sẽ khai báo direct khi mã app import. |
+| `path` | 1.9.1 | Ghép/kiểm tra path; được khai báo direct vì implementation import package này. |
 | `sqflite_common_ffi` | 2.4.3 | Dev-only: inject `databaseFactoryFfi` cho test repository trên Windows. |
 
-- Pub resolver dry-run chọn thêm `sqlite3 3.5.2` cho FFI và báo “Would change 33 dependencies”; không thay `pubspec.yaml`/lockfile. Phiên bản phải được resolve/ghi lockfile lại ở Task 3, không coi dry-run là đã cài vào ứng dụng.
-- Đọc source package trong Pub Cache: `sqflite` yêu cầu Dart ^3.12.0/Flutter >=3.44.0; Android adapter ghi yêu cầu AGP 9.0, minSdk 19/Java 17. `path_provider` yêu cầu Dart ^3.10.0/Flutter >=3.38.0. Project dùng Flutter 3.47.1/Dart 3.13.1, AGP 9.1.0, Java target 17 và minSdk theo Flutter là 24; tương thích ở mức SDK/config/resolve, **chưa kiểm chứng build native**.
-- Chọn Android persistence; Web chỉ preview UI, không lưu. Task 3 factory dùng conditional import để Web không import implementation `dart:io` hoặc gọi native plugin; expose capability cho UI khóa lưu/hiển thị giới hạn. Không thêm Web SQLite, RAM fallback hoặc desktop app runtime. iOS/desktop chưa cấu hình Firebase nên không tuyên bố hỗ trợ.
+- Pub resolver dry-run ở Task 1 chọn thêm `sqlite3 3.5.2` cho FFI và không đổi pubspec/lockfile ở phiên đó. Task 3 sau đó đã resolve và ghi lockfile các package thực tế.
+- Đọc source package trong Pub Cache: `sqflite` yêu cầu Dart ^3.12.0/Flutter >=3.44.0; Android adapter ghi yêu cầu AGP 9.0, minSdk 19/Java 17. `path_provider` yêu cầu Dart ^3.10.0/Flutter >=3.38.0. Project dùng Flutter 3.47.1/Dart 3.13.1, AGP 9.1.0, Java target 17 và minSdk theo Flutter là 24; Android/Web build đã thành công trong Task 3.
+- Chọn Android persistence; Web chỉ preview UI, không lưu. Task 3 factory dùng conditional import để Web không import implementation `dart:io` hoặc gọi native plugin; `ReportRepository.isSupported` cho UI capability để khóa lưu/hiển thị giới hạn. Không thêm Web SQLite, RAM fallback hoặc desktop app runtime. iOS/desktop chưa cấu hình Firebase nên không tuyên bố hỗ trợ.
 - Repository test dùng SQLite thật qua FFI trong thư mục tạm độc lập và inject storage root, không gọi `path_provider` trên test host; đóng/mở DB để kiểm chứng round-trip, ảnh, retry và rollback. Fake chỉ dùng cho UI. Không ghi đè `databaseFactory` toàn cục làm ảnh hưởng các test khác.
-- `sqflite_common_ffi 2.4.x` dùng sqlite3 v3/native build hooks; chưa chạy FFI probe. Task 3 phải kiểm tra runtime trước; nếu host thiếu DLL/toolchain và không thể kiểm chứng thì ghi blocker hoặc dùng integration test Android cho cùng implementation. Không tự downgrade để né lỗi mà chưa kiểm tra.
+- `sqflite_common_ffi 2.4.x` dùng sqlite3 v3/native build hooks; Task 3 đã xác minh runtime bằng 10 test SQLite FFI thực trên Windows.
 - Android device/integration test vẫn cần để kiểm chứng plugin/path_provider và app restart ở Task 7; test host không thay thế bằng chứng này.
 
 Nguồn maintainer đã đọc trong Task 1: [sqflite 2.4.4](https://pub.dev/packages/sqflite/versions/2.4.4), [path_provider 2.1.6](https://pub.dev/packages/path_provider/versions/2.1.6), [path 1.9.1](https://pub.dev/packages/path/versions/1.9.1), [sqflite_common_ffi 2.4.3](https://pub.dev/packages/sqflite_common_ffi/versions/2.4.3). Không sử dụng Web support thử nghiệm trong Ngày 4.
@@ -216,7 +215,7 @@ Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần
 
 **Mục tiêu:** lưu/đọc báo cáo thực, độc lập với Firebase/network và file picker tạm.
 
-**Trạng thái:** Chưa thực hiện; phụ thuộc Task 1–2.
+**Trạng thái:** Hoàn tất ngày 2026-09-27; phụ thuộc Task 1–2.
 
 **Cần làm:**
 
@@ -233,6 +232,16 @@ Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần
 **Tránh:** lưu ảnh chỉ bằng đường dẫn cache; ghi báo cáo trước rồi bỏ qua lỗi copy ảnh; dùng database thật của người dùng cho test; reset database khi đọc lỗi.
 
 **Kiểm thử/tiêu chí hoàn thành:** kiểm thử database thực trong thư mục tạm: lưu/đọc đủ dữ liệu, đóng/mở repository, nhiều bản ghi/thứ tự, retry cùng ID, lỗi ghi ảnh/DB và cleanup; ảnh được đọc từ bản sao sau khi nguồn tạm không còn. Test không gọi Gemini, không sửa dữ liệu ứng dụng đang dùng.
+
+**Đã triển khai:** `lib/repositories/report_repository.dart` định nghĩa contract, các loại lỗi storage an toàn để UI hiển thị và thao tác đọc bytes ảnh. Factory dùng conditional import: Android trả `LocalReportRepository`, Web/nền tảng khác trả lỗi unsupported thay vì RAM fallback. `LocalReportRepository` tạo schema SQLite v1 trong application support, validate dữ liệu đọc, lưu metadata/path tương đối, sort ổn định, copy bytes ảnh vào `report_photos/`, serialize thao tác trong một instance, kiểm tra retry theo snapshot/bytes và dọn file chỉ khi biết insert chưa commit. Khi chưa xác định được kết quả transaction, giữ ảnh và báo lỗi thay vì xóa có thể làm mất dữ liệu.
+
+**Dependency đã thêm:** `sqflite 2.4.4`, `path_provider 2.1.6`, `path 1.9.1`; dev-only `sqflite_common_ffi 2.4.3` cho SQLite thật trong test Windows.
+
+**Kiểm chứng vừa chạy trong Task 3:** `dart format lib/repositories test/local_report_repository_test.dart` — 6 file đã xét, 0 file cần format ở lần rà cuối; `flutter analyze` — No issues found; `flutter test test/local_report_repository_test.dart` — 10/10 đạt; `flutter test` — 77/77 đạt. Test FFI dùng database và support root trong thư mục tạm. `flutter build apk --debug` và `flutter build web --release` đều thành công. APK build cảnh báo Firebase plugins dùng Kotlin Gradle Plugin; Web build có cảnh báo Cupertino icon font/Wasm dry-run. Không cài/mở app hoặc kiểm chứng persistence/plugin qua restart trên Android, không gọi Gemini. Các lệnh Flutter cần quyền ngoài sandbox để đọc Pub Cache/lock; dependency resolution và kiểm tra đều thành công.
+
+**Giới hạn còn lại:** repository chưa được nối vào UI; màn draft chưa lưu được và lịch sử vẫn rỗng. Chưa có kiểm chứng storage qua `sqflite`/`path_provider` Android. Có thể còn file ảnh mồ côi nếu process dừng giữa copy file và commit DB; Task 3 chưa có cơ chế quét/dọn mồ côi.
+
+**Kiểm chứng bổ sung sau Task 3 (2026-09-28):** APK debug được build lại, cài đè qua ADB không dây, package/version xác nhận (`0.1.0`, code 1), app mở foreground trên PKG110/Android 16/API 36. Input rỗng bị chặn, empty state Lịch sử, giữ mô tả khi chuyển tab, không có app fatal exception trong crash buffer; input thử chưa lưu mất sau force-stop/mở lại. ADB-03 còn partial vì không lặp picker/camera/ảnh lớn/mất mạng/AI. Không gửi Gemini request. Các phép thử này xác nhận APK/app shell, không gọi repository; Task 7 vẫn cần kiểm chứng plugin SQLite/path_provider và persistence trên Android sau khi UI lưu/history được nối.
 
 ### Task 4 — Editor, xác nhận và thao tác lưu từ luồng AI
 

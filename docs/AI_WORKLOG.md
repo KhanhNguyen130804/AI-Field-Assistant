@@ -411,3 +411,87 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - Task 2 hoàn tất ở mức model/validation và test. Task 3 (SQLite/ảnh), Task 4 (editor/lưu UI), lịch sử và chi tiết vẫn chưa triển khai.
 - Dependency SQLite vẫn chỉ là kết quả dry-run của Task 1; chưa thêm vào pubspec/lockfile. Build native và FFI runtime chưa được xác minh.
 - Một fixture test ban đầu không đúng với quy tắc constructor tự đánh dấu field rỗng; fixture đã được sửa theo contract, sau đó test liên quan và toàn bộ suite đều đạt. Không có request hoặc dữ liệu hiện trường thật được dùng.
+
+## 2026-09-27 — Ngày 4 Task 3: repository SQLite và ảnh bền vững
+
+### Công cụ, yêu cầu và phạm vi
+
+- **AI coding agent:** Codex; PowerShell, Dart formatter, Flutter analyzer/test runner và Git.
+- **Yêu cầu:** triển khai Task 3 theo `docs/implement_plan_day4.md`: SQLite repository Android, sao chép ảnh bền vững, retry an toàn và kiểm thử repository bằng SQLite thật. Chưa nối editor/lưu/lịch sử vào UI; không gọi Gemini.
+- Git trước khi làm: nhánh `codex/day4-preflight`, working tree sạch tại `155c223`. Không stage/commit/push/reset/checkout/stash.
+
+### Đã triển khai
+
+- Thêm `lib/repositories/report_repository.dart`: contract `save/listReports/findById/readPhotoBytes/close`, lỗi storage typed và thông báo không đưa raw path/payload ra UI.
+- Thêm factory conditional import: Android tạo `LocalReportRepository`; Web và nền tảng khác trả `UnsupportedReportRepository`, không có lưu RAM giả.
+- Thêm `lib/repositories/local_report_repository.dart`: schema SQLite v1 trong application support; serialize report với JSON `confirmed_absent_fields`; query theo `created_at DESC, id DESC`; đọc/deserialize chặt và chuyển lỗi DB/ảnh thành lỗi storage.
+- Ảnh được ghi vào staging trong thư mục app rồi đổi tên thành file do app đặt dưới `report_photos/`; DB chỉ lưu path tương đối. Retry cùng ID chỉ trả bản ghi hiện có khi các field/timestamp và bytes ảnh khớp; nội dung khác bị conflict. Cleanup chỉ xóa file do attempt này tạo khi xác định bản ghi chưa commit; kết quả transaction chưa rõ thì giữ file.
+- Thêm dependency `sqflite 2.4.4`, `path_provider 2.1.6`, `path 1.9.1`, dev dependency `sqflite_common_ffi 2.4.3`.
+- Thêm `test/local_report_repository_test.dart` với SQLite FFI thật trong thư mục tạm: round-trip, reopen, ảnh, sort/tie-break, retry/conflict, missing/unsafe photo, lỗi ghi ảnh/DB, cleanup và dữ liệu JSON hỏng.
+- Cập nhật README, context summary, walkthrough, kế hoạch Ngày 4 và worklog để nêu rõ repository đã có nhưng UI chưa kết nối.
+
+### Kiểm chứng vừa chạy
+
+- `dart format lib/repositories test/local_report_repository_test.dart` — lần đầu format 3 file trong 6 file; lần rà cuối 0 file cần thay đổi.
+- `flutter analyze` — No issues found.
+- `flutter test test/local_report_repository_test.dart` — 10/10 đạt trên SQLite FFI thật.
+- `flutter test` — 77/77 đạt.
+- `flutter build apk --debug` — thành công, APK tại `build/app/outputs/flutter-apk/app-debug.apk`; Gradle cảnh báo Firebase plugins hiện áp dụng Kotlin Gradle Plugin và Java restricted native access.
+- `flutter build web --release` — thành công; có cảnh báo không blocking về Cupertino icon font và Wasm dry-run.
+- Flutter CLI ban đầu không trả output trong sandbox khi chạy `pub add`/`--version`; các lệnh dependency, format, analyze và test sau đó chạy thành công với quyền ngoài sandbox. Không sửa cấu hình hệ thống/cache.
+- Test cleanup ban đầu dùng hai SQLite connection mở đồng thời trong fixture; đã điều chỉnh fixture đóng repository trước khi tạo trigger, test cô lập và toàn suite sau đó đạt. Không sửa DB ứng dụng người dùng.
+- Không cài/mở APK trên thiết bị Android, không gửi Gemini request và không kiểm chứng persistence qua `sqflite`/`path_provider` trên Android. Không dùng dữ liệu hiện trường thật.
+
+### Kết quả và giới hạn
+
+- Task 3 hoàn tất ở mức repository Android + test host. Task 4 editor/lưu UI, Task 5 lịch sử và các task sau chưa triển khai. Người dùng chưa thể lưu báo cáo từ app; tab Lịch sử vẫn rỗng.
+- APK/Web build đã xác minh compile thành công, nhưng chưa kiểm chứng persistence qua app restart trên Android. SQLite FFI Windows không thay thế kiểm chứng plugin Android; việc này vẫn cần trong bước tích hợp thiết bị Task 7.
+- Filesystem và DB không chung transaction. Nếu process dừng giữa ghi ảnh và insert, có thể để lại file mồ côi; chưa có job quét/dọn file mồ côi.
+
+## 2026-09-27 — Tạo APK debug và test case thiết bị
+
+### Yêu cầu và phạm vi
+
+- **AI coding agent:** Codex; PowerShell và Flutter CLI.
+- **Yêu cầu:** tạo APK debug trên ổ D: và viết test case cho kiểm tra trực tiếp trên Android thật cũng như khi điện thoại nối ADB với máy tính.
+- Trước khi làm, Git có các thay đổi Task 3 chưa commit (README/docs/pubspec và repository/test mới). Giữ nguyên; không stage/commit/reset/checkout/stash. Chỉ thêm `docs/MANUAL_TESTCASES_APK_DEBUG.md`; `build/` được Git ignore.
+
+### Kiểm chứng trong phiên
+
+- Lần đầu `flutter build apk --debug` chạy hơn 5 phút nhưng không xuất log/tiến độ và chưa cập nhật output. Dừng riêng tiến trình build do phiên này khởi chạy, sau đó chạy lại cùng lệnh với quyền truy cập Flutter/Gradle cache.
+- Lần chạy lại **thành công**: `flutter build apk --debug`; Flutter báo `Built build\app\outputs\flutter-apk\app-debug.apk`. APK: 178,509,770 bytes; SHA-256 `F571DCAEDD34CFCE5CC1489455BE79D1D489E6B2E096E074D5FF96A399EC66DC`; package `com.example.ai_field_assistant`; version theo pubspec `0.1.0+1`.
+- Gradle phát cảnh báo restricted Java native access và Firebase plugins hiện áp dụng Kotlin Gradle Plugin, có thể không tương thích các phiên bản Flutter tương lai. Build vẫn exit 0.
+- Thêm `docs/MANUAL_TESTCASES_APK_DEBUG.md`: test cài/mở, form/picker/camera, gọi AI có điều kiện mạng/App Check/quota, lỗi mạng, vòng đời app và các lệnh ADB an toàn. Kết quả từng test để trống đến khi người dùng chạy trên thiết bị.
+
+### Chưa kiểm chứng
+
+- Không cài hoặc mở APK trên điện thoại; không chạy `adb devices`, `adb install`, `flutter analyze` hay `flutter test` trong phiên này.
+- Không gửi request Gemini; quota/App Check hiện tại và SQLite/path_provider trên runtime Android chưa được kiểm tra. Build APK chỉ xác nhận compile Android thành công.
+- Không dùng dữ liệu hiện trường thật và không đọc/ghi App Check token.
+
+## 2026-09-28 — Kiểm tra ADB cho APK debug
+
+### Yêu cầu và phạm vi
+
+- **AI coding agent:** Codex; PowerShell, Flutter CLI và Android Platform Tools.
+- **Yêu cầu:** chủ dự án báo PHONE-01–PHONE-13 đã PASS trên máy thật và yêu cầu tiếp tục phần B của `docs/MANUAL_TESTCASES_APK_DEBUG.md`.
+- Git đầu phiên còn các thay đổi Task 3 chưa commit và test case APK chưa theo dõi. Giữ nguyên thay đổi đó; cập nhật kết quả test case và worklog. Không stage/commit/reset/checkout/stash.
+
+### Thực hiện và bằng chứng
+
+- `adb` không có trong `PATH`; SDK tại `C:\Users\khanh\AppData\Local\Android\Sdk` bị sandbox từ chối đọc. Sau khi được phép truy cập, Android Platform Tools `1.0.41` phát hiện đúng một thiết bị ADB không dây ở trạng thái `device` (không lưu serial vào tài liệu).
+- APK không còn ở output path đầu phiên nên chạy lại `flutter build apk --debug` với quyền truy cập SDK/Gradle. Build exit 0; Gradle có cảnh báo Java restricted native access và KGP của Firebase plugins. APK mới 178,509,770 bytes, SHA-256 `F571DCAEDD34CFCE5CC1489455BE79D1D489E6B2E096E074D5FF96A399EC66DC`.
+- **ADB-01 PASS:** `adb install -r` trả `Success`. Một lần thử `adb -d` không thấy thiết bị vì kết nối là không dây; đã chọn serial duy nhất lấy từ `adb devices -l` rồi cài thành công. Không gỡ app hoặc xóa dữ liệu.
+- **ADB-02 PASS:** package `com.example.ai_field_assistant`, versionName `0.1.0`, versionCode `1`, minSdk `24`, targetSdk `36`; thiết bị model `PKG110`, Android `16`, API `36`. Force-stop/monkey mở lại app; process tồn tại và `.MainActivity` ở foreground.
+- **ADB-03 PARTIAL:** qua ADB xác minh input rỗng bị chặn, Lịch sử hiển thị empty state và mô tả tổng hợp còn nguyên sau khi chuyển tab. Không chạy lặp picker/camera/giới hạn ảnh/mất mạng và không gửi các request AI trong lượt này; các PHONE case tương ứng là kết quả chủ dự án báo PASS, chưa có bằng chứng riêng.
+- **ADB-04 PASS:** sau cold start và UI checks, crash buffer không có `FATAL EXCEPTION` khớp package; app còn foreground. Không clear log.
+- **ADB-05 PASS:** chuỗi tổng hợp `ADB_TEST_LOSS_0928` hiện trong trường mô tả trước force-stop; sau force-stop/mở lại field còn trên form nhưng rỗng và process chạy. Chỉ input chưa lưu bị mất như thiết kế hiện tại.
+- **ADB-06 PASS:** ghi model/API, package/version, APK hash, kết quả và số request AI bằng 0; không lưu serial/token. Các XML hierarchy tạm ở `/data/local/tmp` do test tạo đã được xóa sau khi đọc; không đọc/ghi nội dung cá nhân.
+- Ghi PHONE-01–PHONE-13 là PASS theo xác nhận của chủ dự án ngày 28/09; không ghi như kết quả Codex tự quan sát.
+
+### Giới hạn còn lại
+
+- ADB-03 chưa chạy hết PHONE-02–PHONE-11 trong lúc nối ADB; phần AI được bỏ qua để tránh gọi lại và tiêu quota không cần thiết. Bộ test ghi trạng thái PARTIAL, không nâng thành PASS.
+- Không gửi request Gemini; không kiểm tra mạng/App Check/quota hiện tại.
+- APK hiện có repository SQLite trong source nhưng chưa nối vào UI. Cài/mở APK không chứng minh `sqflite`/`path_provider` chạy trên Android, và chưa thể tạo/đọc report qua giao diện. Đây vẫn là phần kiểm chứng storage Android còn thiếu; test FFI host trong Task 3 là bằng chứng riêng.
+- Không chạy `flutter analyze` hoặc `flutter test` trong lượt này; chỉ build APK và test ADB nêu trên.
