@@ -366,13 +366,16 @@ Nếu thêm `integration_test`, ghi lệnh/target cụ thể sau khi chọn ở 
 
 **Trạng thái:** Hoàn tất cập nhật tài liệu và bàn giao theo quyết định đóng Task 7 với ngoại lệ được chấp nhận. Phiếu test và README/context/walkthrough/worklog giữ rõ ảnh/offline chưa được kiểm chứng; Day 4 chưa nghiệm thu đầy đủ.
 
-**Cần làm:**
+**Kế hoạch chi tiết và kết quả thực hiện (2026-09-29):**
 
-1. Cập nhật README về kiến trúc repository/SQLite/ảnh, luồng review, cách chạy, nền tảng hỗ trợ và giới hạn offline/gỡ app.
-2. Cập nhật `CONTEXT_SUMMARY.md`, `WALKTHROUGH.md` và trạng thái từng task/checklist của kế hoạch này; không giữ câu “chưa có lưu trữ” như trạng thái hiện tại nếu đã kiểm chứng xong.
-3. Ghi công cụ AI, prompt triển khai quan trọng, lỗi/đề xuất sai thực sự gặp, cách sửa và lệnh/kết quả trong worklog. Ghi entry mới theo phiên, không bịa nhật ký hồi cứu.
-4. Sửa phân bổ test sai và làm rõ các mục cũ Ngày 3 là lịch sử; cập nhật test thủ công quota/confirmation khi có yêu cầu regression liên quan, không xóa bằng chứng cũ.
-5. Rà diff/status cuối phiên, liệt kê tệp modified/untracked/deleted và dependency mới; chỉ stage/commit/push khi chủ dự án yêu cầu rõ ràng; giữ nguyên artifacts cần thiết.
+1. [x] Đọc hướng dẫn dự án, roadmap, tiêu chí Ngày 4 Task 8, trạng thái Git và các thay đổi đang có; giữ nguyên deletion có trước `docs/PROMPT_01.md`.
+2. [x] Đối chiếu mô tả sản phẩm/kiến trúc trong README với mã Flutter và repository; ghi rõ AI chỉ tạo draft, SQLite là Android persistence, ảnh/offline chưa được xác minh.
+3. [x] Đồng bộ `README.md`, `CONTEXT_SUMMARY.md`, `WALKTHROUGH.md`, phiếu Task 7 và kế hoạch này theo quyết định đóng Task 7 với ngoại lệ được chấp nhận; giữ nguyên trạng thái PARTIAL/BLOCKED/NOT RUN và phân biệt với nghiệm thu đầy đủ Ngày 4.
+4. [x] Rà `AI_WORKLOG.md`, Task 4–7 test records và tài liệu Ngày 3: giữ kết quả theo đúng lượt, phân biệt fake/FFI/ADB/PHONE và kết quả vừa chạy với lịch sử; không sửa/xóa bằng chứng test cũ.
+5. [x] Kiểm tra liên kết Markdown nội bộ trong README/docs (đều resolve) và rà mẫu API token/private key phổ biến trên tài liệu bàn giao (không có kết quả khớp).
+6. [x] Chạy `git diff --check`, kiểm tra danh sách file/status cuối và giữ deletion `docs/PROMPT_01.md` ngoài thay đổi Task 8. Không chạy Flutter build/test/analyze vì lượt này chỉ sửa tài liệu; không commit/push khi chưa được yêu cầu cụ thể.
+
+**Kết quả Task 8:** hoàn tất rà soát tài liệu/bàn giao. Task 7 được ghi là hoàn thành theo quyết định chủ dự án với ngoại lệ; ảnh/offline vẫn là follow-up chưa xác minh. Điều đó không nâng trạng thái nghiệm thu đầy đủ Ngày 4.
 
 **File dự kiến:** `README.md`, `docs/CONTEXT_SUMMARY.md`, `docs/WALKTHROUGH.md`, `docs/AI_WORKLOG.md`, kế hoạch/test case liên quan.
 

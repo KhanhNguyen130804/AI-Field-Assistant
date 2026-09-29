@@ -638,3 +638,12 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - **Cập nhật:** README, CONTEXT_SUMMARY, WALKTHROUGH, implement_plan_day4, phiếu Task 7 và worklog đồng bộ quyết định đóng cùng các ngoại lệ. Không đổi mã nguồn, cấu hình hay dependency.
 - **Kiểm chứng:** không chạy lại Flutter tests/analyzer/build vì đây là lượt tài liệu-only; kết quả tự động/thiết bị tham chiếu từ mục kiểm chứng Task 7 ngay trước đó. `git diff --check` được chạy trước staging; nội dung staging và kết quả publish được xác minh riêng.
 - **Git:** chỉ stage tài liệu thuộc Task 7/Task 8; không stage deletion có trước `docs/PROMPT_01.md`. Không xóa report test hay fixture còn lại.
+
+## 2026-09-29 — Ngày 4 Task 8: rà soát tài liệu và bàn giao
+
+- **Yêu cầu/phạm vi:** lập plan chi tiết và hoàn tất Task 8. Đây là công việc docs-only; không mở rộng sang thay đổi mã, kiểm thử thiết bị, offline hoặc xác minh ảnh.
+- **Đối chiếu:** đọc `AGENTS.md`, roadmap Ngày 4, Task 8 plan, README, context, walkthrough, worklog và test records Task 4–7. Kiểm tra các mô tả hiện tại với mã repository/editor/history/detail và bằng chứng đã ghi. Các test count 85/90/99, repository FFI 10/10, ADB/PHONE và user-reported được giữ đúng nguồn/lượt; Task 5 AI manual cases vẫn được đánh dấu là tài liệu lịch sử.
+- **Kiểm tra tài liệu:** rà liên kết Markdown cục bộ trong README/docs — tất cả resolve; rà mẫu API token/private key phổ biến trên các tài liệu bàn giao — không có kết quả khớp. Không lưu giá trị nhạy cảm hoặc raw logs.
+- **Công cụ/kiểm chứng:** Codex, PowerShell và Git; không gọi Firebase/Gemini, không kết nối ADB và không chạy Flutter build/analyze/test trong lượt này. Chạy `git diff --check`; các test/build gần nhất vẫn là bằng chứng Task 7 trong entry ngay phía trên, không được chạy lại trong Task 8.
+- **Kết quả:** checklist Task 8 trong `docs/implement_plan_day4.md` đã hoàn tất. Task 7 vẫn được đóng theo quyết định chủ dự án với ngoại lệ được chấp nhận; ảnh/offline còn chưa xác minh và Day 4 chưa nghiệm thu đầy đủ.
+- **Git:** giữ nguyên deletion có trước `docs/PROMPT_01.md`; không commit/push trong yêu cầu Task 8 này.
