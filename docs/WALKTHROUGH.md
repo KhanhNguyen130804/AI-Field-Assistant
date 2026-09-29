@@ -1,6 +1,6 @@
-# Walkthrough — luồng hiện tại đến Ngày 4 Task 4
+# Walkthrough — luồng hiện tại đến Ngày 4 Task 5
 
-Hướng dẫn kiểm tra nhập mô tả/chọn ảnh, khởi tạo Firebase/App Check, gọi Gemini từ CTA, rồi sửa/review draft và gửi lưu qua repository. Editor/save Task 4 Ngày 4 có widget tests với fake repository; chủ dự án xác nhận PHONE-D4-01–14 PASS, và ADB đã mở một draft Gemini tổng hợp. ADB save/review chưa chạy; chưa xác minh độc lập đọc lại SQLite/plugin sau restart. Tab Lịch sử chưa đọc dữ liệu đã lưu.
+Hướng dẫn kiểm tra nhập mô tả/chọn ảnh, khởi tạo Firebase/App Check, gọi Gemini từ CTA, sửa/review draft, lưu qua repository và xem danh sách Lịch sử. Task 5 nối Lịch sử vào cùng repository; widget tests của màn này dùng fake repository. Chạm một dòng hiện thông báo màn chi tiết thuộc Task 6. Ngày 29/09/2026, APK source đã được build/cài và luồng Lịch sử được kiểm tra qua ADB Wireless trên PKG110 Android 16/API 36; xem test case và worklog để biết trạng thái từng case. Chưa xác minh report/ảnh còn sau force-stop/restart trên Android.
 
 ## 1. Chuẩn bị và khởi chạy
 
@@ -32,7 +32,7 @@ flutter analyze
 flutter test
 ```
 
-Widget tests bao gồm điều hướng, validation đầu vào rỗng, form/input, permission/picker, ảnh lỗi, editor/review/save, retry, Back, double-tap và viewport 320×568/bàn phím. Service tests ở `test/gemini_report_service_test.dart` dùng fake sender, không cần Firebase/network. `test/local_report_repository_test.dart` kiểm tra repository bằng SQLite FFI thật trên Windows. Kết quả mới nhất: Task 4 Ngày 4 chạy `flutter analyze` — No issues found và toàn suite `flutter test` **85/85 đạt**; test save flow dùng fake repository. Repository FFI **10/10** và toàn suite **77/77** là kết quả lịch sử Task 3; các con số 45/45 dưới đây là lịch sử Task 5–6 Ngày 3.
+Widget tests bao gồm điều hướng, validation đầu vào rỗng, form/input, permission/picker, ảnh lỗi, editor/review/save, retry, Back, double-tap và viewport 320×568/bàn phím. `test/history_screen_test.dart` kiểm tra loading/empty/error/retry, refresh, ID được chọn và save → refresh bằng fake repository. Service tests ở `test/gemini_report_service_test.dart` dùng fake sender, không cần Firebase/network. `test/local_report_repository_test.dart` kiểm tra repository bằng SQLite FFI thật trên Windows. Lượt triển khai Task 5 chạy `flutter analyze` — No issues found và toàn suite `flutter test --reporter compact` **90/90 đạt**. Lượt ADB Wireless sau đó build/cài APK và kiểm tra thao tác thiết bị, nhưng không chạy lại Flutter test/analyze. Task 4 trước đó đạt 85/85; repository FFI 10/10, suite 77/77 và các con số 45/45 bên dưới là bằng chứng lịch sử của Task 3 và Ngày 3.
 
 ## 4. Build APK debug
 
@@ -63,7 +63,7 @@ Bản APK debug đã được chủ dự án kiểm thử thủ công trên thi�
 4. Lỗi (mạng/timeout/quota/App Check/JSON sai): thông báo tiếng Việt ở form, mô tả + ảnh giữ nguyên, bấm lại được.
 5. Bấm Back khi có review/chỉnh sửa: app hỏi có bỏ phần đã xem lại không. Chọn ở lại giữ editor; chọn bỏ quay về form nguồn chưa bị xóa.
 6. Trong editor, hoàn tất review sáu trường rồi bấm **Xác nhận và lưu báo cáo**; xác nhận ở hộp thoại cuối. Khi lưu thành công, về form và hiện thông báo lưu trên thiết bị. Nếu storage lỗi, editor giữ nội dung và cho thử lại; nếu kết quả lưu không chắc chắn, dùng **Kiểm tra kết quả lưu** trước khi thử lại để tránh bản ghi trùng.
-7. Tab **Lịch sử** hiện thông báo chưa tích hợp và chưa liệt kê báo cáo. Màn chi tiết cũng chưa được triển khai. Trên Android, việc chạy SQLite qua plugin và persistence sau khi mở lại chưa được kiểm chứng trong Task 4.
+7. Tab **Lịch sử** tải dữ liệu khi mở tab; có thể kéo xuống để refresh. Empty state chỉ xuất hiện sau khi repository trả danh sách rỗng thành công; lỗi đọc có thông báo và nút **Thử lại**. Danh sách hiển thị sự cố, địa điểm nếu có, priority, ngày giờ địa phương và nhãn đã xác nhận. Chạm một dòng hiện thông báo màn chi tiết sẽ có ở Task 6. Trạng thái danh sách được kiểm tra bằng fake repository; SQLite/path_provider và persistence sau mở lại trên Android chưa được xác minh.
 
 Model dùng: **chính `gemini-3.8-flash`** (chất lượng cao, free 20 request/ngày/model); khi hết quota tự thử **`gemini-3.5-flash-lite`** (500 request/ngày, chất lượng thấp hơn — draft có thể cần xác nhận nhiều hơn) trong cùng lần bấm. Lỗi không phải quota không kích hoạt fallback. Chi tiết và bằng chứng log ở `docs/SESSION_2026-09-26_TASK5.md` mục 4–6; bộ test case thủ công cho luồng này ở `docs/MANUAL_TESTCASES_TASK5.md`.
 
@@ -77,9 +77,9 @@ Debug build in log chẩn đoán `ReportDraft request failed: <lỗi SDK>` qua `
 
 ## Giới hạn kiểm chứng và bước tiếp theo
 
-Task 4 Ngày 4 đã chạy format check, `flutter analyze` sạch và `flutter test` 85/85 (xác minh lại ngày 29/09); widget save tests dùng fake repository. APK Task 4 được build ngày 28/09, cài đè/mở lại qua Wireless debugging ngày 29/09. Chủ dự án xác nhận PHONE-D4-01–14 PASS; ADB-D4-01–06 và 09 được xác minh, gồm một request Gemini tổng hợp mở draft. ADB review/save chưa chạy; đây chưa phải bằng chứng persistence sau restart. SQLite FFI 10/10 và APK/Web build Task 3 là lịch sử; plugin `sqflite`/`path_provider` Android và đọc lại sau restart chưa được xác minh độc lập. Request Android thật/fallback quota là bằng chứng lịch sử Task 5 Ngày 3. Chủ dự án xác nhận Task 5 PASS tổng thể, nhưng bảng 31 case chưa có kết quả từng dòng. Quota hiện tại chưa truy vấn; Web debug provider và App Check production chưa xác minh.
+Lượt triển khai Task 5 chạy `dart format` trên các file Dart đổi, `flutter analyze` — No issues found, `flutter test test/history_screen_test.dart` — 5/5, widget viewport 320×568 — đạt và toàn suite — **90/90 đạt**. Widget history/save flow tests dùng fake repository. Trong lượt ADB Wireless sau đó, `flutter build apk --debug` thành công, `adb install -r` trả `Success`; ADB-D4-HIS-01–05 PASS và ADB-D4-HIS-06 BLOCKED vì không gặp lỗi đọc tự nhiên. Có một request Gemini tổng hợp; report được review/lưu và hiện trong Lịch sử sau khi đổi tab. Không force-stop/restart, nên persistence sau restart vẫn chưa được xác minh.
 
-Task 3 Ngày 4 hoàn tất theo tiêu chí repository và SQLite FFI tests. Ngày 28/09 APK debug cũ được cài qua ADB trước Task 4; smoke test xác nhận app mở, input rỗng bị chặn, tab và lifecycle; ADB-03 còn partial. Sau Task 4, chủ dự án xác nhận PHONE-D4-01–14 PASS; ADB xác minh một request AI mở draft nhưng không lưu. APK được build/cài/mở, tuy vậy việc đọc lại persistence SQLite/path_provider Android sau restart chưa được xác minh độc lập; tab Lịch sử chưa đọc repository. Bước tiếp theo là Task 5 Lịch sử, Task 6 chi tiết và Task 7 kiểm thử Android đầu-cuối. Voice-to-text và GPS chưa triển khai.
+Task 3 Ngày 4 hoàn tất theo tiêu chí repository và SQLite FFI tests. Ngày 28/09 APK debug cũ được cài qua ADB trước Task 4; smoke test xác nhận app mở, input rỗng bị chặn, tab và lifecycle; ADB-03 còn partial. Sau Task 4, chủ dự án xác nhận PHONE-D4-01–14 PASS; ADB xác minh một request AI mở draft nhưng không lưu. Với Task 5, chủ dự án báo PHONE-D4-HIS-01–09 PASS; ADB Wireless kiểm tra build/cài, danh sách, refresh, tap dòng, giữ input, save và cập nhật History (ADB-D4-HIS-01–05 PASS; HIS-06 BLOCKED). Một báo cáo tổng hợp vẫn còn trên thiết bị; không kiểm tra sau restart. Bước tiếp theo là Task 6 chi tiết và Task 7 kiểm thử persistence Android đầu-cuối. Voice-to-text và GPS chưa triển khai.
 
 ### Kết quả kiểm tra/build đã ghi nhận
 

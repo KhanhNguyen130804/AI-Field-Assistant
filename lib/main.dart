@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'repositories/report_repository.dart';
 import 'repositories/report_repository_factory.dart';
 import 'screens/create_report_screen.dart';
+import 'screens/history_screen.dart';
 import 'services/gemini_report_service.dart';
 
 Future<void> main() async {
@@ -84,6 +85,7 @@ class _HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<_HomeScreen> {
   int _selectedIndex = 0;
+  int _historyRefreshToken = 0;
   late final ReportRepository _reportRepository;
 
   @override
@@ -103,8 +105,14 @@ class _HomeScreenState extends State<_HomeScreen> {
             imagePicker: widget.imagePicker,
             reportService: widget.reportService,
             reportRepository: _reportRepository,
+            onReportSaved: _refreshHistory,
           ),
-          const _HistoryScreen(),
+          HistoryScreen(
+            repository: _reportRepository,
+            isActive: _selectedIndex == 1,
+            refreshToken: _historyRefreshToken,
+            onReportSelected: _showDetailNotAvailable,
+          ),
         ],
       ),
       bottomNavigationBar: MediaQuery.viewInsetsOf(context).bottom > 0
@@ -112,7 +120,10 @@ class _HomeScreenState extends State<_HomeScreen> {
           : NavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: (index) {
-                setState(() => _selectedIndex = index);
+                setState(() {
+                  _selectedIndex = index;
+                  if (index == 1) _historyRefreshToken++;
+                });
               },
               destinations: const [
                 NavigationDestination(
@@ -129,58 +140,15 @@ class _HomeScreenState extends State<_HomeScreen> {
             ),
     );
   }
-}
 
-class _HistoryScreen extends StatelessWidget {
-  const _HistoryScreen();
+  void _refreshHistory() {
+    setState(() => _historyRefreshToken++);
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEAF3F0),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.inbox_outlined,
-                  size: 40,
-                  color: Color(0xFF176B5B),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Lịch sử chưa được tích hợp',
-                textAlign: TextAlign.center,
-                style: textTheme.titleLarge?.copyWith(
-                  color: const Color(0xFF17211F),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Màn hình Lịch sử chưa được tích hợp. Báo cáo đã lưu trên '
-                'thiết bị hiện chưa hiển thị tại đây.',
-                textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF65716E),
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-        ),
+  void _showDetailNotAvailable(String _) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Màn hình chi tiết báo cáo sẽ được bổ sung ở Task 6.'),
       ),
     );
   }

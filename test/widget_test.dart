@@ -36,7 +36,7 @@ void main() {
     await tester.tap(find.text('Lịch sử'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('Lịch sử chưa được tích hợp'), findsWidgets);
+    expect(find.byKey(const Key('history-empty-state')), findsOneWidget);
 
     await tester.tap(find.text('Tạo báo cáo'));
     await tester.pumpAndSettle();

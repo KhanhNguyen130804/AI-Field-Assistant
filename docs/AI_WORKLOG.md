@@ -547,3 +547,41 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - **Kiểm tra vừa chạy:** `dart format --set-exit-if-changed lib/main.dart lib/screens/create_report_screen.dart lib/screens/report_draft_screen.dart test/widget_test.dart` — exit 0, 0 file đổi; `flutter analyze` — No issues found; `flutter test` — **85/85 đạt**.
 - **ADB và giới hạn:** ADB-D4-01–06 PASS, ADB-D4-09 là lọc log giới hạn; một request Gemini tổng hợp mở draft. ADB-D4-07–08, 10–11 chưa chạy; không lưu qua ADB, force-stop hoặc ngắt kết nối. Đọc lại report/ảnh từ SQLite Android sau restart chưa được xác minh độc lập. Không chạy APK/Web build trong lượt chốt này; APK hiện tại là artifact đã build ngày 28/09 và cài lại ngày 29/09.
 - **Bàn giao:** Task 4 được chốt. Task 5 (Lịch sử), Task 6 (chi tiết) và Task 7 (kiểm chứng persistence Android đầu-cuối) còn lại. Không đưa credential/token/serial vào tài liệu.
+
+## 2026-09-29 — Ngày 4 Task 5: nối màn Lịch sử với repository
+
+- **Yêu cầu/prompt:** triển khai phần tiếp theo theo kế hoạch Task 5 Ngày 4: dùng chung repository, hiển thị loading/empty/error/retry, refresh khi mở tab và sau save, chuyển report ID khi chọn dòng; giữ các thay đổi có sẵn.
+- **Công cụ:** Codex hỗ trợ đọc và sửa mã/tài liệu; Dart formatter, Flutter analyzer và Flutter test dùng để kiểm tra. Không gọi Gemini trong lượt này.
+- **Thay đổi:** thêm `HistoryScreen` với danh sách, ngày giờ địa phương, priority, địa điểm, nhãn đã xác nhận, pull-to-refresh và xử lý nền tảng không hỗ trợ. `main.dart` dùng repository chung, kích hoạt refresh khi vào tab/sau save và nhận ID dòng được chọn. `CreateReportScreen` phát callback sau khi save thành công. Thêm 5 widget tests; cập nhật test điều hướng và tài liệu. Tap dòng hiện thông báo rõ màn chi tiết được bổ sung ở Task 6; chưa có màn chi tiết.
+- **Vấn đề gặp và cách xử lý:** test ban đầu cần xác nhận field priority khi fixture để null; cập nhật fixture theo hợp đồng model. Expectation cũ của test điều hướng còn tìm placeholder nên chuyển sang empty-state key mới. Widget test không settle khi tab ẩn vẫn chạy spinner; màn chưa mở không khởi động tải/animation nền. Viewport 320×568 phát hiện tràn ở empty state; chuyển nội dung sang vùng cuộn. Analyzer báo import không dùng; đã bỏ import đó.
+
+### Kiểm chứng vừa chạy trong phiên
+
+- `dart format --output=none --set-exit-if-changed lib/main.dart lib/screens/create_report_screen.dart lib/screens/history_screen.dart test/history_screen_test.dart test/widget_test.dart` — exit 0; 5 file, 0 thay đổi.
+- `flutter analyze` — **No issues found!**
+- `flutter test test/history_screen_test.dart` — **5/5 đạt**; kiểm tra widget điều hướng/viewport 320×568 — đạt.
+- `flutter test --reporter compact` — **90/90 đạt** (`+90: All tests passed!`).
+- Không chạy APK/Web build, ADB/device test, request Gemini hoặc runtime SQLite/path_provider trên Android. Widget tests dùng fake repository; không chứng minh persistence trên thiết bị.
+
+### Còn lại
+
+- Task 6 vẫn cần màn chi tiết đọc report theo ID từ repository; hiện tap chỉ phát ID rồi thông báo placeholder.
+- Task 7 cần build/cài bản source mới, kiểm tra SQLite/path_provider, lưu/đọc report và ảnh sau force-stop/mở lại trên Android. Các bằng chứng build/APK/ADB cũ thuộc Task 3–4 và không được chạy lại ở Task 5.
+
+## 2026-09-29 — Soạn test case thủ công cho Ngày 4 Task 5
+
+- **Yêu cầu:** chuẩn bị test case cho các chức năng Lịch sử, chạy trực tiếp trên điện thoại Android thật và quan sát qua ADB Wireless debugging.
+- **Tài liệu tạo:** `docs/testcase_task5_history_day4.txt`, gồm 9 PHONE cases và 6 ADB cases cho tải/rỗng/danh sách/thứ tự/refresh/sau save/giữ form/chọn dòng/lỗi retry, cùng hướng dẫn build APK, cài đè an toàn và thu thập log đã lọc.
+- Tất cả case trong tài liệu được ghi `NOT RUN`. Không build/cài APK, kết nối thiết bị, chạy manual test hoặc thay đổi dữ liệu Android trong lượt soạn này. Kết quả automated 90/90 ở entry phía trên không được dùng làm PASS cho các case điện thoại/ADB.
+
+## 2026-09-29 — Kiểm thử ADB Wireless cho màn Lịch sử Task 5
+
+- **Yêu cầu:** chủ dự án báo đã PASS toàn bộ phần kiểm thử trực tiếp trên Android thật và yêu cầu Codex chạy toàn bộ phần ADB Wireless debugging trong `docs/testcase_task5_history_day4.txt`.
+- **Thiết bị/kết nối:** Android thật PKG110, Android 16/API 36; `adb devices -l` có một thiết bị trạng thái `device` với serial mDNS Wireless debugging, `flutter devices --machine` nhận một Android device. Không ghi serial/IP/pairing code.
+- **Build/cài:** `flutter build apk --debug` exit 0; APK 178,592,675 bytes, SHA-256 `62A896D0F98EDFD19CBBA01016A67A347A393B02046EBF51ADC339E6B0C3B41`; versionName `0.1.0`, versionCode `1`. `adb install -r` trả `Success`; các report đã có vẫn hiển thị sau cài đè. Có cảnh báo Gradle về Java restricted access và Kotlin Gradle Plugin compatibility; build vẫn thành công.
+- **Source:** HEAD `18ca30808b20bde8926138d0ad2eb9803f66edd9` cùng các thay đổi working tree Task 5 chưa commit; không stage/commit. Giữ nguyên các thay đổi có sẵn và file bị xóa/chưa theo dõi.
+- **ADB-D4-HIS-01–05 PASS:** xác nhận kết nối không dây và Flutter nhận thiết bị; cài APK; mở bằng `monkey`, xác minh PID/foreground; mở Lịch sử có dữ liệu, pull-to-refresh không crash; tap dòng hiện snackbar placeholder Task 6; mô tả tổng hợp chưa lưu được giữ sau khi đổi tab. Tạo một draft tổng hợp bằng đúng một Gemini request, xem/xác nhận các trường, xác nhận lưu; sau khi quay lại Lịch sử, report mới ở đầu danh sách mà không restart app. Process/foreground vẫn hoạt động.
+- **ADB-D4-HIS-06 BLOCKED:** không gặp lỗi đọc tự nhiên; không làm hỏng/xóa database để tạo điều kiện thử retry. Không đọc DB riêng tư hoặc kiểm tra lưu sau force-stop/restart (thuộc Task 7).
+- **Log:** xem 1.200 dòng gần nhất bằng `adb logcat -d -t 1200` và bộ lọc đã nêu trong test case; có 0 match `FATAL EXCEPTION` và 0 match nhóm SQLite/plugin. Không chạy `adb logcat -c`; đây chỉ là kiểm tra log giới hạn.
+- **Tác động dữ liệu/giới hạn:** một báo cáo tổng hợp mới được lưu vào app để kiểm tra luồng save → history và vẫn để lại trên thiết bị; không xóa dữ liệu. Android keyboard tự sửa một phần mô tả tổng hợp khi nhập. Không dùng screenshot/log thô trong tài liệu. Không chạy Flutter test/analyze trong lượt kiểm thử này.
+- **Kết quả test case:** cập nhật riêng từng dòng PHONE/ADB trong `docs/testcase_task5_history_day4.txt`. PHONE-D4-HIS-01–09 là trạng thái người dùng báo PASS, không phải kết quả Codex tái kiểm tra; ADB-D4-HIS-01–05 PASS, ADB-D4-HIS-06 BLOCKED.

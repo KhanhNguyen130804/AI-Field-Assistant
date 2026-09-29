@@ -16,6 +16,7 @@ class CreateReportScreen extends StatefulWidget {
     super.key,
     this.imagePicker,
     this.reportService,
+    this.onReportSaved,
     required this.reportRepository,
   });
 
@@ -27,6 +28,8 @@ class CreateReportScreen extends StatefulWidget {
 
   @visibleForTesting
   final ReportRepository reportRepository;
+
+  final VoidCallback? onReportSaved;
 
   static const maxImageBytes = 10 * 1024 * 1024;
 
@@ -346,6 +349,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
           ),
         );
+        widget.onReportSaved?.call();
       }
     } on InvalidReportDraftInputException catch (error) {
       _showFeedback(error.userMessage);

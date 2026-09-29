@@ -1,0 +1,89 @@
+# Test case — Ngày 4 Task 5: màn Lịch sử báo cáo
+
+> Kết quả được cập nhật ngày 29/09/2026. Các PHONE case là PASS theo báo cáo của người dùng, chưa được Codex quan sát lại trong lượt này. Các ADB case được chạy qua Wireless debugging trong cùng ngày; xem kết quả từng dòng và giới hạn ở mục 3. Widget tests dùng fake repository, không thay thế kiểm thử thiết bị hoặc xác minh SQLite Android.
+
+## Chuẩn bị chung
+
+- Dùng thiết bị Android dành cho kiểm thử và dữ liệu tổng hợp. Không dùng mô tả, ảnh, địa điểm hoặc tên có thông tin hiện trường/người thật.
+- Nếu cần có report để kiểm tra danh sách, ưu tiên dùng report tổng hợp đã lưu trên thiết bị kiểm thử. Nếu phải tạo mới, chỉ gửi tối đa một request Gemini cho phiên; ghi nhận số request, không bấm lại để tạo bản khác nếu request đầu thành công.
+- Không gỡ ứng dụng, chạy `pm clear`, xóa DB/ảnh, dùng `run-as` để đọc dữ liệu riêng tư hoặc cố làm đầy bộ nhớ để tạo lỗi. Nếu cần môi trường rỗng, dùng thiết bị/profile kiểm thử riêng; không xóa dữ liệu đang có.
+- Không ghi pairing code, serial/IP thiết bị, App Check debug token, nội dung báo cáo hoặc ảnh vào tài liệu/kết quả chia sẻ. Khi có log lỗi, chỉ lưu đoạn tối thiểu đã lọc và khử nhạy cảm.
+- Ghi từng case là `PASS`, `FAIL`, `BLOCKED` hoặc `NOT RUN`; đính kèm ngày/giờ, model/Android/API, source revision, version và SHA-256 APK. Không đánh dấu pass khi mới chạy widget tests hoặc chỉ thấy app mở được.
+
+## 1. Kiểm thử trực tiếp trên điện thoại Android thật
+
+### Điều kiện trước khi bắt đầu
+
+1. Build/cài APK chứa source Task 5 bằng quy trình ở mục 2 nếu thiết bị chưa có bản phù hợp. Không gỡ cài để cập nhật; dùng `adb install -r` nếu chữ ký cho phép.
+2. Không xóa dữ liệu ứng dụng hiện có. Nếu cần kiểm tra trạng thái hoàn toàn rỗng mà thiết bị có report, dùng thiết bị/profile kiểm thử khác.
+3. Mở ứng dụng và xác nhận thấy tab **Tạo báo cáo** và **Lịch sử**. Không cần gửi Gemini request cho các case chỉ kiểm tra tải danh sách, mở tab hoặc giữ nội dung form.
+
+### Danh sách case
+
+| ID | Thao tác trên điện thoại | Kết quả mong đợi | Kết quả thực tế / bằng chứng |
+|---|---|---|---|
+| PHONE-D4-HIS-01 | Mở ứng dụng từ trạng thái đã đóng. Quan sát tab mặc định và thao tác mở **Lịch sử**. | App không crash; hai tab hiển thị; khi vào Lịch sử, trạng thái tải có thể xuất hiện ngắn rồi chuyển sang danh sách hoặc empty state theo dữ liệu thật. | PASS (người dùng báo đã kiểm thử trọn phần điện thoại; Codex chưa quan sát lại case này) — |
+| PHONE-D4-HIS-02 | Trên thiết bị/profile kiểm thử không có report, mở **Lịch sử** và chờ tải hoàn tất. | Hiện `Chưa có báo cáo đã lưu`; không có dòng giả/demo. Không kết luận rỗng trước khi thao tác tải hoàn tất. | PASS (người dùng báo đã kiểm thử trọn phần điện thoại; Codex chưa quan sát lại case này) — |
+| PHONE-D4-HIS-03 | Trên thiết bị có ít nhất một report tổng hợp đã lưu, mở **Lịch sử**. | Hiện đúng nội dung sự cố đã lưu; địa điểm chỉ hiện khi có; priority khớp dữ liệu, `null` hiển thị `Chưa xác định`; có nhãn `Đã xác nhận` và ngày/giờ địa phương. | PASS (người dùng báo đã kiểm thử trọn phần điện thoại; Codex chưa quan sát lại case này) — |
+| PHONE-D4-HIS-04 | Nếu có ít nhất hai report với thời điểm khác nhau, so sánh vị trí trong danh sách. | Report mới hơn nằm trên report cũ hơn. Nếu chỉ có một report, ghi `BLOCKED` cho phần so sánh thứ tự; không tạo thêm Gemini request chỉ để tăng số mẫu. | PASS (người dùng báo đã kiểm thử trọn phần điện thoại; Codex chưa quan sát lại case này) — |
+| PHONE-D4-HIS-05 | Kéo danh sách xuống để refresh. Nếu đang ở empty state, thực hiện thao tác kéo xuống tại vùng nội dung. | Refresh hoàn tất mà không crash; dữ liệu thật vẫn hiển thị hoặc empty state vẫn đúng sau khi đọc thành công. Có thể thấy chỉ báo refresh trong lúc tải. | PASS (người dùng báo đã kiểm thử trọn phần điện thoại; Codex chưa quan sát lại case này) — |
+| PHONE-D4-HIS-06 | Đang ở tab Tạo báo cáo, dùng một fixture tổng hợp để hoàn tất lưu thành công, rồi mở tab **Lịch sử**. Dùng report hiện có nếu đã đáp ứng điều kiện này. | Sau thông báo lưu thành công, report mới xuất hiện trong Lịch sử mà không cần khởi động lại app; không xuất hiện bản ghi trùng chỉ do mở tab. | PASS (người dùng báo đã kiểm thử trọn phần điện thoại; Codex chưa quan sát lại case này; số Gemini request không được cung cấp) — |
+| PHONE-D4-HIS-07 | Nhập mô tả tổng hợp vào form nhưng chưa phân tích/lưu; chuyển sang Lịch sử rồi quay lại **Tạo báo cáo**. | Mô tả chưa lưu vẫn còn trong form sau khi đổi tab; không tự gọi AI hoặc tự tạo report. | PASS (người dùng báo đã kiểm thử trọn phần điện thoại; Codex chưa quan sát lại case này) — |
+| PHONE-D4-HIS-08 | Chạm một dòng report trong danh sách. | App không crash; hiện snackbar `Màn hình chi tiết báo cáo sẽ được bổ sung ở Task 6.` Đây là placeholder điều hướng; chưa có màn chi tiết. Việc callback mang đúng ID được kiểm tra bằng widget test, không thể xác nhận ID chỉ bằng snackbar trên thiết bị. | PASS (người dùng báo đã kiểm thử trọn phần điện thoại; Codex chưa quan sát lại case này) — |
+| PHONE-D4-HIS-09 | Nếu lỗi đọc xảy ra tự nhiên, ghi nhận thông báo; sau đó chạm **Thử lại** khi nguyên nhân đã hết. Không cố làm hỏng DB hoặc xóa file để kích lỗi. | Lỗi đọc không bị trình bày thành empty state. Sau retry thành công, hiện danh sách hoặc empty state phù hợp. Nếu không thể kích hoạt lỗi an toàn, ghi `BLOCKED` và dẫn chiếu widget test fake repository. | PASS (người dùng báo đã kiểm thử trọn phần điện thoại; Codex chưa quan sát lại case này) — |
+
+## 2. Kiểm thử qua ADB Wireless debugging
+
+### Kết nối và chuẩn bị APK
+
+- Nếu thiết bị đã kết nối, không pair/connect lại hoặc ngắt kết nối. Nếu chưa kết nối, bật **Developer options → Wireless debugging**, pair/connect theo màn hình Android rồi kiểm tra:
+
+```powershell
+adb devices -l
+flutter devices
+```
+
+- Chỉ tiếp tục khi thiết bị kiểm thử hiện trạng thái `device`. Không đưa serial/IP hoặc pairing code vào bảng kết quả.
+- Build từ source hiện tại và cài đè để chắc APK có màn Lịch sử Task 5:
+
+```powershell
+flutter build apk --debug
+Get-FileHash .\build\app\outputs\flutter-apk\app-debug.apk -Algorithm SHA256
+adb install -r .\build\app\outputs\flutter-apk\app-debug.apk
+```
+
+- `adb install -r` không chủ ý xóa dữ liệu ứng dụng. Nếu cài đè không tương thích chữ ký, dừng và dùng thiết bị kiểm thử khác; không gỡ cài để vượt qua lỗi.
+
+### Danh sách case
+
+| ID | Thao tác ADB / điện thoại | Kết quả mong đợi | Kết quả thực tế / bằng chứng |
+|---|---|---|---|
+| ADB-D4-HIS-01 | Chạy `adb devices -l` và `flutter devices`. | Thiết bị Wireless debugging hiện `device`, Flutter nhận cùng thiết bị; không lưu serial/IP vào tài liệu. | PASS — 29/09/2026: 1 thiết bị ở trạng thái `device`, serial mDNS dạng Wireless debugging; Flutter nhận 1 Android device. Không lưu serial/IP. |
+| ADB-D4-HIS-02 | Chạy build APK, lấy SHA-256 và `adb install -r` như phần chuẩn bị. | Build exit 0; hash/version được ghi vào phiếu kiểm thử nội bộ; install trả `Success`; dữ liệu app hiện hữu được giữ lại. | PASS — `flutter build apk --debug` exit 0; APK 178,592,675 bytes, SHA-256 `62A896D0F98EDFD19CBBA01016A67A347A393B02046EBF51ADC339E6B0C3B41`; version 0.1.0 (code 1); `adb install -r` trả `Success`; các report có sẵn vẫn đọc được sau cài đè. |
+| ADB-D4-HIS-03 | Mở app bằng `adb shell monkey -p com.example.ai_field_assistant 1`; sau đó chạy `adb shell pidof com.example.ai_field_assistant` và `adb shell dumpsys activity activities`. | Process có PID; activity app ở foreground; không có crash khi khởi chạy. | PASS — `monkey` mở app; PID tồn tại và package app ở foreground theo `dumpsys`; app không crash. Lệnh PID được xác minh lại bằng biến PowerShell không trùng `$PID`. |
+| ADB-D4-HIS-04 | Tương tác trực tiếp trên điện thoại theo PHONE-D4-HIS-01 đến PHONE-D4-HIS-08 trong khi ADB vẫn kết nối. Sau mỗi luồng quan trọng, kiểm tra PID/foreground bằng các lệnh ở ADB-D4-HIS-03. | Tab Lịch sử, refresh, sau-save và tap dòng hoạt động như mô tả; app/process vẫn chạy. ADB chỉ quan sát/điều khiển, không tự chứng minh dữ liệu đã commit vào SQLite. | PASS — danh sách có report; pull-to-refresh hoàn tất; tap dòng hiện đúng snackbar placeholder Task 6; mô tả tổng hợp chưa lưu còn lại sau khi đổi tab. Dùng 1 Gemini request tổng hợp, review/xác nhận và lưu thành công; report mới hiện đầu Lịch sử sau khi đổi tab, không restart. PID/foreground vẫn đúng. Không đọc SQLite hoặc xác minh sau restart. |
+| ADB-D4-HIS-05 | Sau khi thao tác Lịch sử, xem phần log gần đây bằng bộ lọc bên dưới; không chạy `adb logcat -c`. | Không có `FATAL EXCEPTION` hoặc lỗi SQLite/plugin tương ứng trong đoạn log đã xem. Không có match chỉ là kiểm tra crash/log giới hạn, không chứng minh danh sách/persistence đúng. | PASS (giới hạn log) — `adb logcat -d -t 1200` với bộ lọc quy định: 0 match `FATAL EXCEPTION`, 0 match nhóm SQLite/plugin. Không xóa log buffer; kết quả không xác minh dữ liệu lưu bền vững. |
+| ADB-D4-HIS-06 | Nếu trên điện thoại gặp lỗi đọc tự nhiên, chạm **Thử lại** và kiểm tra process/foreground; không sửa/xóa file database bằng ADB. | Retry không crash; khi lỗi hết, nội dung chuyển về danh sách/empty state theo repository. Nếu không có điều kiện tạo lỗi an toàn, ghi `BLOCKED`. | BLOCKED — không gặp lỗi đọc tự nhiên trong phiên; không tạo lỗi bằng cách phá/xóa dữ liệu. |
+
+PowerShell log filter (chỉ xem log gần đây; không xóa buffer và không chia sẻ log thô):
+
+```powershell
+adb logcat -d -t 1200 | Select-String -Pattern "FATAL EXCEPTION|SQLiteException|DatabaseException|sqflite|path_provider|ReportStorageException"
+```
+
+Force-stop/mở lại để chứng minh dữ liệu và ảnh tồn tại sau restart thuộc phần kiểm chứng persistence Android của Task 7; không tính là tiêu chí đạt của Task 5. Không dùng `adb shell run-as`, không kéo DB/ảnh khỏi vùng riêng tư của ứng dụng.
+
+## 3. Ghi nhận kết quả phiên
+
+| Trường | Ghi nhận |
+|---|---|
+| Ngày/giờ và tester | 29/09/2026, khoảng 14:23–14:32 (Asia/Ho_Chi_Minh); Codex hỗ trợ test qua ADB |
+| Model thiết bị / Android / API | PKG110 / Android 16 / API 36 |
+| Source revision / version / SHA-256 APK | HEAD `18ca30808b20bde8926138d0ad2eb9803f66edd9` + working tree Task 5 code / 0.1.0 (code 1) / `62A896D0F98EDFD19CBBA01016A67A347A393B02046EBF51ADC339E6B0C3B41` |
+| Trạng thái Wireless debugging | Đã kết nối; 1 thiết bị `device`, serial mDNS Wireless debugging; Flutter nhận cùng một Android device. Không lưu serial/IP/pairing code. |
+| Số Gemini request phát sinh | 1 request với mô tả tổng hợp |
+| PHONE cases PASS / FAIL / BLOCKED / NOT RUN | 9 / 0 / 0 / 0 (theo báo cáo của người dùng; Codex không chạy lại phần điện thoại) |
+| ADB cases PASS / FAIL / BLOCKED / NOT RUN | 5 / 0 / 1 / 0 |
+| Lỗi đã khử nhạy cảm / ghi chú | Bàn phím Android tự sửa một phần mô tả tổng hợp khi nhập; draft vẫn tạo được và được lưu. Không có crash hoặc lỗi SQLite/plugin trong 1.200 dòng log được lọc. Lỗi đọc tự nhiên không xuất hiện. Một báo cáo tổng hợp mới còn trong dữ liệu cục bộ để phục vụ kiểm thử; không xóa dữ liệu app. |
+
+Không đánh dấu `PASS` trước khi thao tác và quan sát kết quả trên thiết bị. Widget tests tự động đã kiểm tra loading/empty/error/retry, refresh, ID callback và save → refresh; kết quả đó không thay thế bảng kiểm thử thủ công này.
