@@ -103,3 +103,22 @@ Trong lần chạy test trước khi sửa service, ba test mới tái hiện l�
 - Firebase AI Logic công bố `image/png`, `image/jpeg`, `image/webp` cho ảnh inline; mã được căn theo [tài liệu input-file requirements](https://firebase.google.com/docs/ai-logic/input-file-requirements). Ảnh BMP/GIF/HEIF/AVIF có thể được form hiện preview nhưng bị service từ chối khi phân tích; cần đồng bộ lựa chọn/thông báo form trong Task 4.
 - Task 2 vẫn giữ PHOTO-D5-02 và OFFLINE-D5-01 ở trạng thái **BLOCKED** do chưa có draft/report trên emulator; Task 3 không thay đổi trạng thái đó.
 - Không có build/APK mới, request AI thật, debug token, prompt/response hoặc dữ liệu hiện trường trong kiểm chứng này.
+
+## Day 5 Task 4 — UI resilience, bảo toàn dữ liệu và retry (30/09/2026)
+
+### Thay đổi và kiểm tra host
+
+| ID | Nội dung | Kết quả |
+|---|---|---|
+| UI-D5-04-01 | Chỉ nhận JPEG/PNG/WebP; BMP/GIF/HEIF/AVIF báo không hỗ trợ và giữ ảnh hợp lệ trước đó | Widget test PASS |
+| UI-D5-04-02 | Lỗi service/App Check/response/timeout/quota giữ mô tả/ảnh; loading kết thúc; retry chỉ sau thao tác người dùng | Widget tests PASS |
+| UI-D5-04-03 | Chặn gọi AI lặp khi đang xử lý; draft mở chưa lưu, form chỉ xóa sau save thành công | Widget tests PASS |
+| UI-D5-04-04 | Review/issue bắt buộc; lỗi save giữ nội dung và ảnh; retry dùng cùng ID | Widget tests PASS |
+| UI-D5-04-05 | Kết quả save mơ hồ: cùng ID/nội dung được xác nhận là đã lưu; cùng ID/nội dung khác báo conflict, không retry save | Widget tests PASS |
+| UI-D5-04-06 | Back khi có chỉnh sửa hỏi xác nhận; Back trong lúc save bị chặn; double tap save không tạo save thứ hai | Widget tests PASS |
+| AUTO-D5-10 | `flutter --suppress-analytics test --no-pub test/widget_test.dart --reporter compact` | **PASS — 28/28** |
+| AUTO-D5-11 | `flutter --suppress-analytics test --no-pub --reporter compact` | **PASS — 117/117** |
+| AUTO-D5-12 | `flutter --suppress-analytics analyze --no-pub` | **PASS — No issues found** |
+| AUTO-D5-13 | `dart format --output=none --set-exit-if-changed lib/screens/create_report_screen.dart test/widget_test.dart` | **PASS — 2 file, 0 thay đổi** |
+
+Test dùng fake service/repository trên Windows host. Không build APK, không chạy ADB/Android, không gọi Gemini/App Check thật; các điểm đó không được suy ra từ kết quả này. PHOTO-D5-02 và OFFLINE-D5-01 vẫn BLOCKED theo kết quả Task 2.

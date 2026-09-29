@@ -153,8 +153,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         _showFeedback(_imageTooLargeMessage);
         return;
       }
-      if (!_hasSupportedImageSignature(bytes)) {
-        _showFeedback(_unreadableImageMessage);
+      if (!_hasSupportedAiImageSignature(bytes)) {
+        _showFeedback(
+          _hasUnsupportedImageSignature(bytes)
+              ? _unsupportedImageFormatMessage
+              : _unreadableImageMessage,
+        );
         return;
       }
 
@@ -179,6 +183,10 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       ? 'Không đọc được ảnh. Hãy thử chọn hoặc chụp ảnh khác.'
       : 'Ảnh mới không thể đọc được. Ảnh trước đó vẫn được giữ.';
 
+  String get _unsupportedImageFormatMessage => _selectedImage == null
+      ? 'Chỉ hỗ trợ ảnh JPEG, PNG hoặc WebP để phân tích.'
+      : 'Ảnh mới chưa hỗ trợ để phân tích. Hãy chọn JPEG, PNG hoặc WebP; ảnh trước đó vẫn được giữ.';
+
   void _handleImageDecodeError(int generation) {
     if (_handledDecodeErrorGeneration == generation) return;
     _handledDecodeErrorGeneration = generation;
@@ -198,7 +206,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     });
   }
 
-  bool _hasSupportedImageSignature(Uint8List bytes) {
+  bool _hasSupportedAiImageSignature(Uint8List bytes) {
     bool startsWith(List<int> signature) {
       if (bytes.length < signature.length) return false;
       for (var i = 0; i < signature.length; i++) {
@@ -217,16 +225,19 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       0x1a,
       0x0a,
     ])) {
-      // Require the PNG signature and IHDR chunk before accepting the bytes.
-      return bytes.length >= 33;
+      // Match the service's minimum PNG check: signature and IHDR chunk.
+      return bytes.length >= 33 &&
+          bytes[8] == 0x00 &&
+          bytes[9] == 0x00 &&
+          bytes[10] == 0x00 &&
+          bytes[11] == 0x0d &&
+          bytes[12] == 0x49 &&
+          bytes[13] == 0x48 &&
+          bytes[14] == 0x44 &&
+          bytes[15] == 0x52;
     }
 
-    if (startsWith(const <int>[0xff, 0xd8, 0xff]) ||
-        startsWith(const <int>[0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
-        startsWith(const <int>[0x47, 0x49, 0x46, 0x38, 0x39, 0x61]) ||
-        startsWith(const <int>[0x42, 0x4d])) {
-      return true;
-    }
+    if (startsWith(const <int>[0xff, 0xd8, 0xff])) return true;
 
     if (bytes.length >= 12 &&
         startsWith(const <int>[0x52, 0x49, 0x46, 0x46]) &&
@@ -234,6 +245,24 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         bytes[9] == 0x45 &&
         bytes[10] == 0x42 &&
         bytes[11] == 0x50) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _hasUnsupportedImageSignature(Uint8List bytes) {
+    bool startsWith(List<int> signature) {
+      if (bytes.length < signature.length) return false;
+      for (var i = 0; i < signature.length; i++) {
+        if (bytes[i] != signature[i]) return false;
+      }
+      return true;
+    }
+
+    if (startsWith(const <int>[0x42, 0x4d]) ||
+        startsWith(const <int>[0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
+        startsWith(const <int>[0x47, 0x49, 0x46, 0x38, 0x39, 0x61])) {
       return true;
     }
 
@@ -506,7 +535,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Chọn một ảnh, tối đa 10 MiB sau xử lý.',
+                'Ảnh JPEG, PNG hoặc WebP. Xem trước tối đa 10 MiB; gửi AI tối đa 4 MiB.',
                 style: textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),

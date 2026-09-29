@@ -1,14 +1,15 @@
-# Tóm tắt dự án — trạng thái sau Day 5 Task 3
+# Tóm tắt dự án — trạng thái sau Day 5 Task 4
 
-> Cập nhật ngày 29/09/2026 sau Day 5 Task 3, commit `b201d0b` trên nhánh `codex/day5`. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Kết quả cũ được giữ như bằng chứng lịch sử, không phải xác nhận vừa chạy.
+> Baseline commit: `b201d0b` ngày 29/09/2026; Day 5 Task 4 được triển khai và kiểm tra trong working tree ngày 30/09/2026, chưa commit. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Kết quả cũ được giữ như bằng chứng lịch sử, không phải xác nhận vừa chạy.
 
-## Trạng thái hiện tại — Day 5 Task 1–3
+## Trạng thái hiện tại — Day 5 Task 1–4
 
 - Luồng đang có trong ứng dụng: mô tả/chọn ảnh → người dùng chủ động gọi Firebase AI Logic → chỉnh sửa và xác nhận draft → lưu qua repository SQLite Android → History → chi tiết theo ID.
 - **Task 1:** baseline lịch sử gồm 99/99 tests, analyzer sạch và APK debug build/cài trên emulator. Đây không phải kết quả build của Task 3.
 - **Task 2:** fixture ảnh tổng hợp xuất hiện trong Photo Picker và preview được. Lần gọi AI trên emulator bị App Check chặn; chưa tạo report ảnh để xác minh persistence và chưa kiểm tra lưu/đọc offline. PHOTO-D5-02 và OFFLINE-D5-01 còn BLOCKED.
 - **Task 3:** service chấp nhận JPEG/PNG/WebP, kiểm tra MIME khớp chữ ký bytes, kiểm tra PNG tối thiểu và chuẩn hóa lỗi đọc ảnh; parser giữ contract hiện tại. Ghi nhận của Task 3: format 26 file/0 thay đổi, `flutter analyze` sạch, service/parser 43/43 và full suite 113/113. Không gọi Gemini/App Check thật, không build APK.
-- **Giới hạn cần giữ:** picker/form còn preview BMP/GIF/HEIF/AVIF nhưng service không gửi được các định dạng đó; đồng bộ UX là đầu việc Day 5 Task 4. Request Gemini thật từng thành công trên Android ngày 27/09/2026, nhưng không chứng minh lần gọi mới nhất hoạt động.
+- **Task 4 (30/09/2026):** form giới hạn ảnh phân tích ở JPEG/PNG/WebP, thông báo rõ khi loại ảnh không hỗ trợ và giữ preview trước. Tests bao phủ lỗi App Check/response/service/timeout/quota, giữ input và retry, loading/double tap, validation review/save, lỗi lưu/retry cùng ID, kết quả lưu mơ hồ khớp/conflict, Back khi có chỉnh sửa/đang save, và form chỉ xóa sau save thành công. Full suite đạt 117/117; `flutter analyze` sạch; format check 2 file Dart không đổi. Đây là kiểm chứng host/fake; không gọi Gemini thật, không build APK, không kiểm tra Android trong lượt này.
+- **Giới hạn cần giữ:** preview vẫn có thể fallback nếu bytes không giải mã được dù chữ ký hợp lệ; ngưỡng preview là 10 MiB còn gửi AI là 4 MiB. Request Gemini thật từng thành công trên Android ngày 27/09/2026, nhưng không chứng minh lần gọi mới nhất hoạt động.
 
 ## Bằng chứng lịch sử — Ngày 4 Task 7 (đóng theo quyết định chủ dự án, 2026-09-29)
 
@@ -90,7 +91,7 @@ Các trường nội dung lõi: `category`, `location`, `priority`, `issue`, `su
 - Theo cấu hình được ghi trong worklog lịch sử, quota Firebase AI Logic `Generate content requests` từng được đặt 5 RPM cho 10 vùng Asia (per-user/per-region). Chưa kiểm tra cấu hình Console hiện tại; Bidi không dùng trong app.
 - **Firebase/App Check:** `pubspec.yaml` khai báo `firebase_core` 4.15.0, `firebase_ai` 4.0.0, `firebase_app_check` 0.4.8; `lib/main.dart` khởi tạo Firebase và debug provider trong `kDebugMode`. Một request Android thật thành công ngày 27/09/2026 (bằng chứng lịch sử); lần thử mới hơn ở Day 5 Task 2 bị App Check từ chối. Web debug provider và provider production (Play Integrity/reCAPTCHA Enterprise) chưa được xác minh/cấu hình.
 - Build hiện dùng các file cấu hình FlutterFire (`lib/firebase_options.dart`, `firebase.json`, `android/app/google-services.json`) đã được commit từ Task 3; nếu clone sang project Firebase khác thì phải chạy lại `flutterfire configure` và thay `google-services.json`.
-- **Input ảnh AI:** Firebase AI Logic hỗ trợ inline JPEG/PNG/WebP; service kiểm tra MIME/signature, cấu trúc PNG tối thiểu và giới hạn bytes gốc 4 MiB. Form cho chọn ảnh tới 10 MiB nhưng picker còn cho preview BMP/GIF/HEIF/AVIF, trong khi service sẽ từ chối các loại đó. Chỉ dùng fixture tổng hợp với free tier; không gửi dữ liệu hiện trường thật.
+- **Input ảnh AI:** Firebase AI Logic hỗ trợ inline JPEG/PNG/WebP; service kiểm tra MIME/signature, cấu trúc PNG tối thiểu và giới hạn bytes gốc 4 MiB. Form chỉ nhận ba loại này để phân tích; preview tối đa 10 MiB. Chỉ dùng fixture tổng hợp với free tier; không gửi dữ liệu hiện trường thật.
 - Không cần Cloud Billing cho Spark/free tier. Paid tier/chi phí USD 5/tháng ở quyết định Cloud Run trước đây đã bị thay thế; nếu cần paid tier sau này phải xác nhận lại billing/ngân sách. Chi tiết và nguồn tại `docs/implement_plan_day3.md`/`docs/AI_WORKLOG.md`.
 - Quota per-model, số lượng request/ngày và thiết lập Console ở các tài liệu phiên cũ chỉ là ảnh chụp lịch sử; kiểm tra Firebase/Google Cloud Console trước demo hoặc khi xử lý quota. Không dựa vào các con số lịch sử như cấu hình hiện tại.
 - Lịch sử test Day 3 (`45/45`) vẫn được giữ ở phần kiểm chứng bên dưới; bằng chứng mới hơn của Day 5 Task 3 là full suite `113/113`, service/parser `43/43` và analyzer sạch, không có request Gemini thật trong lượt đó.
@@ -133,6 +134,6 @@ Trong Windows workspace này, Kotlin incremental cache từng lỗi khi project 
 - `docs/implement_plan_day2.md` — phạm vi và tiêu chí triển khai Ngày 2.
 - `docs/implement_plan_day3.md` — kế hoạch Ngày 3 theo Firebase AI Logic và trạng thái Task 1–5.
 - `docs/implement_plan_day4.md` — hợp đồng đã chốt ở Task 1 và kế hoạch Task 2–8, gồm tiến độ một phần của Task 7.
-- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 1 đã có baseline, Task 2 còn blocker ảnh/offline, Task 3 đã triển khai, Task 4–8 chưa thực hiện.
-- `docs/testcase_day5_resilience.txt` — evidence/case Day 5 Task 1–3, gồm kiểm tra host và blocker Android.
+- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 1–4 có kết quả, Task 2 còn blocker ảnh/offline; Task 5–8 chưa thực hiện.
+- `docs/testcase_day5_resilience.txt` — evidence/case Day 5 Task 1–4, gồm kiểm tra host và blocker Android.
 - `docs/PROMPT_01.md` — prompt onboarding coding agent theo trạng thái repo hiện tại.

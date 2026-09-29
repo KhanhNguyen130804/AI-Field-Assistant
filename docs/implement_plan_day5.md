@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 5: Độ tin cậy, kiểm thử lỗi và hoàn thiện UX
 
-> **Trạng thái:** Task 1 đã hoàn tất preflight; Task 2 kiểm tra được picker/preview nhưng persistence ảnh và offline còn BLOCKED; Task 3 đã triển khai và kiểm thử service/parser ngày 29/09/2026. Task 4–8 chưa thực hiện. Ngày 4 Task 7 được chủ dự án đóng với ngoại lệ được chấp nhận; đây không phải nghiệm thu đầy đủ Ngày 4.
+> **Trạng thái:** Task 1 đã hoàn tất preflight; Task 2 kiểm tra được picker/preview nhưng persistence ảnh và offline còn BLOCKED; Task 3 đã triển khai và kiểm thử service/parser ngày 29/09/2026; Task 4 hoàn tất kiểm tra host ngày 30/09/2026 (full suite 117/117, analyzer sạch). Task 5–8 chưa thực hiện. Ngày 4 Task 7 được chủ dự án đóng với ngoại lệ được chấp nhận; đây không phải nghiệm thu đầy đủ Ngày 4.
 >
 > **Baseline theo hồ sơ ngày 29/09/2026:** `flutter analyze` sạch, `flutter test` 99/99, SQLite FFI 10/10 và APK debug build thành công. Trên Android đã kiểm chứng một report text-only qua save → History → detail → force-stop/relaunch. Đây là kết quả lịch sử, không phải kiểm tra mới của kế hoạch này. Lưu/đọc report có ảnh trên Android và save/read offline chưa được xác minh.
 >
@@ -116,8 +116,8 @@ Nhập mô tả / chọn ảnh
 
 - `GeminiReportService` chỉ gửi MIME inline `image/jpeg`, `image/png`, `image/webp`; chữ ký PNG/JPEG/WebP phải khớp MIME, PNG cần signature + IHDR tối thiểu, và lỗi đọc file được ánh xạ thành `InvalidReportDraftInputException` không kèm đường dẫn.
 - Cơ sở allowlist là danh sách MIME Firebase AI Logic công bố cho Gemini inline input: [PNG, JPEG và WebP](https://firebase.google.com/docs/ai-logic/input-file-requirements). Parser/model không đổi contract: field text thiếu để chuỗi rỗng, priority thiếu/null là `null`, thiếu `needs_confirmation` thì yêu cầu review mọi field, key lạ vẫn bị bỏ qua, field đã biết sai kiểu bị từ chối.
-- Bổ sung test cho ngưỡng đúng 4 MiB, MIME chung, JPEG/WebP, signature PNG thiếu IHDR, MIME lạ/mismatch, file không đọc được, response null và schema confirmation sai. Test service/parser đạt 43/43; full suite đạt 113/113; `flutter analyze` sạch; format check toàn bộ 26 tệp Dart không đổi file.
-- Chưa gọi Gemini/App Check thật, không build APK và không kiểm tra thiết bị. `CreateReportScreen` hiện vẫn cho preview một số loại như BMP/GIF/HEIF/AVIF mà service không gửi được; đồng bộ affordance/validation của picker với định dạng AI hỗ trợ là đầu việc hợp lý cho Task 4.
+- Bằng chứng lịch sử Task 3: test service/parser đạt 43/43; full suite đạt 113/113; `flutter analyze` sạch; format check toàn bộ 26 tệp Dart không đổi file. Chưa gọi Gemini/App Check thật, không build APK và không kiểm tra thiết bị.
+- **Task 4 hoàn tất ở host (30/09/2026):** `CreateReportScreen` nhận JPEG/PNG/WebP, báo rõ khi chọn BMP/GIF/HEIF/AVIF và giữ ảnh hợp lệ trước đó; helper text tách ngưỡng preview 10 MiB và gửi AI 4 MiB. Widget tests xác nhận lỗi service/App Check/response/timeout/quota giữ input và cho retry; loading/double tap; review/issue bắt buộc; save lỗi giữ nội dung/ảnh và retry cùng ID; kết quả mơ hồ cùng ID khớp thì không lưu trùng, khác nội dung thì conflict; Back khi chỉnh sửa/đang save; form chỉ xóa sau save thành công. `flutter test --no-pub --reporter compact` đạt 117/117; `flutter analyze --no-pub` sạch; `dart format --output=none --set-exit-if-changed lib/screens/create_report_screen.dart test/widget_test.dart` không đổi file. Chỉ dùng fake/host; không gọi Gemini/App Check thật, không build APK, không kiểm tra thiết bị. Task 4 đã đạt tiêu chí của phần host; giới hạn thiết bị và App Check thuộc các mục Android còn BLOCKED.
 
 ### Task 4 — UI resilience, bảo toàn dữ liệu và retry
 

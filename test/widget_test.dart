@@ -58,6 +58,10 @@ void main() {
   testWidgets('chặn đầu vào rỗng và xem lại mô tả mà không gửi đi', (
     tester,
   ) async {
+    tester.view.physicalSize = const ui.Size(800, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(_testApp(imagePicker: _FakeImagePicker()));
 
     await tester.tap(find.byKey(const Key('review-input-button')));
@@ -72,6 +76,8 @@ void main() {
       find.byKey(const Key('incident-description-field')),
       description,
     );
+    tester.testTextInput.hide();
+    await tester.pumpAndSettle();
     await tester.ensureVisible(find.byKey(const Key('review-input-button')));
     await tester.pumpAndSettle();
     await tester.tap(find.byKey(const Key('review-input-button')));
@@ -194,6 +200,51 @@ void main() {
     expect(find.byKey(const Key('selected-image-preview')), findsOneWidget);
   });
 
+  testWidgets('từ chối định dạng ảnh service không hỗ trợ và giữ ảnh cũ', (
+    tester,
+  ) async {
+    final picker = _FakeImagePicker(nextImage: await _tinyPng());
+    await tester.pumpWidget(_testApp(imagePicker: picker));
+    await tester.tap(find.byKey(const Key('choose-photo-button')));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('selected-image-preview')), findsOneWidget);
+
+    final unsupportedImages = <(String, String, List<int>)>[
+      ('unsupported.bmp', 'image/bmp', [0x42, 0x4d, 0, 0]),
+      ('unsupported.gif', 'image/gif', [0x47, 0x49, 0x46, 0x38, 0x39, 0x61]),
+      (
+        'unsupported.heic',
+        'image/heic',
+        [0, 0, 0, 0, 0x66, 0x74, 0x79, 0x70, 0x68, 0x65, 0x69, 0x63],
+      ),
+      (
+        'unsupported.avif',
+        'image/avif',
+        [0, 0, 0, 0, 0x66, 0x74, 0x79, 0x70, 0x61, 0x76, 0x69, 0x66],
+      ),
+    ];
+
+    for (final (name, mimeType, bytes) in unsupportedImages) {
+      picker.nextImage = XFile.fromData(
+        Uint8List.fromList(bytes),
+        name: name,
+        mimeType: mimeType,
+      );
+      await tester.tap(find.byKey(const Key('choose-photo-button')));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text(
+          'Ảnh mới chưa hỗ trợ để phân tích. Hãy chọn JPEG, PNG hoặc WebP; ảnh trước đó vẫn được giữ.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.byKey(const Key('selected-image-preview')), findsOneWidget);
+    }
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('ảnh mới không đọc được thì giữ preview ảnh trước', (
     tester,
   ) async {
@@ -254,9 +305,14 @@ void main() {
 
   testWidgets('phân tích thành công: mở màn hình bản nháp AI', (tester) async {
     final service = _FakeReportService();
+    final repository = _FakeReportRepository();
     final picker = _FakeImagePicker(nextImage: await _tinyPng());
     await tester.pumpWidget(
-      _testApp(imagePicker: picker, reportService: service),
+      _testApp(
+        imagePicker: picker,
+        reportService: service,
+        reportRepository: repository,
+      ),
     );
 
     await tester.enterText(
@@ -279,6 +335,14 @@ void main() {
     expect(find.byKey(const Key('draft-source-description')), findsOneWidget);
     expect(find.byKey(const Key('draft-source-image')), findsOneWidget);
     expect(find.byKey(const Key('input-error-message')), findsNothing);
+    expect(repository.saveCount, 0);
+
+    // Leaving an unconfirmed draft returns to the form without clearing input.
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    expect(find.text('Điều hòa lễ tân không chạy.'), findsOneWidget);
+    expect(find.byKey(const Key('selected-image-preview')), findsOneWidget);
+    expect(repository.saveCount, 0);
   });
 
   testWidgets(
@@ -364,6 +428,10 @@ void main() {
       find.byKey(const Key('review-input-button')),
     );
     expect(reviewButton.onPressed, isNull);
+    expect(service.callCount, 1);
+    await tester.tap(find.byKey(const Key('analyze-button')));
+    await tester.pump();
+    expect(service.callCount, 1);
 
     service.complete();
     await tester.pumpAndSettle();
@@ -451,6 +519,53 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Điều hòa hỏng.'), findsOneWidget);
+  });
+
+  testWidgets('lỗi App Check và response giữ đầu vào, cho phép thử lại', (
+    tester,
+  ) async {
+    final service = _FakeReportService();
+    final picker = _FakeImagePicker(nextImage: await _tinyPng());
+    await tester.pumpWidget(
+      _testApp(imagePicker: picker, reportService: service),
+    );
+    await tester.enterText(
+      find.byKey(const Key('incident-description-field')),
+      'Rò nước tại phòng máy.',
+    );
+    await tester.tap(find.byKey(const Key('choose-photo-button')));
+    await tester.pumpAndSettle();
+
+    final failures = <(Object, String)>[
+      (
+        const ReportDraftAppCheckException(),
+        'Ứng dụng chưa được xác minh với dịch vụ AI (App Check). '
+            'Bạn báo lại cho người quản trị ứng dụng.',
+      ),
+      (
+        const ReportDraftResponseException(),
+        'AI không trả về kết quả dùng được. Bạn thử lại hoặc chỉnh mô tả.',
+      ),
+    ];
+    for (final (error, message) in failures) {
+      service.nextError = error;
+      await tester.ensureVisible(find.byKey(const Key('analyze-button')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const Key('analyze-button')));
+      await tester.pumpAndSettle();
+
+      expect(find.text(message), findsOneWidget);
+      expect(find.text('Rò nước tại phòng máy.'), findsOneWidget);
+      expect(find.byKey(const Key('selected-image-preview')), findsOneWidget);
+      expect(find.byKey(const Key('analyze-progress')), findsNothing);
+    }
+
+    await tester.ensureVisible(find.byKey(const Key('analyze-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('analyze-button')));
+    await tester.pumpAndSettle();
+    expect(service.callCount, 3);
+    expect(find.byType(ReportDraftScreen), findsOneWidget);
   });
 
   testWidgets('chặn phân tích khi ảnh vượt 4 MiB trước khi gọi service', (
@@ -620,7 +735,7 @@ void main() {
         ReportStorageFailure.database,
         'Không thể lưu báo cáo trên thiết bị.',
       );
-    await _openDraft(tester, repository: repository);
+    await _openDraft(tester, repository: repository, image: await _tinyPng());
     await _confirmAllFields(tester);
     await _confirmField(tester, 'summary');
 
@@ -639,6 +754,8 @@ void main() {
     );
     expect(issueField.controller!.text, 'Điều hòa không hoạt động');
     expect(issueField.enabled, isFalse);
+    expect(find.byKey(const Key('draft-source-image')), findsOneWidget);
+    expect(repository.lastImageBytes, orderedEquals(_tinyPngBytes));
 
     await tester.ensureVisible(find.byKey(const Key('save-report-button')));
     await tester.pumpAndSettle();
@@ -647,7 +764,104 @@ void main() {
 
     expect(repository.saveCount, 2);
     expect(repository.requestedIds.first, repository.requestedIds.last);
+    expect(repository.lastImageBytes, orderedEquals(_tinyPngBytes));
     expect(find.byType(ReportDraftScreen), findsNothing);
+  });
+
+  testWidgets('kết quả save có cùng ID nhưng khác nội dung báo conflict', (
+    tester,
+  ) async {
+    final repository = _FakeReportRepository()
+      ..nextSaveError = const ReportStorageException(
+        ReportStorageFailure.database,
+        'Không xác định được kết quả lưu.',
+      )
+      ..commitBeforeNextSaveError = true;
+    await _openDraft(tester, repository: repository);
+    await _confirmAllFields(tester);
+    await _confirmField(tester, 'summary');
+
+    await tester.ensureVisible(find.byKey(const Key('save-report-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('save-report-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm-save-button')));
+    await tester.pumpAndSettle();
+    expect(repository.saveCount, 1);
+
+    final committed = repository.lastSaved!;
+    repository.findByIdOverride = Report(
+      id: committed.id,
+      createdAt: committed.createdAt,
+      category: committed.category,
+      location: committed.location,
+      priority: committed.priority,
+      issue: 'Nội dung khác cùng ID',
+      suggestedAction: committed.suggestedAction,
+      summary: committed.summary,
+      sourceDescription: committed.sourceDescription,
+      confirmedAbsentFields: committed.confirmedAbsentFields,
+      photoPath: committed.photoPath,
+    );
+    await tester.ensureVisible(find.byKey(const Key('resolve-save-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('resolve-save-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'Không thể xác nhận kết quả lưu vì mã báo cáo đã gắn với nội dung khác. '
+        'Hãy giữ nguyên màn hình và thử lại.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(ReportDraftScreen), findsOneWidget);
+    expect(repository.saveCount, 1);
+    expect(repository.requestedIds, hasLength(1));
+  });
+
+  testWidgets('chỉ xóa form sau khi draft được lưu thành công', (tester) async {
+    final service = _FakeReportService();
+    final repository = _FakeReportRepository();
+    final picker = _FakeImagePicker(nextImage: await _tinyPng());
+    await tester.pumpWidget(
+      _testApp(
+        imagePicker: picker,
+        reportService: service,
+        reportRepository: repository,
+      ),
+    );
+    await tester.enterText(
+      find.byKey(const Key('incident-description-field')),
+      _sampleDescription,
+    );
+    await tester.tap(find.byKey(const Key('choose-photo-button')));
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.byKey(const Key('analyze-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('analyze-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ReportDraftScreen), findsOneWidget);
+    expect(repository.saveCount, 0);
+    await _confirmAllFields(tester);
+    await _confirmField(tester, 'summary');
+    await tester.ensureVisible(find.byKey(const Key('save-report-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('save-report-button')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('confirm-save-button')));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(ReportDraftScreen), findsNothing);
+    expect(repository.saveCount, 1);
+    expect(service.callCount, 1);
+    expect(
+      find.text('Đã lưu trên thiết bị. Mở tab Lịch sử để xem báo cáo.'),
+      findsOneWidget,
+    );
+    expect(find.text(_sampleDescription), findsNothing);
+    expect(find.byKey(const Key('selected-image-preview')), findsNothing);
   });
 
   testWidgets('kiểm tra ID trước khi retry khi kết quả lưu chưa rõ', (
@@ -731,6 +945,10 @@ void main() {
           .onPressed,
       isNull,
     );
+    await tester.tap(find.byKey(const Key('draft-back-button')));
+    await tester.pump();
+    expect(find.byType(ReportDraftScreen), findsOneWidget);
+    expect(repository.saveCount, 1);
 
     repository.saveGate!.complete();
     await tester.pumpAndSettle();
@@ -1004,6 +1222,7 @@ class _FakeReportRepository implements ReportRepository {
   Completer<void>? saveGate;
   Report? lastRequested;
   Report? lastSaved;
+  Report? findByIdOverride;
   Uint8List? lastImageBytes;
   final requestedIds = <String>[];
   final _reports = <String, Report>{};
@@ -1040,7 +1259,7 @@ class _FakeReportRepository implements ReportRepository {
       List.unmodifiable(_reports.values);
 
   @override
-  Future<Report?> findById(String id) async => _reports[id];
+  Future<Report?> findById(String id) async => findByIdOverride ?? _reports[id];
 
   @override
   Future<Uint8List> readPhotoBytes(String relativePath) async =>
