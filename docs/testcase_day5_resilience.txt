@@ -1,0 +1,44 @@
+# Day 5 Task 1 — Preflight và baseline APK
+
+> Ngày thực hiện: 29/09/2026. Phiếu này ghi kết quả thực chạy Task 1 trên working tree hiện tại. Không dùng làm bằng chứng cho các Task Day 5 khác.
+
+## Source và Git trước kiểm tra
+
+| Thuộc tính | Kết quả |
+|---|---|
+| Branch / HEAD | `codex/day4-preflight` / `37c0b0c` (`docs(task8): complete day4 handoff`) |
+| Upstream | `origin/codex/day4-preflight`; HEAD đồng bộ |
+| Working tree có trước lượt này | `README.md` và `docs/CONTEXT_SUMMARY.md` modified; `docs/PROMPT_01.md` deleted; `docs/implement_plan_day5.md` untracked |
+| Bảo toàn thay đổi | Có; không reset/clean/stash/checkout, không stage hoặc commit |
+| Thay đổi source/config/test trong Task 1 | Không |
+
+## Kiểm tra tự động trên host Windows
+
+| ID | Lệnh | Kết quả |
+|---|---|---|
+| AUTO-D5-01 | `dart format --output=none --set-exit-if-changed lib test` | **PASS** — 26 file Dart, 0 file đổi. Lượt thường trong sandbox quá một phút không trả tiến độ; dừng an toàn và chạy lại với quyền SDK/cache. |
+| AUTO-D5-02 | `flutter analyze` | **PASS** — No issues found. |
+| AUTO-D5-03 | `flutter test --reporter compact` | **PASS** — 99/99. Service tests dùng fake sender; không phải request Gemini thật. |
+| AUTO-D5-04 | `flutter test test/local_report_repository_test.dart --reporter compact` | **PASS** — 10/10 trên SQLite FFI host Windows; không phải test plugin `sqflite` Android. |
+| BUILD-D5-01 | `flutter build apk --debug` | **PASS** — exit 0, APK được tạo. Có cảnh báo restricted Java native access và Firebase plugins sử dụng Kotlin Gradle Plugin. |
+
+## APK và cài đặt Android
+
+| Thuộc tính | Kết quả |
+|---|---|
+| APK | `build/app/outputs/flutter-apk/app-debug.apk` |
+| Kích thước | 178,604,382 bytes |
+| SHA-256 | `6E84D74E20027B08CE7A04B0E93626A00AB872D8064B89D62E97D2DBD9A59804` |
+| Version source/cài đặt | `0.1.0` / versionCode `1` |
+| Môi trường | Android emulator API 35 (x86_64), boot completed; không có thiết bị Android vật lý online |
+| Cài đặt | `adb install -r` — **PASS**, `Success`; package chưa cài trước đó |
+| App data | Không gỡ cài, không xóa dữ liệu, không force-stop; app chưa được mở để kiểm tra UI |
+
+ADB ban đầu không có trên PATH; Android Platform Tools được tìm thấy trong Android SDK. Lần chạy thường bị sandbox từ chối truy cập executable; lần liệt kê thiết bị sau đó chạy qua quyền thực thi được duyệt và chỉ dùng trạng thái, không ghi serial/IP. AVD hiện được để chạy cho bước tiếp theo.
+
+## Kết luận và giới hạn
+
+- **Task 1: hoàn tất trong scope.** Git/source baseline, format, analyze, full tests, SQLite FFI, APK build và cài đặt lên emulator đều được xác minh trong phiên này.
+- Đây không phải kiểm tra UI/runtime hay persistence Android. Không xác minh lưu/đọc ảnh, offline save/read, App Check hoặc chất lượng Gemini trong Task 1.
+- Không gửi request Gemini; không đưa dữ liệu hiện trường thật, serial/IP, debug token, prompt/response hoặc log thô vào phiếu.
+- APK/build và test counts trong phiếu này là kết quả ngày 29/09/2026; các kết quả sau này cần ghi riêng, gắn với đúng source/commit.
