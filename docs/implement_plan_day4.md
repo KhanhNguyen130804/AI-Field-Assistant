@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 4: Chỉnh sửa, xác nhận, lưu cục bộ và lịch sử
 
-> **Trạng thái cập nhật (2026-09-29):** Task 1 chốt hợp đồng, Task 2 thêm model/state review, Task 3 thêm repository SQLite Android, Task 4 hoàn tất editor/review/save, Task 5 nối danh sách Lịch sử vào repository chung. Lượt triển khai Task 5 chạy format check, `flutter analyze` sạch và `flutter test` **90/90**. Lượt ADB Wireless sau đó build/cài APK source và xác minh ADB-D4-HIS-01–05 PASS; ADB-D4-HIS-06 BLOCKED vì không gặp lỗi đọc tự nhiên. Chủ dự án báo PHONE-D4-HIS-01–09 PASS. Đã quan sát save → hiện report trong History, nhưng chưa kiểm tra report/ảnh sau restart. Task 6 (chi tiết), Task 7 (kiểm chứng persistence Android) và Task 8 (bàn giao cuối) còn lại.
+> **Trạng thái cập nhật (2026-09-29):** Task 1 chốt hợp đồng, Task 2 thêm model/state review, Task 3 thêm repository SQLite Android, Task 4 hoàn tất editor/review/save, Task 5 nối danh sách Lịch sử, Task 6 thêm màn chi tiết và sửa thông báo sau lưu. Task 6 được kiểm tra bằng `flutter analyze`, toàn suite `flutter test` **99/99** và `flutter build apk --debug` thành công. Widget tests chi tiết dùng fake repository. Lượt ADB Wireless Task 6 sau đó đã cài/chạy APK và quan sát UI; kết quả từng case nằm trong `docs/testcase_task6_detail_day4.txt`, với một số PARTIAL do fixture chưa xác minh. ADB Task 5 đã quan sát save → report hiện trong History. Chưa kiểm tra report/ảnh sau force-stop/restart. Task 7 (kiểm chứng persistence Android) và Task 8 (bàn giao sau Task 7) còn lại.
 >
 > **Phạm vi:** Hoàn thiện MVP Android từ bản nháp AI đến báo cáo đã được người dùng xác nhận, lưu bền vững và mở lại trong lịch sử. Giữ Flutter và Firebase AI Logic hiện có; không thêm đăng nhập, đồng bộ cloud, voice/GPS, push notification hoặc backend mới.
 
@@ -28,7 +28,7 @@ Không thêm sửa/xóa báo cáo đã lưu trong phạm vi bắt buộc. Nếu 
 - `lib/screens/create_report_screen.dart` nhập mô tả, chọn/chụp một ảnh, preview, xem lại đầu vào và gọi `GeminiReportService`; thành công push `ReportDraftScreen`.
 - `lib/screens/report_draft_screen.dart` cho sửa sáu trường, review riêng từng trường, xác nhận trường tùy chọn trống, giữ `issue` bắt buộc và yêu cầu review lại summary sau khi dữ kiện đổi; hiển thị draft AI, danh sách `needs_confirmation`, nhãn hành động đề xuất và mô tả/ảnh gốc.
 - `ReportDraft` có parser/serializer cho sáu trường nội dung và `needs_confirmation`. Constructor tự thêm trường rỗng/null vào danh sách này; không dùng trực tiếp nó để biểu diễn báo cáo đã xác nhận không có thông tin.
-- Task 3 đã thêm repository/database SQLite và path ảnh bền vững; Task 4 nối repository vào luồng lưu. Lưu yêu cầu người dùng xác nhận cuối, khóa thao tác trong lúc ghi, giữ nội dung/retry cùng ID khi lỗi, và chỉ xóa form nguồn sau khi lưu thành công. Task 5 đã nối danh sách lịch sử vào repository; tap dòng chuyển đúng ID nhưng màn chi tiết vẫn chờ Task 6. ADB đã quan sát save rồi đọc lại danh sách trong cùng phiên app; đọc lại sau restart vẫn chưa xác minh.
+- Task 3 đã thêm repository/database SQLite và path ảnh bền vững; Task 4 nối repository vào luồng lưu. Lưu yêu cầu người dùng xác nhận cuối, khóa thao tác trong lúc ghi, giữ nội dung/retry cùng ID khi lỗi, và chỉ xóa form nguồn sau khi lưu thành công. Task 5 nối danh sách lịch sử; Task 6 mở màn chi tiết theo ID. ADB đã quan sát save rồi đọc lại danh sách trong cùng phiên app; đọc lại sau restart vẫn chưa xác minh.
 - Luồng Gemini thật, App Check Android debug và fallback quota có **bằng chứng lịch sử Task 5 Ngày 3**. Task 3 đã xác minh test SQLite FFI 10/10, toàn suite 77/77 và APK/Web build thành công. ADB smoke ngày 28/09 dùng APK trước Task 4; Task 4 có các kết quả 85/85, PHONE/ADB/APK được ghi ở phần lịch sử bên dưới. Lượt triển khai Task 5 Ngày 4 kiểm tra format 5 file Dart (0 đổi), `flutter analyze` sạch, `flutter test test/history_screen_test.dart` 5/5 và toàn suite 90/90; widget tests dùng fake repository. Lượt ADB Wireless sau đó build/cài APK debug và kiểm tra thiết bị, không chạy lại analyze/test. Kết quả từng ADB case, hash APK và giới hạn được ghi trong `docs/testcase_task5_history_day4.txt` và `docs/AI_WORKLOG.md`.
 - Git đầu Task 3 sạch, nhánh `codex/day4-preflight`, HEAD `155c223`. Kiểm tra lại trước mỗi task; không reset/restore/clean/stash hoặc ghi đè thay đổi mới của người dùng.
 
@@ -272,7 +272,7 @@ Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần
 
 **Mục tiêu:** thay empty state cố định bằng màn đọc danh sách báo cáo đã lưu.
 
-**Trạng thái:** Đã triển khai phần danh sách; dùng chung repository với luồng lưu. Chạm dòng chuyển ID qua callback; hiện app hiển thị thông báo màn chi tiết sẽ được bổ sung ở Task 6 vì màn chi tiết chưa thuộc lát triển khai này.
+**Trạng thái:** Hoàn tất. Danh sách dùng chung repository với luồng lưu; chạm dòng phát report ID và app điều hướng sang màn chi tiết (Task 6).
 
 **Cần làm:**
 
@@ -296,9 +296,9 @@ Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần
 
 ### Task 6 — Chi tiết báo cáo đã lưu
 
-**Mục tiêu:** xem lại nội dung đã xác nhận cùng đầu vào gốc và ảnh bền vững.
+**Mục tiêu:** xem lại nội dung đã xác nhận cùng đầu vào gốc và ảnh đã lưu, truy xuất từ repository theo report ID.
 
-**Trạng thái:** Chưa thực hiện; phụ thuộc Task 3 và Task 5.
+**Trạng thái:** Đã triển khai và kiểm tra bằng widget tests với fake repository. Android đọc SQLite/ảnh sau process restart chưa được kiểm chứng; tiêu chí persistence thiết bị thuộc Task 7.
 
 **Cần làm:**
 
@@ -312,7 +312,11 @@ Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần
 
 **Tránh:** lấy draft trong RAM làm màn chi tiết rồi tuyên bố dữ liệu đã lưu; để lỗi ảnh ngăn xem nội dung text; tự sửa report khi đọc.
 
-**Kiểm thử/tiêu chí hoàn thành:** đọc đúng ID, nội dung/null/trống được diễn giải đúng, dữ liệu gốc, ảnh lỗi, report không tồn tại và lỗi đọc. Chi tiết hoạt động sau khi app mở lại, không cần draft trong RAM.
+**Kết quả Task 6 (2026-09-29):** `ReportDetailScreen` truy vấn `findById` bằng ID được chọn, hiển thị trạng thái đã xác nhận, thời gian địa phương, các field, mô tả gốc và ảnh từ `readPhotoBytes`. Field đã xác nhận không có được phân biệt với field không có dữ liệu; `suggested_action` ghi rõ là đề xuất. Có loading, not-found, lỗi/thử lại; lỗi/bytes ảnh hỏng có fallback riêng, giữ phần text và cho retry. Nút Back trở về History. Không thêm edit/delete/share/PDF. Snackbar sau save đã bỏ nội dung cũ nói Lịch sử chưa hiển thị và hướng người dùng mở tab Lịch sử.
+
+**Kiểm chứng vừa chạy:** `dart format` trên các file Dart đã đổi; `flutter analyze` — No issues found; `flutter test --reporter compact` — **99/99 đạt**; `flutter build apk --debug` — exit 0. Có 9 widget tests mới cho ID/field/source, loading, confirmed absence, not-found, report read error/retry, photo read/decode/fallback/retry và điều hướng History → detail → Back. Tests dùng fake repository. APK đã được build, cài và chạy qua ADB Wireless; UI smoke không thay thế xác minh persistence Android sau restart, phần này còn thuộc Task 7. PHONE/ADB case statuses và giới hạn fixture được ghi trong `docs/testcase_task6_detail_day4.txt`.
+
+**Tiêu chí hoàn thành Task 6:** đọc theo ID từ repository, nội dung/null/trống được diễn giải đúng, giữ mô tả gốc, ảnh lỗi không chặn text, xử lý report không tồn tại/lỗi đọc, và màn không phụ thuộc draft trong RAM. Việc chứng minh report/ảnh tồn tại sau khi đóng/mở app cần Android runtime và được ghi nhận trong Task 7.
 
 ### Task 7 — Kiểm chứng MVP Android và persistence sau mở lại
 
@@ -381,7 +385,7 @@ Nếu thêm `integration_test`, ghi lệnh/target cụ thể sau khi chọn ở 
 - [ ] Database cục bộ lưu/đọc được báo cáo; ảnh nằm trong thư mục ứng dụng, không phụ thuộc cache picker.
 - [ ] Lưu lỗi giữ nội dung editor; đọc lỗi có retry, không giả thành empty state.
 - [x] Lịch sử có loading/rỗng/dữ liệu/lỗi và cập nhật sau lưu.
-- [ ] Chi tiết đọc đúng report/ảnh từ persistence; thiếu ảnh có fallback.
+- [x] Chi tiết truy vấn đúng report theo ID và có fallback ảnh; đọc từ SQLite Android sau restart còn cần xác minh ở Task 7.
 - [ ] Đóng process/mở app vẫn thấy report và ảnh trên Android.
 - [ ] Test model/review/repository thực/widget đạt; APK debug cài và kiểm chứng MVP thật.
 - [ ] Kết quả thủ công được điền theo từng TC; các trường hợp thiếu công cụ/quota được ghi Blocked.

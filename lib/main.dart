@@ -8,6 +8,7 @@ import 'firebase_options.dart';
 import 'repositories/report_repository.dart';
 import 'repositories/report_repository_factory.dart';
 import 'screens/create_report_screen.dart';
+import 'screens/report_detail_screen.dart';
 import 'screens/history_screen.dart';
 import 'services/gemini_report_service.dart';
 
@@ -111,7 +112,7 @@ class _HomeScreenState extends State<_HomeScreen> {
             repository: _reportRepository,
             isActive: _selectedIndex == 1,
             refreshToken: _historyRefreshToken,
-            onReportSelected: _showDetailNotAvailable,
+            onReportSelected: _openReportDetail,
           ),
         ],
       ),
@@ -145,10 +146,13 @@ class _HomeScreenState extends State<_HomeScreen> {
     setState(() => _historyRefreshToken++);
   }
 
-  void _showDetailNotAvailable(String _) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Màn hình chi tiết báo cáo sẽ được bổ sung ở Task 6.'),
+  Future<void> _openReportDetail(String reportId) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => ReportDetailScreen(
+          repository: _reportRepository,
+          reportId: reportId,
+        ),
       ),
     );
   }

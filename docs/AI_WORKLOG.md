@@ -585,3 +585,37 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - **Log:** xem 1.200 dòng gần nhất bằng `adb logcat -d -t 1200` và bộ lọc đã nêu trong test case; có 0 match `FATAL EXCEPTION` và 0 match nhóm SQLite/plugin. Không chạy `adb logcat -c`; đây chỉ là kiểm tra log giới hạn.
 - **Tác động dữ liệu/giới hạn:** một báo cáo tổng hợp mới được lưu vào app để kiểm tra luồng save → history và vẫn để lại trên thiết bị; không xóa dữ liệu. Android keyboard tự sửa một phần mô tả tổng hợp khi nhập. Không dùng screenshot/log thô trong tài liệu. Không chạy Flutter test/analyze trong lượt kiểm thử này.
 - **Kết quả test case:** cập nhật riêng từng dòng PHONE/ADB trong `docs/testcase_task5_history_day4.txt`. PHONE-D4-HIS-01–09 là trạng thái người dùng báo PASS, không phải kết quả Codex tái kiểm tra; ADB-D4-HIS-01–05 PASS, ADB-D4-HIS-06 BLOCKED.
+
+## 2026-09-29 — Ngày 4 Task 6: chi tiết báo cáo đã lưu
+
+- **Yêu cầu/prompt:** triển khai Task 6 theo roadmap, rà lại như senior, sửa thông báo cũ “Lịch sử chưa hiển thị báo cáo ở bước này” và báo cáo chi tiết. Không đụng các thay đổi có trước; không commit/push.
+- **Công cụ:** Codex đọc/sửa mã và tài liệu; Dart formatter, Flutter analyzer/test, Android Gradle build. Không gọi Gemini/Firebase AI Logic; APK build chỉ là kiểm tra compile, không phải runtime network test.
+- **Thay đổi mã:** thêm `ReportDetailScreen`, đọc report bằng `ReportRepository.findById(reportId)`, đọc ảnh bằng `readPhotoBytes`; hiển thị field đã xác nhận, trạng thái/thời gian, mô tả gốc và ảnh. Có loading, lỗi/retry, not-found, nhãn cho field đã xác nhận là không có, ghi rõ `suggested_action` là đề xuất, fallback/retry ảnh khi thiếu/lỗi/bytes hỏng, và Back về History. `main.dart` chuyển ID từ History qua route với cùng repository. Thông báo sau lưu giờ hướng người dùng mở tab Lịch sử. Thêm 9 widget tests cho nội dung, trạng thái bất đồng bộ/lỗi, ảnh và điều hướng; cập nhật assertion snackbar. Không thêm edit/delete/share/PDF.
+- **Vấn đề gặp và cách xử lý:** widget tests ban đầu tìm phần tử nằm ngoài vùng `ListView` lazy chưa được build; cập nhật helper test cuộn đến phần tử trước khi assert. Đây là điều chỉnh cách kiểm tra viewport, không phải thay đổi logic sản phẩm. Rà race async: kết quả report/ảnh cũ bị bỏ qua khi ID/repository đổi; lỗi retry report không làm mất một lần đọc ảnh đang chạy.
+- **Tài liệu:** cập nhật `README.md`, `docs/CONTEXT_SUMMARY.md`, `docs/WALKTHROUGH.md` và `docs/implement_plan_day4.md` để đánh dấu Task 6, ghi rõ fake repository/build provenance và giữ Task 7 Android persistence ở trạng thái chưa xác minh.
+
+### Kiểm chứng vừa chạy trong phiên
+
+- `dart format lib/main.dart lib/screens/create_report_screen.dart lib/screens/report_detail_screen.dart test/report_detail_screen_test.dart test/widget_test.dart` — exit 0; 5 file xem xét, formatter thay đổi 1 file (`test/widget_test.dart`).
+- `flutter analyze` — **No issues found**.
+- `flutter test --reporter compact` — **99/99 đạt**. 9 test mới cho detail dùng fake repository; các tests không chứng minh SQLite/path_provider trên Android hoặc request AI thật.
+- `flutter build apk --debug` — exit 0, tạo `build/app/outputs/flutter-apk/app-debug.apk`. Build phát cảnh báo Java restricted native access và các plugin Firebase dùng Kotlin Gradle Plugin cần theo dõi chuyển sang Built-in Kotlin ở Flutter tương lai; hiện build thành công.
+- Không cài/chạy APK qua ADB, không thử trên thiết bị/emulator, không kiểm tra force-stop/restart, không gọi Gemini. Vì vậy Task 7 persistence Android sau restart vẫn chưa hoàn thành.
+- Không stage/commit/push. Giữ nguyên deletion có sẵn `docs/PROMPT_01.md`.
+
+## 2026-09-29 — Soạn test case thủ công cho Ngày 4 Task 6
+
+- **Yêu cầu:** viết test case để kiểm tra chức năng chính của màn chi tiết trên điện thoại Android thật và qua ADB Wireless debugging.
+- **Tài liệu tạo:** `docs/testcase_task6_detail_day4.txt`, gồm 10 PHONE cases và 6 ADB cases. Bao gồm fixture report có ảnh/text-only/null và field xác nhận không có; điều hướng History → detail → Back; field/mô tả gốc/thời gian/ảnh; build/cài APK an toàn, launch/process/logcat giới hạn.
+- **Giới hạn/an toàn:** tất cả case được để `NOT RUN`. Ưu tiên report tổng hợp sẵn có; nếu cần tạo fixture mới thì tối đa hai report/AI request. Không xóa dữ liệu, không cố tình làm hỏng DB/ảnh, không đọc vùng riêng tư hoặc ghi serial/IP/token/log thô. Not-found và lỗi ảnh/repository nhân tạo đã có widget coverage; chỉ đánh dấu BLOCKED nếu không xảy ra lỗi tự nhiên trên thiết bị.
+- Không chạy build/test, không kết nối ADB, không cài APK, không thay đổi dữ liệu thiết bị và không gọi Gemini trong lượt soạn test case này. Cập nhật liên kết tài liệu trong README, context summary và walkthrough.
+
+## 2026-09-29 — ADB Wireless kiểm tra Task 6 trên thiết bị
+
+- **Phạm vi:** chạy build/cài APK Task 6, mở History và detail, quan sát trạng thái ảnh/mô tả, điều hướng Back, process và logcat. Không tạo Gemini request, không sửa/xóa report, không đọc database/vùng riêng tư, không dùng `force-stop`.
+- **Thiết bị/kết nối:** một thiết bị Android mDNS Wireless online, PKG110, Android 16/API 36. Một lần `flutter devices --machine` liệt kê hai mục Android tên PKG110 với ID khác nhau; lần đọc sau còn một mục. Dùng duy nhất thiết bị online được ADB liệt kê, không lưu serial/IP.
+- **Build/cài:** `flutter build apk --debug` exit 0. `adb install -r` trả `Success`; version 0.1.0 (versionCode 1), APK 178,604,382 bytes, SHA-256 `6E84D74E20027B08CE7A04B0E93626A00AB872D8064B89D62E97D2DBD9A59804`. Report đã có vẫn hiển thị sau cài đè.
+- **Quan sát UI:** mở History, vào các report đã có, xem trạng thái/field đã xác nhận, mô tả gốc, ghi chú hành động đề xuất, trạng thái không có ảnh và một ảnh đã lưu; Back quay lại History. Cỡ chữ hệ thống lớn đang bật; nội dung cuộn được, không thấy overflow. Nguồn/độ an toàn của fixture có sẵn chưa xác minh; không ghi/chụp nội dung hoặc ảnh vào tài liệu.
+- **ADB sau thao tác:** app process có PID và resumed activity; Back từ detail về History, process tiếp tục chạy. Đọc `adb logcat -d -t 1500` trong bộ nhớ, 0 match `FATAL EXCEPTION` và 0 match nhóm SQLite/plugin; không xóa logcat buffer và không chép log thô.
+- **Kết quả test case:** ghi riêng PHONE/ADB cases trong `docs/testcase_task6_detail_day4.txt`. ADB build/install/launch/log scan/Back đạt; Flutter discovery được PARTIAL do danh sách trùng tạm thời. UI cases bị giới hạn do không xác minh fixture, null/absence fixture chưa được kiểm tra, cùng-report reopen chưa được kiểm tra; lỗi retry tự nhiên không gặp nên BLOCKED.
+- **Giới hạn:** lượt này không kiểm tra save mới hoặc độ bền sau force-stop/restart; Task 7 persistence trên Android vẫn cần xác minh riêng. Không chạy analyze/widget tests trong lượt ADB này. Giữ nguyên mọi thay đổi Git chưa commit và deletion `docs/PROMPT_01.md`; không stage/commit/push.

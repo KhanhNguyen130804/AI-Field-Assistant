@@ -345,7 +345,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text(
-              'Đã lưu trên thiết bị. Lịch sử chưa hiển thị báo cáo ở bước này.',
+              'Đã lưu trên thiết bị. Mở tab Lịch sử để xem báo cáo.',
             ),
           ),
         );

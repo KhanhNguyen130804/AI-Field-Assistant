@@ -536,7 +536,10 @@ void main() {
     expect(repository.lastImageBytes, Uint8List.fromList(_tinyPngBytes));
     expect(repository.lastSaved?.photoPath, isNotNull);
     expect(find.byType(ReportDraftScreen), findsNothing);
-    expect(find.textContaining('Đã lưu trên thiết bị.'), findsOneWidget);
+    expect(
+      find.text('Đã lưu trên thiết bị. Mở tab Lịch sử để xem báo cáo.'),
+      findsOneWidget,
+    );
     expect(
       tester
           .widget<TextField>(
@@ -675,7 +678,10 @@ void main() {
 
     expect(repository.saveCount, 1);
     expect(find.byType(ReportDraftScreen), findsNothing);
-    expect(find.textContaining('Đã lưu trên thiết bị.'), findsOneWidget);
+    expect(
+      find.text('Đã lưu trên thiết bị. Mở tab Lịch sử để xem báo cáo.'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('Back hỏi trước khi bỏ review và giữ input nguồn', (

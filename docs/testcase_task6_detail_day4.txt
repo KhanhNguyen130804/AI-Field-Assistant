@@ -1,0 +1,95 @@
+# Test case — Ngày 4 Task 6: chi tiết báo cáo đã lưu
+
+> Bộ case được soạn ngày 29/09/2026. Kết quả ADB Wireless ngày 29/09/2026 được ghi tại phiếu bên dưới; các trạng thái chỉ phản ánh bằng chứng quan sát trong lượt đó. Widget tests 99/99 là kết quả tự động đã ghi nhận riêng, không thay thế kiểm tra thiết bị.
+
+## Phạm vi và quy tắc
+
+- Kiểm tra luồng **Lịch sử → Chi tiết báo cáo → Back**, nội dung đã xác nhận, mô tả gốc, trạng thái ảnh và độ ổn định khi tải/chuyển màn.
+- Dùng điện thoại Android/profile kiểm thử và dữ liệu tổng hợp. Không dùng tên người, địa chỉ thật, mô tả sự cố thật hoặc ảnh hiện trường.
+- Trước tiên dùng report tổng hợp sẵn có nếu nó đáp ứng fixture cần kiểm tra. Nếu phải tạo report mới, tạo qua luồng UI thông thường, review/xác nhận trước khi lưu và ghi số Gemini request đã dùng; không gửi lặp request khi lần đầu thành công. Dùng tối đa hai report mới: một report có ảnh, một report text-only có trường tùy chọn được xác nhận là không có.
+- Dùng ảnh tổng hợp không chứa dữ liệu cá nhân. Không gỡ app, chạy `pm clear`, xóa/sửa database hoặc ảnh riêng tư, hay dùng `run-as` để đọc dữ liệu app. Nếu cài đè không tương thích chữ ký, dừng và dùng thiết bị/profile khác.
+- Không cố tình làm hỏng DB hoặc xóa ảnh để tạo lỗi đọc. Nếu lỗi không xuất hiện tự nhiên, ghi `BLOCKED`; dùng widget tests đã có cho not-found, retry và ảnh hỏng.
+- Ghi từng case là `PASS`, `PARTIAL`, `FAIL`, `BLOCKED` hoặc `NOT RUN`, kèm kết quả quan sát ngắn. Không ghi pairing code, serial/IP, App Check token, nội dung report/ảnh hoặc log thô vào tài liệu chia sẻ.
+
+## Fixture đề xuất
+
+Ưu tiên các report đã lưu trên thiết bị nếu đáp ứng các điều kiện dưới đây.
+
+| Fixture | Dữ liệu cần có | Dùng để kiểm tra |
+|---|---|---|
+| R1 — có ảnh | Report đã xác nhận; issue, category, location, priority, suggested action, summary và mô tả gốc có giá trị dễ phân biệt; có một ảnh tổng hợp đã lưu cùng report. | Đúng record/field, trạng thái xác nhận, ngày giờ, mô tả gốc, hiển thị ảnh, nhãn hành động đề xuất. |
+| R2 — text-only | Report đã xác nhận không có ảnh; `priority` là `null` đã xác nhận chưa xác định; một hoặc nhiều field tùy chọn rỗng đã được người dùng xác nhận không có. | Trạng thái không có ảnh, diễn giải field rỗng và priority null. |
+
+Nếu cần tạo fixture: nhập mô tả tổng hợp có cụm từ dễ tìm trong Lịch sử; với R1 chọn ảnh tổng hợp. Trong màn draft chỉnh/review các trường theo fixture rồi lưu sau xác nhận cuối. Với R2, không chọn ảnh; xác nhận các field tùy chọn không có và priority chưa xác định. Không lưu nếu `issue` rỗng. Ghi lại số request AI phát sinh; nếu quota/App Check chặn, dùng fixture sẵn có hoặc đánh dấu case phụ thuộc fixture là `BLOCKED`.
+
+## 1. Kiểm thử trực tiếp trên điện thoại Android thật
+
+| ID | Điều kiện / thao tác | Kết quả mong đợi | Kết quả thực tế / bằng chứng |
+|---|---|---|---|
+| PHONE-D4-DET-01 | Mở tab **Lịch sử**, tìm R1 hoặc report tổng hợp đã biết, chạm đúng dòng. | Mở app bar **Chi tiết báo cáo**; report hiển thị khớp sự cố của dòng vừa chọn; app không crash. | PARTIAL — History mở đúng report được chạm; fixture không có khóa nhận dạng đã biết để đối chiếu độc lập. |
+| PHONE-D4-DET-02 | Trên R1, đối chiếu lần lượt danh mục, địa điểm, priority, sự cố, hành động đề xuất, tóm tắt và trạng thái. | Giá trị khớp report đã review/lưu; trạng thái hiển thị **Đã xác nhận**; thời gian tạo khớp thời điểm lưu theo phút giờ địa phương. Không có field của report khác. | PARTIAL — Các field và trạng thái xác nhận hiển thị; không có baseline fixture đã xác minh để so khớp từng giá trị. |
+| PHONE-D4-DET-03 | Trên R1, cuộn tới **Mô tả gốc** và so sánh với nội dung đã nhập trước khi gọi AI. | Hiển thị mô tả đầu vào đã lưu; không thay bằng summary hoặc nội dung do AI đề xuất. | PARTIAL — Phần mô tả gốc hiển thị khi cuộn; không đối chiếu được với input gốc đã biết. |
+| PHONE-D4-DET-04 | Trên R1, cuộn tới **Ảnh báo cáo** và chờ tải/giải mã. | Ảnh đã lưu hiển thị đúng; nội dung text vẫn đọc được. Không chỉ dựa vào preview còn trong form. | PARTIAL — Ảnh đã lưu tải và hiển thị; nguồn/độ an toàn fixture trên thiết bị chưa xác minh. |
+| PHONE-D4-DET-05 | Mở R2 không có ảnh và cuộn tới phần ảnh. | Hiện `Không có ảnh được lưu cùng báo cáo.`; không hiện spinner mãi hoặc ảnh placeholder giả. | PARTIAL — Trạng thái không có ảnh hiển thị; chưa xác minh report đó là fixture R2 đã biết. |
+| PHONE-D4-DET-06 | Mở R2; đối chiếu các field tùy chọn đã xác nhận trống và `priority=null`. | Field trống đã xác nhận hiển thị là **Đã xác nhận không có thông tin**; priority hiển thị **Đã xác nhận chưa xác định**. Không trình bày chúng như lỗi hoặc thông tin chưa review. | NOT RUN — Không xác minh được fixture có priority null và field tùy chọn được xác nhận vắng mặt. |
+| PHONE-D4-DET-07 | Mở report có `suggested_action` và đọc phần ghi chú dưới field. | Ghi rõ đây là hành động đề xuất, chưa phải việc đã thực hiện. Nội dung không được thể hiện như công việc đã hoàn tất. | PASS — Ghi chú hành động đề xuất hiển thị trên màn chi tiết. |
+| PHONE-D4-DET-08 | Từ chi tiết nhấn Back; mở lại cùng dòng trong History. | Trở về đúng danh sách/vị trí hợp lý; mở lại đúng report; không tạo bản ghi mới hay thay đổi nội dung. | PARTIAL — Back trả về History; chưa mở lại cùng report để đối chiếu không đổi/không nhân đôi. |
+| PHONE-D4-DET-09 | Trên màn điện thoại hẹp hoặc với cỡ chữ hệ thống lớn hơn mặc định, cuộn qua toàn màn chi tiết. | Nội dung và nút hệ thống Back vẫn dùng được; không có overflow cắt field/ảnh hoặc nút **Tải lại ảnh**. Ghi cỡ chữ nếu có vấn đề. | PASS — Trên thiết bị với cỡ chữ lớn đang bật, cuộn màn chi tiết không thấy overflow và Back dùng được. |
+| PHONE-D4-DET-10 | Nếu lỗi đọc report/ảnh xảy ra tự nhiên, ghi nhận rồi thử **Thử lại** / **Tải lại ảnh** khi nguyên nhân đã hết. Không tạo lỗi bằng cách sửa/xóa dữ liệu app. | Lỗi report có thông báo và retry; lỗi ảnh không che report text; retry thành công khôi phục nội dung tương ứng. Nếu không có lỗi tự nhiên, đánh dấu `BLOCKED`, không phá dữ liệu. | BLOCKED — Không gặp lỗi đọc report/ảnh tự nhiên; không cố tình phá dữ liệu để tạo lỗi. |
+
+## 2. Kiểm thử qua ADB Wireless debugging
+
+ADB xác minh build/cài/launch/process/log giới hạn; thao tác chọn dòng và đối chiếu nội dung vẫn thực hiện, quan sát trực tiếp trên điện thoại theo PHONE cases. ADB không chứng minh record đã commit vào SQLite và không cần truy cập database riêng tư.
+
+### Kết nối, build và cài đặt
+
+Nếu thiết bị đã kết nối, giữ kết nối hiện tại. Chỉ pair/connect theo màn hình Android nếu chưa có phiên Wireless debugging đang hoạt động.
+
+```powershell
+adb devices -l
+flutter devices
+flutter build apk --debug
+Get-FileHash .\build\app\outputs\flutter-apk\app-debug.apk -Algorithm SHA256
+adb install -r .\build\app\outputs\flutter-apk\app-debug.apk
+adb shell monkey -p com.example.ai_field_assistant 1
+adb shell pidof com.example.ai_field_assistant
+adb shell dumpsys activity activities | Select-String -Pattern "mResumedActivity|topResumedActivity"
+```
+
+Chỉ tiếp tục nếu đúng thiết bị kiểm thử hiện trạng thái `device` và Flutter nhận Android device. Không gỡ app hoặc xóa dữ liệu để xử lý lỗi cài đặt. Ghi branch/commit + working tree, version và SHA-256 APK vào biên bản; không chép serial/IP.
+
+### Danh sách case
+
+| ID | Thao tác ADB / điện thoại | Kết quả mong đợi | Kết quả thực tế / bằng chứng |
+|---|---|---|---|
+| ADB-D4-DET-01 | Chạy `adb devices -l` và `flutter devices`. | Thiết bị kiểm thử Wireless hiện `device`; Flutter nhận thiết bị Android tương ứng. Không lưu serial/IP/pairing code. | PARTIAL — ADB có đúng 1 thiết bị Wireless online; Flutter từng liệt kê 2 mục PKG110 khác ID, lần kiểm tra sau còn 1 mục. |
+| ADB-D4-DET-02 | Build APK, ghi version/SHA-256 và cài đè bằng `adb install -r`. Sau cài đặt mở Lịch sử để kiểm tra report sẵn có. | Build exit 0; install trả `Success`; report cũ vẫn còn sau cài đè. Nếu chữ ký không tương thích, dừng, không gỡ app. | PASS — `flutter build apk --debug` exit 0; `adb install -r` trả `Success`; các report có sẵn vẫn xuất hiện sau cài đè. |
+| ADB-D4-DET-03 | Mở app bằng `adb shell monkey -p com.example.ai_field_assistant 1`, sau đó chạy lệnh `pidof` và `dumpsys activity` trong phần chuẩn bị. | Có process PID và package app là activity resumed/foreground. Không đưa PID/serial vào tài liệu chia sẻ. | PASS — Sau launch, process có PID và package là resumed activity. |
+| ADB-D4-DET-04 | Trên điện thoại thao tác PHONE-D4-DET-01 đến 08 trong khi ADB còn kết nối. Sau khi vào chi tiết và sau Back, kiểm tra process bằng lệnh ADB-D4-DET-03. | Nội dung/ảnh/back hoạt động như PHONE cases; process còn chạy, không crash. Ghi riêng những PHONE case đã quan sát; không suy ra nội dung màn chỉ từ PID. | PARTIAL — Đã mở History/detail, xem field/mô tả/trạng thái ảnh, Back về History; process còn chạy. Fixture chưa xác minh. |
+| ADB-D4-DET-05 | Sau thao tác chi tiết, xem log gần đây bằng bộ lọc bên dưới; không chạy `adb logcat -c`. | Không có `FATAL EXCEPTION` hoặc lỗi Flutter/SQLite/plugin tương ứng trong phần log đã kiểm tra. Ghi số match và kết luận giới hạn; không đính kèm log thô. | PASS — `adb logcat -d -t 1500`: 0 match `FATAL EXCEPTION`, 0 match nhóm SQLite/plugin; chỉ là cửa sổ log giới hạn. |
+| ADB-D4-DET-06 | Khi app đang ở chi tiết, nhấn Back trên điện thoại hoặc `adb shell input keyevent KEYCODE_BACK`; kiểm tra lại process/foreground và History. | App quay về History, không crash; report vẫn trong danh sách. Không dùng `force-stop` hoặc xóa dữ liệu ở bộ Task 6 này; kiểm tra sau process restart thuộc Task 7. | PASS — Back từ detail về History; process vẫn chạy. Không dùng force-stop hoặc xóa dữ liệu. |
+
+PowerShell lọc log gần đây; nếu xem dòng lỗi để chẩn đoán thì khử nội dung report, đường dẫn cá nhân và thông tin thiết bị trước khi ghi lại:
+
+```powershell
+adb logcat -d -t 1500 | Select-String -Pattern "FATAL EXCEPTION|Exception|SQLiteException|DatabaseException|sqflite|path_provider|ReportStorageException"
+```
+
+Không lưu/chia sẻ log thô. Không có match chỉ là kiểm tra crash/log giới hạn, không chứng minh dữ liệu lưu bền vững. Không dùng `adb shell run-as`, không kéo DB/ảnh từ vùng riêng tư của app.
+
+## 3. Phiếu ghi kết quả
+
+| Trường | Ghi nhận |
+|---|---|
+| Ngày/giờ, tester | 29/09/2026; Codex ghi nhận thao tác ADB/UI trong lượt này. |
+| Model thiết bị / Android / API | PKG110; Android 16 / API 36. Không ghi serial. |
+| Branch/commit + thay đổi working tree | `codex/day4-preflight` / `719bec2`; working tree có thay đổi chưa commit trước và trong Task 6; giữ nguyên, không stage/commit. |
+| App version / SHA-256 APK | 0.1.0 (versionCode 1); 178,604,382 bytes; SHA-256 `6E84D74E20027B08CE7A04B0E93626A00AB872D8064B89D62E97D2DBD9A59804`. |
+| Trạng thái Wireless debugging | ADB xác nhận 1 thiết bị mDNS Wireless ở trạng thái `device`; Flutter enumeration từng trùng 2 mục rồi ổn định còn 1. Không ghi serial/IP/pairing code. |
+| Fixture đã dùng | Chỉ xem report có sẵn trên thiết bị; không tạo/sửa/xóa report. Nguồn fixture chưa xác minh nên không xác nhận là R1/R2 tổng hợp. Không ghi nội dung/ảnh. |
+| Số Gemini request phát sinh | 0 do lượt kiểm thử này. |
+| PHONE cases PASS / PARTIAL / FAIL / BLOCKED / NOT RUN | 2 / 6 / 0 / 1 / 1 |
+| ADB cases PASS / PARTIAL / FAIL / BLOCKED / NOT RUN | 4 / 2 / 0 / 0 / 0 |
+| Lỗi đã khử nhạy cảm / giới hạn | Không có lỗi tự nhiên để thử retry; fixture trên thiết bị không xác minh nguồn; Flutter list trùng tạm thời; không xác minh save/persistence sau process restart. |
+
+Lỗi not-found, bytes ảnh sai định dạng và lỗi repository cần seam/fake đã có widget test tự động; không tìm cách tạo các lỗi này bằng cách phá dữ liệu thật trên thiết bị. Task 7 sẽ kiểm tra riêng đóng process/mở app và đọc lại report/ảnh từ persistence Android.
