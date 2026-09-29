@@ -42,3 +42,34 @@ ADB ban đầu không có trên PATH; Android Platform Tools được tìm thấ
 - Đây không phải kiểm tra UI/runtime hay persistence Android. Không xác minh lưu/đọc ảnh, offline save/read, App Check hoặc chất lượng Gemini trong Task 1.
 - Không gửi request Gemini; không đưa dữ liệu hiện trường thật, serial/IP, debug token, prompt/response hoặc log thô vào phiếu.
 - APK/build và test counts trong phiếu này là kết quả ngày 29/09/2026; các kết quả sau này cần ghi riêng, gắn với đúng source/commit.
+
+## Day 5 Task 2 — Carry-over persistence Android (29/09/2026)
+
+### Môi trường và baseline
+
+| Thuộc tính | Kết quả |
+|---|---|
+| Branch / HEAD khi kiểm tra | `codex/day5` / `1b53614` (`docs(day5): record task 1 baseline`) |
+| Thiết bị | Android emulator API 35, x86_64; ADB local; boot completed |
+| Package cài trên emulator | `com.example.ai_field_assistant`, versionName `0.1.0`, versionCode `1` |
+| APK host | SHA-256 khớp baseline Task 1: `6E84D74E20027B08CE7A04B0E93626A00AB872D8064B89D62E97D2DBD9A59804`; không build/cài lại trong Task 2 |
+| Report sẵn có | Không có; tab History tải xong và hiện trạng thái rỗng “Chưa có báo cáo đã lưu” |
+| Fixture trên thiết bị | Bản sao synthetic `AI_Field_Day5_Task2_Synthetic.png` được chép vào `/sdcard/Pictures/` và MediaScanner index để Photo Picker cung cấp; giữ nguyên file này trên emulator sau kiểm tra |
+
+### Kết quả từng case
+
+| ID | Thao tác và quan sát | Trạng thái |
+|---|---|---|
+| PHOTO-D5-01 | Lần mở đầu Photo Picker trống. Sau khi chép fixture tổng hợp hiện có trên host (`ai_field_task7_synthetic.png`, 8,513 bytes, ảnh có nhãn TEST ONLY) thành tên mới trong Pictures công khai và yêu cầu MediaScanner index, mở picker lại; fixture hiện ra, được chọn bằng UI Photo Picker chuẩn và preview hiển thị trong form. | **PASS** — picker/preview với fixture tổng hợp đã kiểm chứng; không dùng ảnh cá nhân hay truy cập vượt quyền. |
+| AI-D5-01 | Nhập mô tả chỉ rõ đây là sự cố tổng hợp, chọn fixture TEST ONLY và bấm CTA **Phân tích bằng AI** đúng một lần. UI tải rồi báo ứng dụng chưa được xác minh với dịch vụ AI (App Check); form vẫn giữ mô tả và preview. Không retry. | **BLOCKED** — không có draft; không xác minh model Gemini có nhận request hay không. |
+| PHOTO-D5-02 | Không thể tạo report có ảnh sau AI-D5-01; do đó chưa save, chưa mở History/detail cho record ảnh và chưa force-stop/relaunch để kiểm tra ảnh lưu. | **BLOCKED** — chưa có report ảnh để kiểm tra persistence Android. |
+| OFFLINE-D5-01 | History ban đầu rỗng. Sau App Check error vẫn không có report tổng hợp đã xác nhận để đọc/lưu offline. | **BLOCKED** — chưa thể kiểm tra local save/read offline vì chưa tạo được draft/report. |
+
+### Giới hạn và kết luận
+
+- Đã xác nhận UI khởi chạy, History empty state tải xong, fixture tổng hợp đi qua Photo Picker và preview hiển thị. Đây không phải bằng chứng lưu/đọc report có ảnh hoặc thao tác offline.
+- Một lần bấm CTA gửi đầu vào tổng hợp; app trả lỗi App Check. Không retry và không suy luận rằng Gemini model đã xử lý payload. Không đọc/ghi App Check token, database/app-private data hoặc dùng media cá nhân. Trạng thái mạng không bị đổi.
+- Fixture bổ sung được giữ tại `/sdcard/Pictures/AI_Field_Day5_Task2_Synthetic.png`; đây là file test tổng hợp do lượt này chép vào emulator, không phải ảnh người dùng.
+- APK SHA được so với giá trị đã ghi ở Task 1; build không chạy lại và APK đã cài không được pull/hash độc lập trong lượt này.
+- Không chạy `dart format`, `flutter analyze`, `flutter test` hoặc `flutter build apk` trong Task 2. Không có thay đổi mã nguồn/cấu hình; kết quả test/build Task 1 vẫn chỉ là bằng chứng lịch sử Task 1.
+- **Task 2 mới đạt phần fixture/picker/preview.** Persistence ảnh và local save/read offline vẫn chưa nghiệm thu; PHOTO-D5-02, OFFLINE-D5-01 và AI-D5-01 còn BLOCKED, không tính là PASS.
