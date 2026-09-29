@@ -4,16 +4,19 @@
 
 ## Trạng thái hiện tại
 
-Snapshot nền sau commit `b201d0b` trên nhánh `codex/day5` (29/09/2026), cộng thay đổi Task 4 chưa commit ngày 30/09/2026:
+Snapshot được đối chiếu ngày 30/09/2026 trên nhánh `codex/day5`, tại commit `ec51214` (`feat(day5): complete task 4 resilience`), đồng bộ với `origin/codex/day5`. Task 4 đã được commit. Trước lần cập nhật README/context trong phiên khảo sát, không có tracked changes; `docs/HOME_DEVICE_TEST_CHECKLIST.md` đang chưa được theo dõi và còn một số hướng dẫn Task 4 từ snapshot cũ.
 
 - Luồng hiện có: nhập mô tả/chọn ảnh → người dùng chủ động gọi AI → xem/sửa/xác nhận draft → lưu cục bộ → History → chi tiết report. Service AI, parser, SQLite repository và các màn UI đã được nối trong app.
 - **Day 5 Task 1:** baseline lịch sử gồm 99/99 test, analyzer sạch, APK debug build/cài trên emulator. Đây là kết quả của Task 1, không phải build mới sau Task 3.
 - **Day 5 Task 2:** đã chọn ảnh synthetic qua Photo Picker và xem preview. Lần thử AI trên emulator bị App Check chặn; chưa tạo report ảnh để xác minh persistence và chưa thử lưu/đọc offline. Hai phần persistence ảnh và offline vẫn BLOCKED.
 - **Day 5 Task 3:** service từ chối MIME không hỗ trợ hoặc không khớp signature, chuẩn hóa lỗi đọc ảnh và giữ contract parser. Format check 26 file không đổi, analyzer sạch, test service/parser 43/43 và full suite 113/113 đạt; đây là kiểm tra host/fake, không phải Gemini thật.
 - **Day 5 Task 4 hoàn tất ở host:** form giới hạn phân tích ở JPEG/PNG/WebP; ảnh BMP/GIF/HEIF/AVIF bị từ chối và ảnh hợp lệ trước đó được giữ. Widget tests bao phủ lỗi service/App Check/response, loading/retry, lưu lỗi/mơ hồ, double tap và Back. Ngày 30/09/2026, full suite đạt 117/117, `flutter analyze` sạch, format check 2 file Dart không đổi. Không build APK hoặc kiểm tra thiết bị trong Task 4.
+- **Day 5 Task 5:** rà soát call site và dữ liệu gửi; service không còn log exception SDK thô. Analyzer và format check service sạch trong lượt này. Firebase debug provider vẫn ghi debug token vào log cục bộ; API-key restrictions chưa được kiểm tra trong Console, và không gọi Gemini thật.
 - **Ngày 4 Task 7:** trên Android đã xác minh một report text-only còn ở History/detail sau force-stop/relaunch. Day 4 được đóng theo quyết định của chủ dự án với ngoại lệ; ảnh và offline chưa được nghiệm thu.
 
 Firebase và App Check debug được khởi tạo khi mở app; lần gọi thật ngày 27/09/2026 từng trả draft trên Android. Lần thử gần nhất ghi trong Task 2 bị App Check chặn, nên không khẳng định dịch vụ hiện đang thông suốt. Chưa có voice-to-text, GPS, đăng nhập, cloud sync hoặc dashboard.
+
+Task 5 privacy review: request chỉ được tạo sau khi người dùng bấm **Phân tích bằng AI**, gồm mô tả/ảnh đã chọn cùng system prompt/schema cố định; app không tự thêm GPS, tài khoản hay report đã lưu. Service không log prompt, ảnh, raw response hoặc exception SDK; lỗi được ánh xạ thành thông báo chung. App Check debug provider vẫn ghi debug token vào log cục bộ; không chụp/chia sẻ raw log. Chỉ dùng dữ liệu tổng hợp khi demo free tier.
 
 ## Kiến trúc hiện tại
 
@@ -90,7 +93,8 @@ Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `iss
 - **Input ảnh gửi AI:** service và form nhận `image/jpeg`, `image/png`, `image/webp` để phân tích; form giới hạn preview 10 MiB, service giới hạn bytes gửi 4 MiB. [Firebase AI Logic liệt kê ba MIME này cho ảnh inline](https://firebase.google.com/docs/ai-logic/input-file-requirements). Task 4 đã được kiểm tra bằng widget test host; chưa xác minh trên Android trong lượt này.
 - Task 2 Ngày 3 thêm `ReportDraft` schema/parser và prompt; Task 4 Ngày 3 thêm service Firebase AI Logic với `responseSchema`, fake sender, timeout và ánh xạ lỗi; Task 5 Ngày 3 nối CTA/loading/lỗi/retry. Task 3 Ngày 5 bổ sung kiểm tra MIME/signature, lỗi đọc ảnh và test parser mà không đổi schema.
 - **Firebase trong app (Task 3):** `firebase_core` 4.15.0, `firebase_ai` 4.0.0, `firebase_app_check` 0.4.8 (`firebase_auth` 6.7.0 là dependency chuyển tiếp). `main()` async khởi tạo Firebase và kích hoạt App Check debug provider trong `kDebugMode`; API `firebase_app_check` 0.4.8 dùng class provider mới (`providerAndroid`/`providerWeb`), tham số enum cũ đã deprecated.
-- Firebase Console/App Check đã hoạt động cho lần request Android thật ngày 27/09/2026. Tuy nhiên, một lần thử khác trên emulator trong Task 2 Day 5 bị App Check từ chối; debug token có thể khác giữa thiết bị/cài đặt. Web và provider production (Play Integrity/reCAPTCHA Enterprise) chưa được xác minh/cấu hình. Không chia sẻ debug token.
+- Firebase Console/App Check đã hoạt động cho lần request Android thật ngày 27/09/2026. Tuy nhiên, một lần thử khác trên emulator trong Task 2 Day 5 bị App Check từ chối; debug token có thể khác giữa thiết bị/cài đặt. Web và provider production (Play Integrity/reCAPTCHA Enterprise) chưa được xác minh/cấu hình. Firebase debug provider ghi token vào log cục bộ; không chụp/chia sẻ raw log hoặc đưa token vào tài liệu.
+- Các khóa Firebase trong `firebase_options.dart`/`google-services.json` là cấu hình client nhận diện project, không phải Gemini Developer API key. Chưa kiểm tra API restrictions của project trong Google Cloud Console; không phát hiện Gemini Developer API key trong lần quét source/config Task 5. Xem [Firebase API key guidance](https://firebase.google.com/docs/projects/api-keys) và [Firebase AI Logic security checklist](https://firebase.google.com/docs/ai-logic/security-checklist).
 - Các con số quota và trạng thái Console được ghi trong log theo thời điểm quan sát, không được truy vấn lại trong Task 3 Day 5. Quota có thể thay đổi; kiểm tra Firebase/Google Cloud Console trước request demo.
 - Spark/free tier không cần thẻ hoặc Cloud Billing. Free-tier input có thể được dùng để cải thiện sản phẩm Google, nên chỉ thử bằng mô tả/ảnh tổng hợp, không dùng dữ liệu hiện trường thật. Paid tier và mục tiêu USD 5/tháng chưa áp dụng; việc bật billing sau này cần xác nhận riêng.
 - Ứng dụng chặn ảnh gửi AI ở **4 MiB bytes gốc** tại form và service; form có thể giữ ảnh tới 10 MiB để preview cục bộ. Giới hạn của Firebase AI Logic phụ thuộc phiên bản/dịch vụ, nên cần kiểm tra tài liệu hiện hành nếu thay đổi ngưỡng.
@@ -166,6 +170,6 @@ Task 6 kiểm tra tự động và Task 7 rà soát tài liệu Ngày 3 hoàn t�
 - `docs/SESSION_2026-09-26_TASK5.md` — tổng kết phiên Task 5: triển khai, sự cố App Check/quota, model fallback.
 - `docs/implement_plan_day3.md` — kế hoạch tích hợp Firebase AI Logic và trạng thái Task 1–7.
 - `docs/implement_plan_day4.md` — task chỉnh sửa/xác nhận, persistence, lịch sử/chi tiết; Task 7 được đóng theo quyết định chủ dự án với ngoại lệ ảnh/offline; Day 4 chưa nghiệm thu đầy đủ.
-- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 1–4 có kết quả, Task 2 còn blocker ảnh/offline; Task 5–8 đang chờ.
+- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 1–5 có kết quả host/audit theo giới hạn đã ghi, Task 2 còn blocker ảnh/offline; Task 6–8 đang chờ.
 - `docs/testcase_day5_resilience.txt` — kết quả riêng của Day 5 Task 1–4, gồm test host và blocker Android.
 - `docs/PROMPT_01.md` — prompt onboarding cho coding agent theo trạng thái dự án hiện tại.

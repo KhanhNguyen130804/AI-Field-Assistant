@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 5: Độ tin cậy, kiểm thử lỗi và hoàn thiện UX
 
-> **Trạng thái:** Task 1 đã hoàn tất preflight; Task 2 kiểm tra được picker/preview nhưng persistence ảnh và offline còn BLOCKED; Task 3 đã triển khai và kiểm thử service/parser ngày 29/09/2026; Task 4 hoàn tất kiểm tra host ngày 30/09/2026 (full suite 117/117, analyzer sạch). Task 5–8 chưa thực hiện. Ngày 4 Task 7 được chủ dự án đóng với ngoại lệ được chấp nhận; đây không phải nghiệm thu đầy đủ Ngày 4.
+> **Trạng thái:** Task 1 đã hoàn tất preflight; Task 2 kiểm tra được picker/preview nhưng persistence ảnh và offline còn BLOCKED; Task 3 đã triển khai và kiểm thử service/parser ngày 29/09/2026; Task 4 hoàn tất kiểm tra host ngày 30/09/2026 (full suite 117/117, analyzer sạch); Task 5 đã rà call site, dữ liệu/log và bỏ log exception SDK thô ngày 30/09/2026. Còn xác minh API restrictions trong Console; Firebase App Check debug provider vẫn ghi debug token vào log cục bộ. Task 6–8 chưa thực hiện. Ngày 4 Task 7 được chủ dự án đóng với ngoại lệ được chấp nhận; đây không phải nghiệm thu đầy đủ Ngày 4.
 >
 > **Baseline theo hồ sơ ngày 29/09/2026:** `flutter analyze` sạch, `flutter test` 99/99, SQLite FFI 10/10 và APK debug build thành công. Trên Android đã kiểm chứng một report text-only qua save → History → detail → force-stop/relaunch. Đây là kết quả lịch sử, không phải kiểm tra mới của kế hoạch này. Lưu/đọc report có ảnh trên Android và save/read offline chưa được xác minh.
 >
@@ -153,6 +153,8 @@ Nhập mô tả / chọn ảnh
 5. Xác nhận test/demo chỉ dùng dữ liệu tổng hợp. Ghi rõ Firebase Spark/free-tier có giới hạn privacy/data-use trong tài liệu phù hợp; không khẳng định dịch vụ đã cấu hình production.
 
 **Tiêu chí hoàn tất:** không phát hiện secret mới hoặc payload nhạy cảm trong diff/log kiểm tra; mọi request AI đều gắn với hành động người dùng. Ghi chính xác phạm vi quét, không tuyên bố bảo đảm tuyệt đối.
+
+**Kết quả Task 5 (30/09/2026):** hoàn tất rà call site và bỏ log SDK exception thô. Chưa kiểm tra API-key restrictions trong Firebase/Google Cloud Console. Debug provider vẫn xuất token cục bộ theo hành vi SDK; không chia sẻ log/token, nên mục này là giới hạn còn cần ghi nhận thay vì tuyên bố log Android sạch hoàn toàn.
 
 ### Task 6 — UX regression trên viewport và Android
 

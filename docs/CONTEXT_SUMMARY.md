@@ -1,14 +1,17 @@
-# Tóm tắt dự án — trạng thái sau Day 5 Task 4
+# Tóm tắt dự án — trạng thái sau Day 5 Task 5
 
-> Baseline commit: `b201d0b` ngày 29/09/2026; Day 5 Task 4 được triển khai và kiểm tra trong working tree ngày 30/09/2026, chưa commit. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Kết quả cũ được giữ như bằng chứng lịch sử, không phải xác nhận vừa chạy.
+> Trạng thái được đối chiếu ngày 30/09/2026: Day 5 Task 4 đã được commit tại `ec51214` (`feat(day5): complete task 4 resilience`) trên `codex/day5`, đồng bộ với `origin/codex/day5`. Trước lần cập nhật README/context trong phiên khảo sát, không có tracked changes; `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi. Checklist này được viết từ snapshot cũ và phần Task 4 của nó chưa phản ánh implementation hiện tại. Hướng dẫn chuẩn tắc nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Các kết quả kiểm thử bên dưới là bằng chứng lịch sử theo từng task, không phải kiểm tra vừa chạy trong lượt khảo sát.
 
-## Trạng thái hiện tại — Day 5 Task 1–4
+## Trạng thái hiện tại — Day 5 Task 1–5
 
 - Luồng đang có trong ứng dụng: mô tả/chọn ảnh → người dùng chủ động gọi Firebase AI Logic → chỉnh sửa và xác nhận draft → lưu qua repository SQLite Android → History → chi tiết theo ID.
 - **Task 1:** baseline lịch sử gồm 99/99 tests, analyzer sạch và APK debug build/cài trên emulator. Đây không phải kết quả build của Task 3.
 - **Task 2:** fixture ảnh tổng hợp xuất hiện trong Photo Picker và preview được. Lần gọi AI trên emulator bị App Check chặn; chưa tạo report ảnh để xác minh persistence và chưa kiểm tra lưu/đọc offline. PHOTO-D5-02 và OFFLINE-D5-01 còn BLOCKED.
 - **Task 3:** service chấp nhận JPEG/PNG/WebP, kiểm tra MIME khớp chữ ký bytes, kiểm tra PNG tối thiểu và chuẩn hóa lỗi đọc ảnh; parser giữ contract hiện tại. Ghi nhận của Task 3: format 26 file/0 thay đổi, `flutter analyze` sạch, service/parser 43/43 và full suite 113/113. Không gọi Gemini/App Check thật, không build APK.
 - **Task 4 (30/09/2026):** form giới hạn ảnh phân tích ở JPEG/PNG/WebP, thông báo rõ khi loại ảnh không hỗ trợ và giữ preview trước. Tests bao phủ lỗi App Check/response/service/timeout/quota, giữ input và retry, loading/double tap, validation review/save, lỗi lưu/retry cùng ID, kết quả lưu mơ hồ khớp/conflict, Back khi có chỉnh sửa/đang save, và form chỉ xóa sau save thành công. Full suite đạt 117/117; `flutter analyze` sạch; format check 2 file Dart không đổi. Đây là kiểm chứng host/fake; không gọi Gemini thật, không build APK, không kiểm tra Android trong lượt này.
+- **Task 5 (30/09/2026):** rà call site xác nhận yêu cầu AI chỉ phát sinh từ CTA phân tích, chỉ gửi mô tả/ảnh người dùng cùng prompt/schema cố định, không tự thêm GPS/tài khoản/report đã lưu. Đã bỏ log exception SDK thô; log fallback còn lại là thông báo tĩnh về chuyển model. Quét marker secret trong source/config/test/tài liệu hiện tại phát hiện cấu hình Firebase client; không phát hiện Gemini Developer API key/private key trong phạm vi quét. Chưa kiểm tra API restrictions trong Console, không quét lịch sử Git hoặc APK. Firebase App Check debug provider vẫn ghi debug token vào log cục bộ theo hành vi SDK; không chia sẻ raw log. Không gọi Gemini/App Check thật trong Task 5.
+
+Khóa Firebase client trong cấu hình là để nhận diện project và không thay thế cơ chế authorization; cần giữ API restrictions phù hợp. Không tìm thấy Gemini Developer API key trong phạm vi quét. Phân loại dựa theo [Firebase API key guidance](https://firebase.google.com/docs/projects/api-keys) và [Firebase AI Logic security checklist](https://firebase.google.com/docs/ai-logic/security-checklist); cấu hình restrictions thực tế chưa được kiểm tra trong Console.
 - **Giới hạn cần giữ:** preview vẫn có thể fallback nếu bytes không giải mã được dù chữ ký hợp lệ; ngưỡng preview là 10 MiB còn gửi AI là 4 MiB. Request Gemini thật từng thành công trên Android ngày 27/09/2026, nhưng không chứng minh lần gọi mới nhất hoạt động.
 
 ## Bằng chứng lịch sử — Ngày 4 Task 7 (đóng theo quyết định chủ dự án, 2026-09-29)
@@ -134,6 +137,6 @@ Trong Windows workspace này, Kotlin incremental cache từng lỗi khi project 
 - `docs/implement_plan_day2.md` — phạm vi và tiêu chí triển khai Ngày 2.
 - `docs/implement_plan_day3.md` — kế hoạch Ngày 3 theo Firebase AI Logic và trạng thái Task 1–5.
 - `docs/implement_plan_day4.md` — hợp đồng đã chốt ở Task 1 và kế hoạch Task 2–8, gồm tiến độ một phần của Task 7.
-- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 1–4 có kết quả, Task 2 còn blocker ảnh/offline; Task 5–8 chưa thực hiện.
+- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 1–5 có kết quả audit/host theo từng giới hạn, Task 2 còn blocker ảnh/offline; Task 6–8 chưa thực hiện.
 - `docs/testcase_day5_resilience.txt` — evidence/case Day 5 Task 1–4, gồm kiểm tra host và blocker Android.
 - `docs/PROMPT_01.md` — prompt onboarding coding agent theo trạng thái repo hiện tại.

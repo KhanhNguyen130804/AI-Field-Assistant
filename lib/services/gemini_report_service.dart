@@ -182,12 +182,8 @@ class GeminiReportService {
           .timeout(requestTimeout);
     } on Object catch (error) {
       final mapped = _mapError(error);
-      if (kDebugMode) {
-        // Diagnosis only: surface the raw SDK error in debug builds so field
-        // issues (App Check rejection, model name, quota) are visible in
-        // logcat. Never log the prompt or image payload.
-        debugPrint('ReportDraft request failed: $error');
-      }
+      // SDK exceptions can contain request metadata or credentials. Keep the
+      // UI error mapping, but never write the raw exception to device logs.
       if (mapped is! ReportDraftQuotaException) {
         throw mapped;
       }
@@ -205,9 +201,6 @@ class GeminiReportService {
             .send(prompt)
             .timeout(requestTimeout);
       } on Object catch (fallbackError) {
-        if (kDebugMode) {
-          debugPrint('ReportDraft fallback request failed: $fallbackError');
-        }
         // The fallback quota error is the truthful outcome to report; other
         // fallback failures must not hide the original quota cause either.
         throw _mapError(fallbackError) is ReportDraftQuotaException
