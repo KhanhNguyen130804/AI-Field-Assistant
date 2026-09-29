@@ -20,6 +20,12 @@ const _fallbackModelName = 'gemini-3.5-flash-lite';
 
 const _defaultRequestTimeout = Duration(seconds: 60);
 
+const _supportedInlineImageMimeTypes = {
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+};
+
 /// Maximum original image bytes accepted for an AI request: 4 MiB leaves
 /// room for the base64 overhead under the Firebase AI Logic 7 MB inline limit.
 const maxImageBytesForAi = 4 * 1024 * 1024;
@@ -215,7 +221,15 @@ class GeminiReportService {
   }
 
   Future<(String, Uint8List)> _readImage(XFile image) async {
-    final bytes = await image.readAsBytes();
+    final Uint8List bytes;
+    try {
+      bytes = await image.readAsBytes();
+    } on Object {
+      // Do not expose the local path or a platform exception to the UI/logs.
+      throw const InvalidReportDraftInputException(
+        'Ảnh không đọc được. Hãy chọn ảnh khác rồi thử lại.',
+      );
+    }
     if (bytes.isEmpty) {
       throw const InvalidReportDraftInputException(
         'Ảnh không đọc được. Hãy chọn ảnh khác rồi thử lại.',
@@ -230,20 +244,50 @@ class GeminiReportService {
     final mimeType = _imageMimeType(image, bytes);
     if (mimeType == null) {
       throw const InvalidReportDraftInputException(
-        'Loại ảnh không được hỗ trợ. Hãy dùng ảnh JPEG, PNG, WebP, GIF hoặc HEIC.',
+        'Loại ảnh không được hỗ trợ. Hãy dùng ảnh JPEG, PNG hoặc WebP.',
       );
     }
     return (mimeType, bytes);
   }
 
   String? _imageMimeType(XFile image, Uint8List bytes) {
-    final declared = image.mimeType;
-    if (declared != null && declared.startsWith('image/')) return declared;
+    final detected = _detectImageMimeType(bytes);
+    final declared = image.mimeType?.split(';').first.trim().toLowerCase();
 
-    if (_startsWith(bytes, const [0x89, 0x50, 0x4e, 0x47])) return 'image/png';
+    if (declared == null || declared.isEmpty) return detected;
+    if (declared == 'application/octet-stream') return detected;
+    if (!_supportedInlineImageMimeTypes.contains(declared)) return null;
+
+    // The file bytes are authoritative. Never send a supported MIME label
+    // that disagrees with the detected image signature.
+    return declared == detected ? declared : null;
+  }
+
+  String? _detectImageMimeType(Uint8List bytes) {
+    if (bytes.length >= 33 &&
+        _startsWith(bytes, const [
+          0x89,
+          0x50,
+          0x4e,
+          0x47,
+          0x0d,
+          0x0a,
+          0x1a,
+          0x0a,
+        ]) &&
+        _startsWith(bytes.sublist(8), const [
+          0x00,
+          0x00,
+          0x00,
+          0x0d,
+          0x49,
+          0x48,
+          0x44,
+          0x52,
+        ])) {
+      return 'image/png';
+    }
     if (_startsWith(bytes, const [0xff, 0xd8, 0xff])) return 'image/jpeg';
-    if (_startsWith(bytes, const [0x47, 0x49, 0x46, 0x38])) return 'image/gif';
-    if (_startsWith(bytes, const [0x42, 0x4d])) return 'image/bmp';
     if (_startsWith(bytes, const [0x52, 0x49, 0x46, 0x46]) &&
         bytes.length >= 12 &&
         bytes[8] == 0x57 &&
@@ -251,11 +295,6 @@ class GeminiReportService {
         bytes[10] == 0x42 &&
         bytes[11] == 0x50) {
       return 'image/webp';
-    }
-    if (bytes.length >= 12 && bytes[4] == 0x66 && bytes[5] == 0x74) {
-      final brand = String.fromCharCodes(bytes.sublist(8, 12));
-      const heifBrands = {'heic', 'heix', 'hevc', 'hevx', 'mif1', 'msf1'};
-      if (heifBrands.contains(brand)) return 'image/heic';
     }
     return null;
   }

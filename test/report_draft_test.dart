@@ -47,6 +47,25 @@ void main() {
       },
     );
 
+    test('missing fields without a confirmation list remain unconfirmed', () {
+      final draft = ReportDraft.fromJson({'issue': 'Water is leaking.'});
+
+      expect(draft.category, '');
+      expect(draft.location, '');
+      expect(draft.priority, isNull);
+      expect(draft.issue, 'Water is leaking.');
+      expect(draft.suggestedAction, '');
+      expect(draft.summary, '');
+      expect(draft.needsConfirmation, ReportDraft.confirmableFields);
+    });
+
+    test('ignores unknown response keys and preserves the known schema', () {
+      final json = _validJson()..['future_field'] = 'ignored';
+      final draft = ReportDraft.fromJson(json);
+
+      expect(draft.toJson(), _validJson());
+    });
+
     test('requires review of all fields if needs_confirmation is missing', () {
       final draft = ReportDraft.fromJson({
         'category': 'Equipment failure',
@@ -67,11 +86,19 @@ void main() {
       );
     });
 
+    test('rejects response maps with non-string keys', () {
+      expect(
+        () => ReportDraft.fromJson({1: 'unexpected'}),
+        throwsFormatException,
+      );
+    });
+
     test('rejects incorrect field types and unsupported priorities', () {
       final wrongTextType = _validJson()..['location'] = 42;
       final wrongPriority = _validJson()..['priority'] = 'urgent';
       final wrongConfirmationType = _validJson()
         ..['needs_confirmation'] = 'issue';
+      final wrongConfirmationValue = _validJson()..['needs_confirmation'] = [1];
       final unknownConfirmationField = _validJson()
         ..['needs_confirmation'] = ['cause'];
 
@@ -79,6 +106,10 @@ void main() {
       expect(() => ReportDraft.fromJson(wrongPriority), throwsFormatException);
       expect(
         () => ReportDraft.fromJson(wrongConfirmationType),
+        throwsFormatException,
+      );
+      expect(
+        () => ReportDraft.fromJson(wrongConfirmationValue),
         throwsFormatException,
       );
       expect(

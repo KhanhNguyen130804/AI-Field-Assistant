@@ -171,7 +171,7 @@ Ký hiệu expectation: chuỗi thông báo trong **đậm** phải khớp **ngu
 
 ### TC-5.5.3 File giả mạo (ảnh C) với phân tích
 - **Bước:** Chọn ảnh C (nếu picker cho chọn). Nếu form đã chặn ngay ở preview (không thể chọn), ghi kết quả đó.
-- **Kỳ vọng:** Không bao giờ tới được bước gửi; thông báo từ form ("không đọc được") hoặc từ service **"Loại ảnh không được hỗ trợ. Hãy dùng ảnh JPEG, PNG, WebP, GIF hoặc HEIC."**; không crash, ảnh khác vẫn chọn được sau đó.
+- **Kỳ vọng:** Không bao giờ tới được bước gửi; thông báo từ form ("không đọc được") hoặc từ service **"Loại ảnh không được hỗ trợ. Hãy dùng ảnh JPEG, PNG hoặc WebP."**; không crash, ảnh khác vẫn chọn được sau đó. Firebase AI Logic inline chỉ nhận ba MIME này; ảnh BMP/GIF/HEIF/AVIF có thể qua preview nhưng service từ chối khi phân tích.
 
 ---
 

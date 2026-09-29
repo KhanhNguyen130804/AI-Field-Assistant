@@ -1,6 +1,6 @@
-# Day 5 Task 1 — Preflight và baseline APK
+# Day 5 — Phiếu kiểm chứng Task 1–3
 
-> Ngày thực hiện: 29/09/2026. Phiếu này ghi kết quả thực chạy Task 1 trên working tree hiện tại. Không dùng làm bằng chứng cho các Task Day 5 khác.
+> Ngày thực hiện: 29/09/2026. Mỗi mục ghi riêng môi trường, lệnh và kết quả; không suy rộng bằng chứng từ task này sang task khác.
 
 ## Source và Git trước kiểm tra
 
@@ -73,3 +73,33 @@ ADB ban đầu không có trên PATH; Android Platform Tools được tìm thấ
 - APK SHA được so với giá trị đã ghi ở Task 1; build không chạy lại và APK đã cài không được pull/hash độc lập trong lượt này.
 - Không chạy `dart format`, `flutter analyze`, `flutter test` hoặc `flutter build apk` trong Task 2. Không có thay đổi mã nguồn/cấu hình; kết quả test/build Task 1 vẫn chỉ là bằng chứng lịch sử Task 1.
 - **Task 2 mới đạt phần fixture/picker/preview.** Persistence ảnh và local save/read offline vẫn chưa nghiệm thu; PHOTO-D5-02, OFFLINE-D5-01 và AI-D5-01 còn BLOCKED, không tính là PASS.
+
+## Day 5 Task 3 — Audit service/parser (29/09/2026)
+
+### Môi trường, phạm vi và thay đổi
+
+| Thuộc tính | Kết quả |
+|---|---|
+| Branch / HEAD trước Task 3 | `codex/day5` / `077c943` (`docs(day5): record task 2 persistence check`) |
+| Môi trường | Windows host, Flutter/Dart; fake request sender; không gửi mạng |
+| Thay đổi mã | MIME inline giới hạn PNG/JPEG/WebP; chữ ký phải khớp MIME; PNG cần signature và IHDR header; lỗi đọc file thành lỗi input có thông báo an toàn |
+| Contract parser | Không đổi schema; field thiếu vẫn rỗng/null và cần xác nhận; key lạ bị bỏ qua; field đã biết sai kiểu bị từ chối |
+| Git có trước Task 3 | README/CONTEXT_SUMMARY modified, `docs/PROMPT_01.md` deleted, `docs/implement_plan_day5.md` untracked; giữ nguyên, không stage/commit/push |
+
+### Kết quả kiểm tra vừa chạy
+
+| ID | Lệnh | Kết quả |
+|---|---|---|
+| AUTO-D5-05 | `flutter test test/gemini_report_service_test.dart test/report_draft_test.dart --reporter compact` | **PASS — 43/43**; fake sender, không chứng minh Gemini thật |
+| AUTO-D5-06 | `flutter test --reporter compact` | **PASS — 113/113** |
+| AUTO-D5-07 | `flutter analyze` | **PASS — No issues found** |
+| AUTO-D5-08 | `dart format lib/services/gemini_report_service.dart test/gemini_report_service_test.dart test/report_draft_test.dart` | **PASS** — 3 file được format |
+| AUTO-D5-09 | `dart format --output=none --set-exit-if-changed lib test` | **PASS** — 26 file, 0 thay đổi |
+
+Trong lần chạy test trước khi sửa service, ba test mới tái hiện lỗi: MIME SVG/không khớp signature vẫn được gửi; `PathNotFoundException` từ đọc ảnh thoát khỏi service thay vì thành lỗi input. Sau sửa, các test đó đạt. Không chạy APK build, ADB hoặc kiểm tra Firebase/Gemini/App Check thật trong Task 3.
+
+### Ranh giới và đầu việc liên quan
+
+- Firebase AI Logic công bố `image/png`, `image/jpeg`, `image/webp` cho ảnh inline; mã được căn theo [tài liệu input-file requirements](https://firebase.google.com/docs/ai-logic/input-file-requirements). Ảnh BMP/GIF/HEIF/AVIF có thể được form hiện preview nhưng bị service từ chối khi phân tích; cần đồng bộ lựa chọn/thông báo form trong Task 4.
+- Task 2 vẫn giữ PHOTO-D5-02 và OFFLINE-D5-01 ở trạng thái **BLOCKED** do chưa có draft/report trên emulator; Task 3 không thay đổi trạng thái đó.
+- Không có build/APK mới, request AI thật, debug token, prompt/response hoặc dữ liệu hiện trường trong kiểm chứng này.

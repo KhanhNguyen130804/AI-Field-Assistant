@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:ai_field_assistant/models/report_draft.dart';
@@ -20,11 +21,19 @@ const _validDraftJson = '''
 }
 ''';
 
-// Minimal PNG header so the service can sniff the MIME type when XFile
-// carries none.
+// Minimal PNG signature and IHDR header so the service can sniff the MIME
+// type when XFile carries none. Tests use a fake sender, not a real model.
 const _pngHeaderBytes = <int>[
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, //
   0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, // width
+  0x00, 0x00, 0x00, 0x01, // height
+  0x08,
+  0x02,
+  0x00,
+  0x00,
+  0x00, // bit depth, color type, compression, filter, interlace
+  0x00, 0x00, 0x00, 0x00, // placeholder CRC for signature-only tests
 ];
 
 void main() {
@@ -124,6 +133,76 @@ void main() {
     );
   });
 
+  test('ảnh khai báo MIME chung: nhận diện từ signature PNG', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await service.createReportDraft(
+      image: XFile.fromData(
+        Uint8List.fromList(_pngHeaderBytes),
+        name: 'photo',
+        mimeType: 'application/octet-stream',
+      ),
+    );
+
+    expect(sender.callCount, 1);
+    expect(
+      sender.lastPrompt.parts.whereType<InlineDataPart>().single.mimeType,
+      'image/png',
+    );
+  });
+
+  test('JPEG khai báo MIME đúng: gửi với image/jpeg', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await service.createReportDraft(
+      image: XFile.fromData(
+        Uint8List.fromList([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x00]),
+        name: 'photo.jpg',
+        mimeType: 'image/jpeg',
+      ),
+    );
+
+    expect(sender.callCount, 1);
+    expect(
+      sender.lastPrompt.parts.whereType<InlineDataPart>().single.mimeType,
+      'image/jpeg',
+    );
+  });
+
+  test('WebP khai báo MIME đúng: gửi với image/webp', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await service.createReportDraft(
+      image: XFile.fromData(
+        Uint8List.fromList([
+          0x52,
+          0x49,
+          0x46,
+          0x46,
+          0x00,
+          0x00,
+          0x00,
+          0x00,
+          0x57,
+          0x45,
+          0x42,
+          0x50,
+        ]),
+        name: 'photo.webp',
+        mimeType: 'image/webp',
+      ),
+    );
+
+    expect(sender.callCount, 1);
+    expect(
+      sender.lastPrompt.parts.whereType<InlineDataPart>().single.mimeType,
+      'image/webp',
+    );
+  });
+
   test('cả mô tả và ảnh đều trống: chặn trước khi gửi', () async {
     final sender = _FakeSender(responseText: _validDraftJson);
     final service = buildService(sender);
@@ -158,6 +237,23 @@ void main() {
     expect(sender.callCount, 0);
   });
 
+  test('ảnh đúng 4 MiB: được gửi nguyên vẹn', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+    final bytes = Uint8List(maxImageBytesForAi)
+      ..setRange(0, _pngHeaderBytes.length, _pngHeaderBytes);
+
+    await service.createReportDraft(
+      image: XFile.fromData(bytes, name: 'exact.png', mimeType: 'image/png'),
+    );
+
+    expect(sender.callCount, 1);
+    expect(
+      sender.lastPrompt.parts.whereType<InlineDataPart>().single.bytes,
+      hasLength(maxImageBytesForAi),
+    );
+  });
+
   test('ảnh rỗng: chặn với thông báo ảnh không đọc được', () async {
     final sender = _FakeSender(responseText: _validDraftJson);
     final service = buildService(sender);
@@ -184,6 +280,97 @@ void main() {
     expect(sender.callCount, 0);
   });
 
+  test('PNG thiếu IHDR: chặn trước khi gửi', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(
+        image: XFile.fromData(
+          Uint8List.fromList(_pngHeaderBytes.take(16).toList()),
+          name: 'truncated.png',
+          mimeType: 'image/png',
+        ),
+      ),
+      throwsA(isA<InvalidReportDraftInputException>()),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test(
+    'MIME ảnh không được Firebase AI Logic hỗ trợ: chặn trước khi gửi',
+    () async {
+      final sender = _FakeSender(responseText: _validDraftJson);
+      final service = buildService(sender);
+
+      await expectLater(
+        service.createReportDraft(
+          image: XFile.fromData(
+            Uint8List.fromList(_pngHeaderBytes),
+            name: 'vector.svg',
+            mimeType: 'image/svg+xml',
+          ),
+        ),
+        throwsA(isA<InvalidReportDraftInputException>()),
+      );
+      expect(sender.callCount, 0);
+    },
+  );
+
+  test('BMP không được gửi với Firebase AI Logic inline data', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(
+        image: XFile.fromData(
+          Uint8List.fromList([0x42, 0x4d, 0x00, 0x00]),
+          name: 'photo.bmp',
+          mimeType: 'image/bmp',
+        ),
+      ),
+      throwsA(isA<InvalidReportDraftInputException>()),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test('MIME khai báo không khớp signature: chặn trước khi gửi', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(
+        image: XFile.fromData(
+          Uint8List.fromList(_pngHeaderBytes),
+          name: 'photo.jpg',
+          mimeType: 'image/jpeg',
+        ),
+      ),
+      throwsA(isA<InvalidReportDraftInputException>()),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test('lỗi đọc file ảnh được ánh xạ thành lỗi input', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+    final missingPath =
+        '${Directory.systemTemp.path}${Platform.pathSeparator}'
+        'ai-field-missing-${DateTime.now().microsecondsSinceEpoch}.png';
+
+    await expectLater(
+      service.createReportDraft(image: XFile(missingPath)),
+      throwsA(
+        isA<InvalidReportDraftInputException>().having(
+          (error) => error.userMessage,
+          'userMessage',
+          contains('đọc'),
+        ),
+      ),
+    );
+    expect(sender.callCount, 0);
+  });
+
   test('response rỗng: báo lỗi phản hồi AI', () async {
     final sender = _FakeSender(responseText: '   ');
     final service = buildService(sender);
@@ -192,6 +379,17 @@ void main() {
       service.createReportDraft(description: 'Điều hòa hỏng.'),
       throwsA(isA<ReportDraftResponseException>()),
     );
+  });
+
+  test('response null: báo lỗi phản hồi AI', () async {
+    final sender = _FakeSender();
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+    expect(sender.callCount, 1);
   });
 
   test('response không phải JSON: báo lỗi phản hồi AI', () async {
@@ -210,6 +408,21 @@ void main() {
 
     await expectLater(
       service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+  });
+
+  test('needs_confirmation có phần tử sai kiểu: báo lỗi phản hồi AI', () async {
+    final sender = _FakeSender(
+      responseText:
+          '{"category":"", "location":"", "priority":null,'
+          '"issue":"Rò rỉ nước", "suggested_action":"", "summary":"",'
+          '"needs_confirmation":[1]}',
+    );
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Rò rỉ nước.'),
       throwsA(isA<ReportDraftResponseException>()),
     );
   });
