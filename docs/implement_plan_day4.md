@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 4: Chỉnh sửa, xác nhận, lưu cục bộ và lịch sử
 
-> **Trạng thái cập nhật (2026-09-29):** Task 1 chốt hợp đồng, Task 2 thêm model/state review, Task 3 thêm repository SQLite Android, Task 4 hoàn tất editor/review/save, Task 5 nối danh sách Lịch sử, Task 6 thêm màn chi tiết và sửa thông báo sau lưu. Task 6 được kiểm tra bằng `flutter analyze`, toàn suite `flutter test` **99/99** và `flutter build apk --debug` thành công. Widget tests chi tiết dùng fake repository. Lượt ADB Wireless Task 6 sau đó đã cài/chạy APK và quan sát UI; kết quả từng case nằm trong `docs/testcase_task6_detail_day4.txt`, với một số PARTIAL do fixture chưa xác minh. ADB Task 5 đã quan sát save → report hiện trong History. Chưa kiểm tra report/ảnh sau force-stop/restart. Task 7 (kiểm chứng persistence Android) và Task 8 (bàn giao sau Task 7) còn lại.
+> **Trạng thái cập nhật (2026-09-29):** Task 1–6 đã triển khai. Task 7 được chủ dự án đánh dấu hoàn thành với ngoại lệ được chấp nhận: automated checks và text-only AI → review → save → History/detail → force-stop/relaunch đạt; marker còn sau restart. Persistence ảnh Android chưa kiểm chứng vì fixture không xuất hiện trong Photo Picker; offline chưa chạy do chỉ có ADB Wireless. Task 8 cập nhật tài liệu/bàn giao xong; nghiệm thu đầy đủ Ngày 4 vẫn thiếu các case ảnh/offline. Chi tiết từng case ở docs/testcase_task7_persistence_day4.txt.
 >
 > **Phạm vi:** Hoàn thiện MVP Android từ bản nháp AI đến báo cáo đã được người dùng xác nhận, lưu bền vững và mở lại trong lịch sử. Giữ Flutter và Firebase AI Logic hiện có; không thêm đăng nhập, đồng bộ cloud, voice/GPS, push notification hoặc backend mới.
 
@@ -28,11 +28,11 @@ Không thêm sửa/xóa báo cáo đã lưu trong phạm vi bắt buộc. Nếu 
 - `lib/screens/create_report_screen.dart` nhập mô tả, chọn/chụp một ảnh, preview, xem lại đầu vào và gọi `GeminiReportService`; thành công push `ReportDraftScreen`.
 - `lib/screens/report_draft_screen.dart` cho sửa sáu trường, review riêng từng trường, xác nhận trường tùy chọn trống, giữ `issue` bắt buộc và yêu cầu review lại summary sau khi dữ kiện đổi; hiển thị draft AI, danh sách `needs_confirmation`, nhãn hành động đề xuất và mô tả/ảnh gốc.
 - `ReportDraft` có parser/serializer cho sáu trường nội dung và `needs_confirmation`. Constructor tự thêm trường rỗng/null vào danh sách này; không dùng trực tiếp nó để biểu diễn báo cáo đã xác nhận không có thông tin.
-- Task 3 đã thêm repository/database SQLite và path ảnh bền vững; Task 4 nối repository vào luồng lưu. Lưu yêu cầu người dùng xác nhận cuối, khóa thao tác trong lúc ghi, giữ nội dung/retry cùng ID khi lỗi, và chỉ xóa form nguồn sau khi lưu thành công. Task 5 nối danh sách lịch sử; Task 6 mở màn chi tiết theo ID. ADB đã quan sát save rồi đọc lại danh sách trong cùng phiên app; đọc lại sau restart vẫn chưa xác minh.
+- Task 3 đã thêm repository/database SQLite và path ảnh bền vững; Task 4 nối repository vào luồng lưu. Lưu yêu cầu người dùng xác nhận cuối, khóa thao tác trong lúc ghi, giữ nội dung/retry cùng ID khi lỗi, và chỉ xóa form nguồn sau khi lưu thành công. Task 5 nối danh sách lịch sử; Task 6 mở màn chi tiết theo ID. Task 7 đã xác minh một report text-only còn trong History/detail sau force-stop/relaunch trên Android; ảnh và hoạt động khi offline chưa xác minh.
 - Luồng Gemini thật, App Check Android debug và fallback quota có **bằng chứng lịch sử Task 5 Ngày 3**. Task 3 đã xác minh test SQLite FFI 10/10, toàn suite 77/77 và APK/Web build thành công. ADB smoke ngày 28/09 dùng APK trước Task 4; Task 4 có các kết quả 85/85, PHONE/ADB/APK được ghi ở phần lịch sử bên dưới. Lượt triển khai Task 5 Ngày 4 kiểm tra format 5 file Dart (0 đổi), `flutter analyze` sạch, `flutter test test/history_screen_test.dart` 5/5 và toàn suite 90/90; widget tests dùng fake repository. Lượt ADB Wireless sau đó build/cài APK debug và kiểm tra thiết bị, không chạy lại analyze/test. Kết quả từng ADB case, hash APK và giới hạn được ghi trong `docs/testcase_task5_history_day4.txt` và `docs/AI_WORKLOG.md`.
 - Git đầu Task 3 sạch, nhánh `codex/day4-preflight`, HEAD `155c223`. Kiểm tra lại trước mỗi task; không reset/restore/clean/stash hoặc ghi đè thay đổi mới của người dùng.
 
-**Quyết định Task 1:** SQLite qua `sqflite` cho báo cáo có cấu trúc; ảnh lưu riêng trong thư mục application support qua `path_provider`, database giữ đường dẫn tương đối và dùng `path` để ghép/kiểm tra đường dẫn. Các phiên bản `sqflite 2.4.4`, `path_provider 2.1.6`, `path 1.9.1` và dev dependency `sqflite_common_ffi 2.4.3` được chốt bằng dry-run ở Task 1, sau đó đã thêm/resolve ở Task 3. APK/Web build và SQLite FFI test Windows thành công; plugin/restart trên Android chưa xác minh.
+**Quyết định Task 1:** SQLite qua sqflite cho báo cáo có cấu trúc; ảnh lưu riêng trong thư mục application support qua path_provider, database giữ đường dẫn tương đối và dùng path để ghép/kiểm tra đường dẫn. Các phiên bản sqflite 2.4.4, path_provider 2.1.6, path 1.9.1 và dev dependency sqflite_common_ffi 2.4.3 được chốt bằng dry-run ở Task 1, sau đó đã thêm/resolve ở Task 3. APK/Web build và SQLite FFI test Windows thành công. Bằng chứng Android Task 7 hiện xác nhận được text-only save/read qua restart; ảnh và offline vẫn chưa xác minh.
 
 **Web:** giữ khả năng preview UI và test qua repository inject; persistence Android là tiêu chí bắt buộc. Nếu lựa chọn SQLite không hỗ trợ Web trong cấu hình này, hiển thị rõ giới hạn và vô hiệu hóa thao tác lưu trên Web, không tự lưu vào RAM rồi báo thành công. Không mở rộng sang backend lưu Web để hoàn thành Ngày 4.
 
@@ -322,20 +322,26 @@ Kiểm chứng phiên này: `dart format` trên 6 file liên quan (exit 0, lần
 
 **Mục tiêu:** có bằng chứng đầu-cuối cho Ngày 4 và kiểm tra lỗi quan trọng.
 
-**Trạng thái:** Chưa thực hiện; phụ thuộc Task 2–6.
+**Trạng thái:** Hoàn thành theo quyết định của chủ dự án với ngoại lệ được chấp nhận (2026-09-29). Đây là quyết định đóng task, không phải xác nhận mọi tiêu chí kiểm chứng đều đạt; nghiệm thu đầy đủ Ngày 4 vẫn còn thiếu.
 
-**Cần làm:**
+**Kết quả kiểm chứng Task 7 (2026-09-29):** format check 26 file Dart/0 file cần đổi; flutter analyze sạch; flutter test --reporter compact 99/99; test/local_report_repository_test.dart 10/10 bằng SQLite FFI host; APK debug build thành công (version 0.1.0/code 1, SHA-256 6E84D74E20027B08CE7A04B0E93626A00AB872D8064B89D62E97D2DBD9A59804). APK cài đặt trùng hash build. Trên PKG110 Android 16/API 36, một request Gemini tổng hợp tạo draft text-only; người dùng chỉnh sửa/review, xác nhận priority null, lưu, mở đúng report ở History/detail; sau force-stop/relaunch cùng marker vẫn có ở History/detail. Logcat giới hạn: 1.956 dòng, không có match fatal exception hoặc nhóm lỗi SQLite/plugin đã lọc. Model thực tế của request không được ghi nhận; service hiện cấu hình gemini-3.8-flash primary và gemini-3.5-flash-lite fallback.
 
-1. Chạy format, `flutter analyze`, toàn bộ `flutter test`; chạy test repository thực theo phương án Task 1. Ghi số test thực tế từ output, không tái dùng số cũ.
-2. Build APK debug, cài và chạy trên Android; ghi model/Android version/thời điểm và build được dùng. Không gỡ cài/xóa dữ liệu khi thiết bị còn dữ liệu người dùng cần giữ; dùng thiết bị/emulator test phù hợp.
-3. Với input tổng hợp: tạo draft AI thật → sửa ít nhất một field → xử lý field thiếu/xác nhận trống → xác nhận cuối → lưu → lịch sử → chi tiết. Nếu quota/App Check chặn, ghi blocker; test fake không được mô tả như AI E2E thật.
-4. Kiểm tra text-only và có ảnh; chọn priority null rồi xác nhận chưa xác định; issue rỗng không lưu được; sửa dữ kiện sau xác nhận phải review lại summary.
-5. Đóng process/mở lại app để xác minh report và ảnh từ persistence, không chỉ bấm Home. Không xóa dữ liệu hoặc gỡ app trong bước kiểm chứng này.
-6. Sau khi có draft, tắt mạng rồi sửa/xác nhận/lưu; mở lịch sử/chi tiết khi mất mạng. Nếu Firebase init lúc cold start gây trở ngại, ghi đúng giới hạn, không suy ra offline hoàn chỉnh từ test repository.
-7. Test lỗi lưu/đọc/ảnh mất bằng seam hoặc database/thư mục test; không phá dữ liệu thật. Ghi rõ lỗi nào được mô phỏng, lỗi nào quan sát trên thiết bị.
-8. Tạo bảng test thủ công Ngày 4, điền riêng từng TC với PASS/FAIL/Blocked, thời gian/model và bằng chứng ngắn; không chỉ ghi PASS tổng thể.
+**Còn thiếu:** fixture ảnh do phiên test tạo không xuất hiện trong Android Photo Picker nên chưa tạo/lưu/reopen report có ảnh; offline save/read chưa chạy vì thiết bị chỉ có ADB Wireless transports và ngắt Wi-Fi làm mất kênh điều khiển. Thử issue rỗng trên thiết bị mới xác nhận editor có field rỗng; chưa thử nút lưu trong trạng thái mọi field khác đã review. Widget/repository tests bao phủ validation/lỗi tương ứng. Bảng trạng thái từng case nằm ở docs/testcase_task7_persistence_day4.txt. Một báo cáo tổng hợp được giữ trong app; fixture ảnh/screenshot tạm chưa dọn được sau khi automatic approval review chặn lệnh xóa qua nhiều shell/filesystem. Không có lệnh xóa chạy.
 
-**Lệnh dự kiến (chưa chạy trong phiên lập kế hoạch):**
+**Quyết định đóng:** chủ dự án yêu cầu đánh dấu Task 7 hoàn thành và publish dù còn các ngoại lệ trên. Vì vậy task được đóng theo chấp thuận của chủ dự án; các case ảnh/offline vẫn giữ BLOCKED/NOT RUN, không được ghi thành PASS. Việc xác minh ảnh/offline được giữ làm follow-up; điều này không đồng nghĩa nghiệm thu đầy đủ Ngày 4.
+
+**Tiến độ theo tiêu chí:**
+
+1. [x] Format check, flutter analyze, full flutter test và test repository FFI: 26 file/0 đổi, analyzer sạch, 99/99 và 10/10.
+2. [x] Debug APK build; app Android chạy qua ADB Wireless, APK cài đặt khớp hash APK vừa build. Không gỡ cài/xóa dữ liệu.
+3. [x] Với input tổng hợp, AI tạo draft text-only → sửa/review → xác nhận cuối → save → History → detail.
+4. [~] Text-only và priority null đã kiểm tra; issue rỗng được nhìn thấy trong editor nhưng chưa xác minh nút lưu khi các field khác đã review; summary được xác nhận sau review nhưng chưa thử invalidation sau khi summary đã được xác nhận. Có ảnh bị BLOCKED do fixture không xuất hiện trong Photo Picker.
+5. [~] Text-only report còn trong History/detail sau force-stop/relaunch; ảnh chưa kiểm chứng.
+6. [ ] Chưa chạy offline thật. Chỉ có ADB Wireless transports, nên chưa ngắt Wi-Fi.
+7. [x] Test host SQLite FFI 10/10 bao gồm lỗi write, ảnh mất, path không an toàn và JSON hỏng; không cố tình phá dữ liệu Android.
+8. [x] Bảng test thủ công có trạng thái từng case tại docs/testcase_task7_persistence_day4.txt.
+
+**Lệnh dùng khi kiểm tra Task 7 (kết quả phiên này ghi ở trên và trong phiếu test):**
 
 ```bash
 dart format lib test
@@ -348,7 +354,7 @@ flutter run -d <android-device-id>
 
 Nếu thêm `integration_test`, ghi lệnh/target cụ thể sau khi chọn ở Task 1. Web build chỉ kiểm tra tương thích preview nếu vẫn hỗ trợ, không chứng minh SQLite Android hoạt động.
 
-**File dự kiến:** các test liên quan; `docs/MANUAL_TESTCASES_DAY4.md`, `docs/AI_WORKLOG.md`.
+**File:** test liên quan; docs/testcase_task7_persistence_day4.txt; README.md; docs/CONTEXT_SUMMARY.md; docs/WALKTHROUGH.md; docs/AI_WORKLOG.md.
 
 **Tránh:** gọi AI nhiều lần để kiểm tra các thao tác chỉ cần database; dùng ảnh có sẵn không rõ nguồn; coi build thành công là đã chạy được app; ghi kết quả khi môi trường thiếu công cụ.
 
@@ -358,7 +364,7 @@ Nếu thêm `integration_test`, ghi lệnh/target cụ thể sau khi chọn ở 
 
 **Mục tiêu:** README/context/walkthrough phản ánh đúng persistence và bằng chứng vừa có.
 
-**Trạng thái:** Chưa thực hiện; sau Task 7 hoặc ghi rõ các phần còn bị chặn.
+**Trạng thái:** Hoàn tất cập nhật tài liệu và bàn giao theo quyết định đóng Task 7 với ngoại lệ được chấp nhận. Phiếu test và README/context/walkthrough/worklog giữ rõ ảnh/offline chưa được kiểm chứng; Day 4 chưa nghiệm thu đầy đủ.
 
 **Cần làm:**
 
@@ -366,7 +372,7 @@ Nếu thêm `integration_test`, ghi lệnh/target cụ thể sau khi chọn ở 
 2. Cập nhật `CONTEXT_SUMMARY.md`, `WALKTHROUGH.md` và trạng thái từng task/checklist của kế hoạch này; không giữ câu “chưa có lưu trữ” như trạng thái hiện tại nếu đã kiểm chứng xong.
 3. Ghi công cụ AI, prompt triển khai quan trọng, lỗi/đề xuất sai thực sự gặp, cách sửa và lệnh/kết quả trong worklog. Ghi entry mới theo phiên, không bịa nhật ký hồi cứu.
 4. Sửa phân bổ test sai và làm rõ các mục cũ Ngày 3 là lịch sử; cập nhật test thủ công quota/confirmation khi có yêu cầu regression liên quan, không xóa bằng chứng cũ.
-5. Rà diff/status cuối phiên, liệt kê tệp modified/untracked/deleted và dependency mới; không stage/commit/push hoặc dọn artifacts nếu chưa được yêu cầu.
+5. Rà diff/status cuối phiên, liệt kê tệp modified/untracked/deleted và dependency mới; chỉ stage/commit/push khi chủ dự án yêu cầu rõ ràng; giữ nguyên artifacts cần thiết.
 
 **File dự kiến:** `README.md`, `docs/CONTEXT_SUMMARY.md`, `docs/WALKTHROUGH.md`, `docs/AI_WORKLOG.md`, kế hoạch/test case liên quan.
 
@@ -378,18 +384,18 @@ Nếu thêm `integration_test`, ghi lệnh/target cụ thể sau khi chọn ở 
 
 - [ ] Có thể chỉnh sửa sáu field của draft và đối chiếu đầu vào gốc.
 - [ ] Nội dung AI, field cần review và nội dung người dùng xác nhận được phân biệt rõ.
-- [ ] `issue` không rỗng trước lưu; priority không tự mặc định.
-- [ ] Trường thiếu được bổ sung hoặc xác nhận không có; sửa sau xác nhận yêu cầu review lại.
-- [ ] Summary được người dùng đối chiếu với dữ kiện đã xác nhận; thay đổi dữ kiện hủy xác nhận summary.
-- [ ] Chỉ lưu khi có xác nhận cuối; double-tap/retry không tạo bản ghi trùng.
-- [ ] Database cục bộ lưu/đọc được báo cáo; ảnh nằm trong thư mục ứng dụng, không phụ thuộc cache picker.
-- [ ] Lưu lỗi giữ nội dung editor; đọc lỗi có retry, không giả thành empty state.
+- [~] Issue rỗng đã thấy trong editor, priority null đã xác nhận chưa có; chưa thử nút save khi các field khác đã review hết.
+- [~] Các field được review trong luồng test; chưa kiểm tra trên thiết bị rằng chỉnh field sau khi đã xác nhận sẽ yêu cầu review lại.
+- [~] Summary được xác nhận sau khi review field; chưa kiểm tra invalidation sau khi summary đã xác nhận. Widget test có coverage.
+- [~] Lưu sau xác nhận cuối chạy được; double-tap/retry được test tự động, chưa stress-test trên Android.
+- [~] SQLite Android đã giữ report text-only sau force-stop/relaunch; ảnh chưa được chọn/lưu vì Photo Picker không thấy fixture.
+- [~] Repository/widget tests bao phủ lỗi write/read/retry; không cố tình tạo lỗi hoặc phá dữ liệu trên Android.
 - [x] Lịch sử có loading/rỗng/dữ liệu/lỗi và cập nhật sau lưu.
-- [x] Chi tiết truy vấn đúng report theo ID và có fallback ảnh; đọc từ SQLite Android sau restart còn cần xác minh ở Task 7.
-- [ ] Đóng process/mở app vẫn thấy report và ảnh trên Android.
-- [ ] Test model/review/repository thực/widget đạt; APK debug cài và kiểm chứng MVP thật.
-- [ ] Kết quả thủ công được điền theo từng TC; các trường hợp thiếu công cụ/quota được ghi Blocked.
-- [ ] README/context/walkthrough/worklog khớp mã; giới hạn Web/offline/production được nêu đúng.
+- [~] Chi tiết mở đúng report theo ID sau restart; fallback ảnh có widget coverage nhưng chưa kiểm tra ảnh Android.
+- [~] Report text-only còn sau force-stop/relaunch; persistence ảnh chưa xác minh.
+- [x] Format/analyzer/tests/repository FFI/APK debug đều đạt; Android MVP đã kiểm chứng một phần.
+- [~] Bảng từng case đã cập nhật; ảnh/offline còn BLOCKED/NOT RUN.
+- [x] Tài liệu và bàn giao Task 8 đã đồng bộ; các ngoại lệ ảnh/offline vẫn được nêu rõ.
 - [ ] Không thêm secret, dữ liệu nhạy cảm, đăng nhập/cloud/voice/GPS hoặc thay đổi billing.
 
 ## 6. Thứ tự ưu tiên và điều kiện dừng
@@ -398,8 +404,8 @@ Nếu thêm `integration_test`, ghi lệnh/target cụ thể sau khi chọn ở 
 2. Task 2–3: validation và persistence thực.
 3. Task 4: sửa/xác nhận/lưu từ draft.
 4. Task 5–6: lịch sử và chi tiết từ database.
-5. Task 7: kiểm chứng Android và đóng/mở app.
-6. Task 8: đồng bộ tài liệu/bàn giao.
+5. Task 7 đã đóng theo quyết định chủ dự án; giữ follow-up kiểm chứng ảnh và offline khi có thiết bị/đường điều khiển phù hợp.
+6. Task 8: hoàn tất cập nhật tài liệu/bàn giao và publish; giữ nguyên trạng thái ngoại lệ Task 7.
 
 Triển khai từng task thành lát nhỏ, chạy kiểm tra liên quan sau khi đổi mã; không dựng toàn bộ ngày trong một lượt nếu yêu cầu chỉ một task. Ưu tiên hoàn thiện luồng text-only trước rồi xác minh ảnh bền vững, nhưng không coi Ngày 4 hoàn tất khi còn thiếu lưu ảnh.
 

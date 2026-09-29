@@ -1,8 +1,14 @@
-# Tóm tắt dự án — sau Task 6 Ngày 4
+# Tóm tắt dự án — Task 7 đã đóng với ngoại lệ được chấp nhận
 
-> Bản tóm tắt cập nhật sau khi hoàn tất Task 6 ngày 29/09/2026. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Các lần kiểm tra/build lịch sử, lượt triển khai và lượt ADB được phân biệt bên dưới.
+> Cập nhật ngày 29/09/2026 sau Task 7. Hướng dẫn chuẩn tắc vẫn nằm trong `AGENTS.md`; roadmap đầy đủ nằm trong `docs/CHALLENGE_VI_ROADMAP.md`. Kết quả lịch sử, lượt triển khai và kiểm tra thiết bị được phân biệt bên dưới.
 
-## Cập nhật mới nhất — Ngày 4 Task 6 (2026-09-29)
+## Cập nhật mới nhất — Ngày 4 Task 7 (đóng theo quyết định chủ dự án, 2026-09-29)
+
+Trong phiên này, dart format --output=none --set-exit-if-changed lib test xét 26 file/0 đổi; flutter analyze sạch; toàn suite đạt 99/99; test local_report_repository_test.dart đạt 10/10 với SQLite FFI host; APK debug build thành công. Trên PKG110 Android 16/API 36, một request AI với nội dung tổng hợp tạo draft text-only; report được review/lưu, mở đúng ở History/detail, rồi còn đọc được sau force-stop/relaunch. APK cài đặt được so hash trùng APK build. Logcat giới hạn 1.956 dòng có 0 match FATAL EXCEPTION và 0 match nhóm SQLite/plugin error đã lọc.
+
+Theo quyết định của chủ dự án, Task 7 được đóng với ngoại lệ được chấp nhận; điều này không biến các case chưa chạy thành PASS và không đồng nghĩa nghiệm thu đầy đủ Ngày 4. Ảnh tổng hợp không xuất hiện trong Photo Picker nên chưa lưu/reopen report có ảnh; offline save/read chưa chạy vì chỉ có ADB Wireless transports và tắt Wi-Fi sẽ làm mất kênh điều khiển. Issue rỗng từng được thấy trong editor nhưng chưa thử nút lưu khi mọi field khác đã review; widget tests bao phủ validation. Model thực tế của request Gemini không được ghi nhận độc lập. Case-by-case ở docs/testcase_task7_persistence_day4.txt; ảnh/offline là follow-up khi có thiết bị/đường điều khiển phù hợp.
+
+Một báo cáo tổng hợp Task 7 được giữ trên thiết bị để nhận diện kết quả sau restart; không xóa bản ghi hay đọc các report khác. Fixture ảnh/screenshot tạm trong thiết bị và Temp chưa dọn được sau khi automatic approval review chặn lệnh xóa kết hợp nhiều filesystem/shell; không có lệnh xóa nào chạy. Trước yêu cầu publish: nhánh codex/day4-preflight, HEAD đầu lượt da407b6; deletion có trước docs/PROMPT_01.md được giữ nguyên và không đưa vào commit Task 7.
 
 `HistoryScreen` dùng cùng `ReportRepository` với form lưu. Màn tải khi vào tab Lịch sử và khi refresh token tăng sau save; có loading, empty state chỉ sau lần đọc thành công, lỗi/thử lại, pull-to-refresh và trạng thái nền tảng không hỗ trợ. Chạm một dòng mở `ReportDetailScreen` theo ID, màn này gọi `findById`, hiển thị report đã xác nhận, mô tả gốc, metadata và ảnh qua `readPhotoBytes`. Field được xác nhận là không có được gắn nhãn rõ; hành động đề xuất không bị mô tả như việc đã làm. Lỗi/không tìm thấy có trạng thái riêng; lỗi hoặc bytes ảnh hỏng có fallback/retry và không che nội dung report. Back quay về danh sách. Thông báo sau lưu đã được sửa thành hướng dẫn mở tab Lịch sử.
 
@@ -34,7 +40,7 @@ Task 1 đã chốt hợp đồng `ReportReview`/`Report`, SQLite schema v1, repo
 
 Task 6 đã chạy lại kiểm tra format ở chế độ read-only (11 file, 0 thay đổi), `flutter analyze` (No issues) và `flutter test` (45/45 đạt). Bằng chứng request Gemini thật đầu-cuối với App Check hợp lệ đã được ghi ở Task 5; chủ dự án xác nhận bộ kiểm thử thủ công Task 5 đã PASS. Không có kết quả theo từng TC trong bảng thủ công. Phiên này không gửi request Gemini mới vì app đang có ảnh được chọn không rõ nội dung; quota hiện tại cũng chưa được truy vấn từ Console. Chi tiết ở cuối `docs/AI_WORKLOG.md`.
 
-Task 7 chỉ đồng bộ tài liệu và rà Git; không thay đổi mã/config, chạy build/test hoặc tạo request Gemini. Bước sản phẩm kế tiếp là Day 4: chỉnh sửa/xác nhận draft, lưu cục bộ và hiển thị lịch sử.
+**Bản ghi lịch sử trước lượt xác minh Task 7 ngày 29/09:** lượt đó chỉ đồng bộ tài liệu và rà Git; không thay đổi mã/config, chạy build/test hoặc tạo request Gemini. Bước sản phẩm kế tiếp khi ấy là Day 4: chỉnh sửa/xác nhận draft, lưu cục bộ và hiển thị lịch sử. Trạng thái mới nhất nằm ở phần đầu tài liệu.
 
 ## Người dùng và vấn đề
 
@@ -46,7 +52,7 @@ AI Field Assistant trước hết dành cho **nhân viên bảo trì tòa nhà**
 Tạo báo cáo → Xem/chỉnh sửa bản nháp → Lịch sử → Chi tiết báo cáo
 ```
 
-Đây là luồng sản phẩm đã thống nhất; hiện **Tạo báo cáo** nhập mô tả/chọn ảnh, gọi Gemini để mở draft chưa lưu, cho review/chỉnh sửa rồi lưu qua repository. **Lịch sử** đọc danh sách từ repository; chạm report mở **chi tiết đã lưu** đọc theo ID. Các widget tests dùng fake services/repositories và không chứng minh SQLite Android hoạt động sau restart.
+Đây là luồng sản phẩm đã thống nhất; hiện **Tạo báo cáo** nhập mô tả/chọn ảnh, gọi Gemini để mở draft chưa lưu, cho review/chỉnh sửa rồi lưu qua repository. **Lịch sử** đọc danh sách từ repository; chạm report mở **chi tiết đã lưu** đọc theo ID. Widget tests dùng fake services/repositories; Task 7 đã xác minh một report text-only còn đọc được trên Android sau restart process. Ảnh và offline chưa xác minh.
 
 ## Schema báo cáo đã thống nhất
 
@@ -62,15 +68,15 @@ Các trường nội dung lõi: `category`, `location`, `priority`, `issue`, `su
 | `summary` | Có thể rỗng nếu chưa đủ dữ kiện; nếu có thì chỉ tóm tắt dữ kiện đã xác nhận. | Có thể giữ trống sau khi người dùng xem lại. |
 | `needs_confirmation` | Danh sách tên trường đang cần người dùng xem lại. | Người dùng phải xử lý từng mục bằng cách bổ sung dữ liệu hoặc xác nhận dữ liệu đó không có; sau xác nhận trường được phép tiếp tục trống. |
 
-`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata, không thuộc các trường nội dung lõi. Schema có `ReportDraft` parser và được `GeminiReportService` dùng qua `responseSchema` + parse/validate phía app. Request Gemini thật được xác minh đầu-cuối trên Android trong Task 5 lịch sử. Draft chỉ trở thành báo cáo sau khi người dùng hoàn thành review/xác nhận và repository trả kết quả lưu thành công. UI được kiểm tra bằng widget tests; chủ dự án xác nhận các PHONE case Task 4 PASS và ADB quan sát được một draft AI mở thành công. Đọc lại báo cáo/ảnh từ SQLite sau restart chưa được kiểm chứng.
+`created_at`, đường dẫn ảnh và trạng thái báo cáo là metadata, không thuộc các trường nội dung lõi. Schema có `ReportDraft` parser và được `GeminiReportService` dùng qua `responseSchema` + parse/validate phía app. Request Gemini thật được xác minh đầu-cuối trên Android trong Task 5 lịch sử. Draft chỉ trở thành báo cáo sau khi người dùng hoàn thành review/xác nhận và repository trả kết quả lưu thành công. UI được kiểm tra bằng widget tests; chủ dự án xác nhận các PHONE case Task 4 PASS và ADB quan sát được một draft AI mở thành công. Task 7 đã xác minh một report text-only còn sau process restart trên Android; ảnh và offline chưa kiểm chứng.
 
 ## Công nghệ, hiện trạng và giới hạn
 
 - **Flutter/Dart**, Android-first; Web bật để xem trước giao diện. UI dùng Material 3, `NavigationBar` và `IndexedStack`.
 - Image picker: `image_picker` 1.2.3; yêu cầu resize tối đa 1600×1600, JPEG quality 85 và giới hạn 10 MiB. Không thêm `permission_handler` hoặc quyền storage rộng.
 - Điểm vào app shell: `lib/main.dart`; form: `lib/screens/create_report_screen.dart`; editor/review: `lib/screens/report_draft_screen.dart`; lịch sử: `lib/screens/history_screen.dart`; chi tiết: `lib/screens/report_detail_screen.dart`; widget thông báo: `lib/widgets/status_notice.dart`; model draft: `lib/models/report_draft.dart`; model đã xác nhận: `lib/models/report.dart`; review state: `lib/models/report_review.dart`; priority dùng chung: `lib/models/report_priority.dart`; prompt: `lib/services/report_draft_prompt.dart`; service AI: `lib/services/gemini_report_service.dart`; repository contract/factory/SQLite: `lib/repositories/`; tests gồm `test/widget_test.dart`, `test/history_screen_test.dart`, `test/report_detail_screen_test.dart`, model/review tests, service tests và `test/local_report_repository_test.dart`.
-- Ngày 2 đã thêm nhập mô tả, camera/gallery picker, preview cục bộ, validation đầu vào và thông báo lỗi. Task 2 Ngày 3 thêm `ReportDraft` model/parser và prompt; Task 2 Ngày 4 thêm model/state review; Task 3 Ngày 3 nối Firebase Core/App Check; Task 4 Ngày 3 thêm `GeminiReportService`; Task 5 Ngày 3 nối service vào UI và có bằng chứng request Gemini thật trên Android. Task 3 Ngày 4 thêm repository SQLite/lưu ảnh; Task 4 Ngày 4 nối editor/review/save vào form; Task 5–6 Ngày 4 nối màn lịch sử và chi tiết. **Persistence report/ảnh sau restart Android chưa được kiểm chứng.**
-- Khi người dùng chủ động bấm **Phân tích bằng AI**, mô tả và/hoặc ảnh được gửi tới Gemini; trước thao tác đó form chỉ giữ đầu vào trong state và ảnh picker tạm. Draft trả về chưa tự lưu; sau review/xác nhận, editor gọi repository Android SQLite. Chủ dự án xác nhận PHONE-D4-01–14 PASS ở Task 4 và PHONE-D4-HIS-01–09 PASS ở Task 5. ADB Task 5 đã chạy một luồng lưu rồi đọc danh sách trong cùng phiên app; widget tests dùng fake repository. Chưa kiểm tra độc lập việc report/ảnh còn sau force-stop/restart.
+- Ngày 2 đã thêm nhập mô tả, camera/gallery picker, preview cục bộ, validation đầu vào và thông báo lỗi. Task 2 Ngày 3 thêm `ReportDraft` model/parser và prompt; Task 2 Ngày 4 thêm model/state review; Task 3 Ngày 3 nối Firebase Core/App Check; Task 4 Ngày 3 thêm `GeminiReportService`; Task 5 Ngày 3 nối service vào UI và có bằng chứng request Gemini thật trên Android. Task 3 Ngày 4 thêm repository SQLite/lưu ảnh; Task 4 Ngày 4 nối editor/review/save vào form; Task 5–6 Ngày 4 nối màn lịch sử và chi tiết. Task 7 đã xác minh text-only persistence qua process restart; ảnh/offline còn thiếu.
+- Khi người dùng chủ động bấm **Phân tích bằng AI**, mô tả và/hoặc ảnh được gửi tới Gemini; trước thao tác đó form chỉ giữ đầu vào trong state và ảnh picker tạm. Draft trả về chưa tự lưu; sau review/xác nhận, editor gọi repository Android SQLite. Chủ dự án xác nhận PHONE-D4-01–14 PASS ở Task 4 và PHONE-D4-HIS-01–09 PASS ở Task 5. ADB Task 5 đã chạy một luồng lưu rồi đọc danh sách trong cùng phiên app; widget tests dùng fake repository. Task 7 đã xác minh một report text-only còn ở History/detail sau force-stop/restart; report có ảnh và offline chưa xác minh.
 - **Quyết định Task 1 sau khi đổi hướng:** Firebase AI Logic + Gemini Developer API trên Spark/free tier. **Model hiện tại (cập nhật Task 5):** chính `gemini-3.8-flash` (free 20 req/ngày/model, cạn khi test 27/09) + **fallback tự động `gemini-3.5-flash-lite`** (free 500 req/ngày) khi gặp lỗi quota; chất lượng fallback thấp hơn — draft có thể cần xác nhận nhiều hơn. Không có Cloud Run backend hoặc Secret Manager do dự án tự quản lý; Gemini key được Firebase proxy giữ phía server.
 - Chủ dự án đã chọn Android/Web trong `flutterfire configure`; theo worklog, Firebase Console đã bật API/AI monitoring và dùng project Spark. Các cấu hình `lib/firebase_options.dart`, `firebase.json`, `android/app/google-services.json` đã được commit trong Task 3; bản clone dùng Firebase project khác cần cấu hình lại.
 - Quota Firebase AI Logic `Generate content requests` đã được đặt 5 RPM cho 10 vùng Asia (per-user/per-region); quota Gemini Developer API free tier vẫn cần kiểm tra khi dùng. Bidi giữ 100 vì app không dùng streaming.
@@ -113,8 +119,9 @@ Trong Windows workspace này, Kotlin incremental cache từng lỗi khi project 
 - `docs/MANUAL_TESTCASES_APK.md` — test case thủ công APK debug trên thiết bị thật.
 - `docs/testcase_task5_history_day4.txt` — kết quả theo từng case Task 5 Ngày 4: PHONE 9/9 PASS theo báo cáo người dùng; ADB 5 PASS, 1 BLOCKED.
 - `docs/testcase_task6_detail_day4.txt` — 10 PHONE cases và 6 ADB Wireless cases cho màn chi tiết Task 6; kết quả hiện tại: PHONE 2 PASS / 6 PARTIAL / 0 FAIL / 1 BLOCKED / 1 NOT RUN; ADB 4 PASS / 2 PARTIAL / 0 FAIL / 0 BLOCKED / 0 NOT RUN. Fixture thiết bị chưa xác minh nguồn.
+- docs/testcase_task7_persistence_day4.txt — kết quả từng case Task 7: automated checks, text-only Android persistence, restart và blocker ảnh/offline.
 - `docs/MANUAL_TESTCASES_TASK5.md` — test case thủ công luồng AI (Task 5) trên thiết bị thật.
 - `docs/SESSION_2026-09-26_TASK5.md` — tổng kết phiên triển khai Task 5, sự cố App Check/quota và model fallback.
 - `docs/implement_plan_day2.md` — phạm vi và tiêu chí triển khai Ngày 2.
 - `docs/implement_plan_day3.md` — kế hoạch Ngày 3 theo Firebase AI Logic và trạng thái Task 1–5.
-- `docs/implement_plan_day4.md` — hợp đồng đã chốt ở Task 1 và kế hoạch Task 2–8.
+- `docs/implement_plan_day4.md` — hợp đồng đã chốt ở Task 1 và kế hoạch Task 2–8, gồm tiến độ một phần của Task 7.

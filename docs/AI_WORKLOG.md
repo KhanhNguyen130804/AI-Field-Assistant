@@ -601,7 +601,7 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - `flutter test --reporter compact` — **99/99 đạt**. 9 test mới cho detail dùng fake repository; các tests không chứng minh SQLite/path_provider trên Android hoặc request AI thật.
 - `flutter build apk --debug` — exit 0, tạo `build/app/outputs/flutter-apk/app-debug.apk`. Build phát cảnh báo Java restricted native access và các plugin Firebase dùng Kotlin Gradle Plugin cần theo dõi chuyển sang Built-in Kotlin ở Flutter tương lai; hiện build thành công.
 - Không cài/chạy APK qua ADB, không thử trên thiết bị/emulator, không kiểm tra force-stop/restart, không gọi Gemini. Vì vậy Task 7 persistence Android sau restart vẫn chưa hoàn thành.
-- Không stage/commit/push. Giữ nguyên deletion có sẵn `docs/PROMPT_01.md`.
+- Không stage/commit/push. Giữ nguyên deletion có sẵn docs/PROMPT_01.md.
 
 ## 2026-09-29 — Soạn test case thủ công cho Ngày 4 Task 6
 
@@ -618,4 +618,23 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - **Quan sát UI:** mở History, vào các report đã có, xem trạng thái/field đã xác nhận, mô tả gốc, ghi chú hành động đề xuất, trạng thái không có ảnh và một ảnh đã lưu; Back quay lại History. Cỡ chữ hệ thống lớn đang bật; nội dung cuộn được, không thấy overflow. Nguồn/độ an toàn của fixture có sẵn chưa xác minh; không ghi/chụp nội dung hoặc ảnh vào tài liệu.
 - **ADB sau thao tác:** app process có PID và resumed activity; Back từ detail về History, process tiếp tục chạy. Đọc `adb logcat -d -t 1500` trong bộ nhớ, 0 match `FATAL EXCEPTION` và 0 match nhóm SQLite/plugin; không xóa logcat buffer và không chép log thô.
 - **Kết quả test case:** ghi riêng PHONE/ADB cases trong `docs/testcase_task6_detail_day4.txt`. ADB build/install/launch/log scan/Back đạt; Flutter discovery được PARTIAL do danh sách trùng tạm thời. UI cases bị giới hạn do không xác minh fixture, null/absence fixture chưa được kiểm tra, cùng-report reopen chưa được kiểm tra; lỗi retry tự nhiên không gặp nên BLOCKED.
-- **Giới hạn:** lượt này không kiểm tra save mới hoặc độ bền sau force-stop/restart; Task 7 persistence trên Android vẫn cần xác minh riêng. Không chạy analyze/widget tests trong lượt ADB này. Giữ nguyên mọi thay đổi Git chưa commit và deletion `docs/PROMPT_01.md`; không stage/commit/push.
+- **Giới hạn:** lượt này không kiểm tra save mới hoặc độ bền sau force-stop/restart; Task 7 persistence trên Android vẫn cần xác minh riêng. Không chạy analyze/widget tests trong lượt ADB này. Giữ nguyên mọi thay đổi Git chưa commit và deletion có trước docs/PROMPT_01.md; không stage/commit/push.
+
+## 2026-09-29 — Ngày 4 Task 7: xác minh persistence Android (một phần)
+
+- **Yêu cầu:** tiếp tục Task 7, kiểm tra implementation như senior và báo cáo kết quả chi tiết; không commit/push.
+- **Công cụ:** Codex dùng PowerShell, Flutter/Dart, ADB Wireless và UIAutomator. Ứng dụng gửi một request tổng hợp qua Firebase AI Logic; không ghi prompt đầy đủ hay nội dung raw của phản hồi. Model thực tế của request không được ghi nhận độc lập; mã service cấu hình gemini-3.8-flash primary và gemini-3.5-flash-lite fallback.
+- **Kiểm tra tự động vừa chạy:** dart format --output=none --set-exit-if-changed lib test — exit 0, 26 file/0 đổi; flutter analyze — No issues found; flutter test --reporter compact — 99/99; flutter test test/local_report_repository_test.dart --reporter compact — 10/10; flutter build apk --debug — exit 0. Test repository dùng SQLite FFI trên host Windows, gồm close/reopen ảnh và các nhánh lỗi/missing/corrupt; không phải Android plugin test. Build có cảnh báo Java restricted native access và Firebase plugin Kotlin Gradle Plugin migration.
+- **APK/thiết bị:** version 0.1.0/code 1, 178,604,382 bytes, SHA-256 6E84D74E20027B08CE7A04B0E93626A00AB872D8064B89D62E97D2DBD9A59804. APK cài đặt được pull/so hash trùng APK build; không cần cài đè. PKG110 Android 16/API 36, điều khiển qua ADB Wireless. ADB liệt kê hai wireless transports; không ghi serial/IP.
+- **Luồng đã xác minh:** tạo draft text-only với dữ liệu tổng hợp → chỉnh sửa/review → xác nhận priority null là chưa có → xác nhận các field → lưu cuối → marker test hiện trong History → mở detail. Force-stop làm process kết thúc; mở lại app và marker vẫn đọc được ở History/detail. Một report test được giữ lại trên thiết bị để không xóa dữ liệu.
+- **Case một phần/chưa chạy:** editor từng có issue rỗng nhưng chưa kiểm tra nút lưu khi các field khác đã review hết. Photo Picker không liệt kê fixture tổng hợp sau media-scan, nên không chọn media có sẵn và không tạo report có ảnh. Offline save/read chưa chạy: chỉ có ADB Wireless transports và không đổi trạng thái Wi-Fi để giữ kênh điều khiển. Case chi tiết ở docs/testcase_task7_persistence_day4.txt.
+- **Log/giới hạn:** adb logcat -d -t 1800 đọc trong bộ nhớ, 1.956 dòng; 0 match FATAL EXCEPTION và 0 match nhóm SQLite/plugin error đã lọc. Không xuất raw logs, không xóa log buffer. Kiểm tra này không chứng minh ảnh persistence/offline.
+- **Fixture dọn dở:** một lệnh dọn ảnh/screenshot tổng hợp trong Temp và trên Android qua ADB bị automatic approval review chặn với trạng thái blocked by policy; lệnh không chạy. Fixture còn lại do phiên test tạo; không đụng file/media khác. Report tổng hợp đã lưu cũng còn trong app.
+- **Tình trạng Task:** Task 7 một phần, chưa đạt nghiệm thu Ngày 4 vì thiếu ảnh persistence và offline test. Task 8 chỉ được đồng bộ hiện trạng tài liệu một phần; chưa commit/push. Giữ nguyên deletion có trước docs/PROMPT_01.md.
+
+## 2026-09-29 — Chủ dự án đóng Task 7 với ngoại lệ và yêu cầu publish
+
+- **Quyết định/phạm vi:** chủ dự án yêu cầu đánh dấu Task 7 hoàn thành và commit/push. Task được ghi là đóng theo quyết định chủ dự án với ngoại lệ được chấp nhận; điều này không biến ảnh/offline PARTIAL/BLOCKED/NOT RUN thành PASS và Day 4 vẫn chưa nghiệm thu đầy đủ.
+- **Cập nhật:** README, CONTEXT_SUMMARY, WALKTHROUGH, implement_plan_day4, phiếu Task 7 và worklog đồng bộ quyết định đóng cùng các ngoại lệ. Không đổi mã nguồn, cấu hình hay dependency.
+- **Kiểm chứng:** không chạy lại Flutter tests/analyzer/build vì đây là lượt tài liệu-only; kết quả tự động/thiết bị tham chiếu từ mục kiểm chứng Task 7 ngay trước đó. `git diff --check` được chạy trước staging; nội dung staging và kết quả publish được xác minh riêng.
+- **Git:** chỉ stage tài liệu thuộc Task 7/Task 8; không stage deletion có trước `docs/PROMPT_01.md`. Không xóa report test hay fixture còn lại.
