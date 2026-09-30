@@ -11,6 +11,8 @@ import 'screens/create_report_screen.dart';
 import 'screens/report_detail_screen.dart';
 import 'screens/history_screen.dart';
 import 'services/gemini_report_service.dart';
+import 'theme/app_theme.dart';
+import 'widgets/field_assistant_logo.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,25 +43,10 @@ class AiFieldAssistantApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const brandColor = Color(0xFF176B5B);
-
     return MaterialApp(
       title: 'AI Field Assistant',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: brandColor),
-        scaffoldBackgroundColor: const Color(0xFFF5F7F6),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          surfaceTintColor: Colors.transparent,
-          titleTextStyle: TextStyle(
-            color: Color(0xFF17211F),
-            fontSize: 18,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-      ),
+      theme: AppTheme.light,
       home: _HomeScreen(
         imagePicker: imagePicker,
         reportService: reportService,
@@ -98,7 +85,35 @@ class _HomeScreenState extends State<_HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('AI Field Assistant')),
+      appBar: AppBar(
+        titleSpacing: 20,
+        title: const Row(
+          children: [
+            FieldAssistantLogo(size: 40),
+            SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('AI Field Assistant'),
+                  SizedBox(height: 2),
+                  Text(
+                    'TRỢ LÝ HIỆN TRƯỜNG',
+                    style: TextStyle(
+                      color: AppColors.slate,
+                      fontSize: 10,
+                      height: 1.2,
+                      letterSpacing: 1.1,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
       body: IndexedStack(
         index: _selectedIndex,
         children: [

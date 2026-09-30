@@ -1,5 +1,12 @@
 # Tóm tắt dự án — snapshot Ngày 6 (30/09/2026)
 
+## Cập nhật mới nhất — UI/UX refresh
+
+- Nhánh UI/UX: `codex/ui-ux-refresh`, tạo từ `codex/day6` commit `18e3ea7f5dc900bbd8099e9ed99ee54b14c43187`. Giữ nguyên `docs/HOME_DEVICE_TEST_CHECKLIST.md` untracked có trước.
+- Thêm `.agents/skills/field-assistant-apple-gallery-ui/SKILL.md` để áp dụng style reference theo ngữ cảnh mobile; kế hoạch chi tiết ở `docs/implement_plan_ui_ux.md`.
+- Theme/shell/form/review/history/detail/notices và Android launcher identity được làm mới về mặt trình bày. Không thay đổi service AI, schema, quyền, repository, dữ liệu hoặc thao tác PDF.
+- Nhánh đã được format và `flutter analyze --no-pub` sạch ngày 01/10; APK debug được build lại sau chỉnh CTA. Test suite chưa chạy; AVD chỉ dùng để tạo App Check debug token, không phải UX acceptance. Chi tiết và cảnh báo build nằm trong `docs/AI_WORKLOG.md`; các kết quả Day 6 bên dưới thuộc source/commit trước đó.
+
 ## Trạng thái hiện tại — Ngày 6
 
 - Nhánh làm việc `codex/day6`, tạo từ commit `ec35228` có PDF export. Tracked files trước task sạch; `docs/HOME_DEVICE_TEST_CHECKLIST.md` là untracked có trước và được giữ nguyên.

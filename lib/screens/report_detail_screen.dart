@@ -8,6 +8,7 @@ import '../models/report_priority.dart';
 import '../repositories/report_repository.dart';
 import '../services/report_pdf_actions.dart';
 import '../services/report_pdf_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/status_notice.dart';
 
 /// Reads and displays a previously saved, user-confirmed report.
@@ -173,8 +174,12 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     final isPhotoBusy = _report?.photoPath != null && _isPhotoLoading;
     return SafeArea(
       top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: AppColors.galleryWhite,
+          border: Border(top: BorderSide(color: AppColors.hairlineSilver)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
         child: Row(
           children: [
             Expanded(
@@ -360,10 +365,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
         Expanded(
           child: ListView(
             key: const Key('report-detail-content'),
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 28),
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
             children: [
               _buildReportHeader(report),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               _buildDetailField(
                 report,
                 field: 'category',
@@ -402,9 +407,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
                 label: 'Tóm tắt',
                 value: report.summary,
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               _buildSourceDescription(report),
-              const SizedBox(height: 10),
+              const SizedBox(height: 12),
               _buildPhotoSection(report),
             ],
           ),
@@ -471,11 +476,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              label,
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w700),
-            ),
+            Text(label, style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 6),
             Text(displayValue, key: Key('report-detail-value-$field')),
             if (helperText != null) ...[
@@ -503,11 +504,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Mô tả gốc',
-            style: Theme.of(context).textTheme.titleSmall
-                ?.copyWith(fontWeight: FontWeight.w700),
-          ),
+          Text('Mô tả gốc', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 6),
           Text(
             report.sourceDescription.isEmpty
@@ -531,11 +528,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'Ảnh báo cáo',
-              style: Theme.of(context).textTheme.titleSmall
-                  ?.copyWith(fontWeight: FontWeight.w700),
-            ),
+            Text('Ảnh báo cáo', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 10),
             if (photoPath == null)
               const StatusNotice(
@@ -560,7 +553,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
               _buildPhotoError(message)
             else if (_photoBytes case final bytes?)
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(28),
                 child: Image.memory(
                   bytes,
                   key: const Key('report-detail-photo'),
