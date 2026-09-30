@@ -424,7 +424,9 @@ void main() {
       find.byKey(const Key('analyze-button')),
     );
     expect(analyzeButton.onPressed, isNull);
-    final reviewButton = tester.widget<FilledButton>(
+    // The UI refresh made the AI CTA the only primary action, so the
+    // secondary "review input" action is now an OutlinedButton.
+    final reviewButton = tester.widget<OutlinedButton>(
       find.byKey(const Key('review-input-button')),
     );
     expect(reviewButton.onPressed, isNull);
