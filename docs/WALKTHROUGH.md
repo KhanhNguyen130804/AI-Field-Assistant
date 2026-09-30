@@ -95,7 +95,7 @@ Trong lượt PDF ban đầu, host test đạt 126/126, analyzer/format sạch v
 - `flutter analyze --no-pub`: PASS, No issues found.
 - `flutter test --no-pub --reporter compact`: PASS, 126/126; `test/local_report_repository_test.dart`: PASS, 10/10 với SQLite FFI trên host.
 - `flutter build apk --release --no-pub`: PASS; artifact `build/app/outputs/flutter-apk/app-release.apk`, 59,681,400 bytes, SHA-256 `8715F1F5654318BC6B840BDB6D9559ACD110C629A95735B065150137397A457C`.
-- `adb install -r` trên AVD Android 35 và mở launcher Activity: PASS. Không xóa app data; chưa thao tác AI, save, History hoặc PDF. Không có điện thoại vật lý kết nối.
+- `adb install -r` trên AVD Android 35: PASS, app data được giữ; form Create Report render. Lần đầu có hộp Android **System UI isn't responding**; chọn **Wait** thì hồi phục. Bấm **Phân tích bằng AI** khi input rỗng hiện validation; code chặn trước service nên không gửi request. Chưa thao tác draft thành công, save, History hoặc PDF; không có điện thoại vật lý kết nối.
 - Kịch bản quay: `docs/DEMO_SCRIPT_DAY6.md`. Video chưa quay; request Gemini mới không chạy. App Check, PDF Android, persistence ảnh và offline vẫn là các giới hạn cần kiểm chứng riêng.
 
 ### Kết quả kiểm tra/build đã ghi nhận
