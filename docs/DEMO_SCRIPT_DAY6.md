@@ -24,4 +24,4 @@
 ## Trạng thái
 
 - Script: đã chuẩn bị.
-- Quay/xem lại video: chưa thực hiện trong môi trường hiện tại; cần thiết bị Android phù hợp và công cụ ghi màn hình. Kết quả AI/App Check phải được xác nhận tại thời điểm quay.
+- Quay/xem lại video: chưa thực hiện. Follow-up đã xác nhận OnePlus PKG110 Android 16/API 36 và app debug v0.1.0, nhưng chưa đọc UI hay thử công cụ ghi màn hình; kết quả AI/App Check phải được xác nhận tại thời điểm quay.
