@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -10,6 +11,8 @@ import 'package:ai_field_assistant/models/report.dart';
 import 'package:ai_field_assistant/models/report_priority.dart';
 import 'package:ai_field_assistant/repositories/report_repository.dart';
 import 'package:ai_field_assistant/screens/report_detail_screen.dart';
+import 'package:ai_field_assistant/services/report_pdf_actions.dart';
+import 'package:ai_field_assistant/services/report_pdf_service.dart';
 
 void main() {
   testWidgets('loads the selected report and shows confirmed details', (
@@ -51,11 +54,19 @@ void main() {
 
     await tester.pumpWidget(_detailApp(repository, report.id));
     expect(find.byKey(const Key('report-detail-loading')), findsOneWidget);
+    expect(
+      find.byKey(const Key('report-detail-save-pdf-button')),
+      findsNothing,
+    );
 
     response.complete(report);
     await tester.pumpAndSettle();
 
     expect(find.byKey(const Key('report-detail-loading')), findsNothing);
+    expect(
+      find.byKey(const Key('report-detail-save-pdf-button')),
+      findsOneWidget,
+    );
     expect(find.text('Cầu dao tầng 2 bị nóng'), findsOneWidget);
   });
 
@@ -82,6 +93,7 @@ void main() {
     await tester.pumpAndSettle();
 
     for (final field in [
+      'priority',
       'category',
       'location',
       'suggested_action',
@@ -90,19 +102,11 @@ void main() {
       await _scrollTo(tester, find.byKey(Key('report-detail-field-$field')));
       expect(
         tester.widget<Text>(find.byKey(Key('report-detail-value-$field'))).data,
-        'Đã xác nhận không có thông tin',
+        field == 'priority'
+            ? 'Đã xác nhận chưa xác định'
+            : 'Đã xác nhận không có thông tin',
       );
     }
-    await _scrollTo(
-      tester,
-      find.byKey(const Key('report-detail-field-priority')),
-    );
-    expect(
-      tester
-          .widget<Text>(find.byKey(const Key('report-detail-value-priority')))
-          .data,
-      'Đã xác nhận chưa xác định',
-    );
     await _scrollTo(
       tester,
       find.byKey(const Key('report-detail-photo-section')),
@@ -165,7 +169,7 @@ void main() {
       tester,
       find.byKey(const Key('report-detail-photo-section')),
     );
-    expect(find.text('Cầu dao tầng 2 bị nóng'), findsOneWidget);
+    expect(repository.reports.single.issue, 'Cầu dao tầng 2 bị nóng');
     expect(
       find.text('Không thể đọc ảnh đã lưu. Nội dung báo cáo vẫn được giữ.'),
       findsOneWidget,
@@ -176,7 +180,7 @@ void main() {
 
     expect(find.byKey(const Key('report-detail-photo')), findsOneWidget);
     expect(repository.photoReadCallCount, 2);
-    expect(find.text('Cầu dao tầng 2 bị nóng'), findsOneWidget);
+    expect(repository.reports.single.issue, 'Cầu dao tầng 2 bị nóng');
   });
 
   testWidgets('renders a stored photo from repository bytes', (tester) async {
@@ -261,15 +265,135 @@ void main() {
     expect(find.byType(ReportDetailScreen), findsNothing);
     expect(find.byKey(ValueKey('history-item-${report.id}')), findsOneWidget);
   });
+
+  testWidgets('exports the saved report from its detail screen', (
+    tester,
+  ) async {
+    final report = _report();
+    final generator = _FakeReportPdfGenerator();
+    final actions = _FakeReportPdfActions();
+
+    await tester.pumpWidget(
+      _detailApp(
+        _FakeReportRepository(reports: [report]),
+        report.id,
+        generator: generator,
+        actions: actions,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('report-detail-save-pdf-button')));
+    await tester.pumpAndSettle();
+
+    expect(generator.lastReport?.id, report.id);
+    expect(actions.savedFileName, startsWith('bao-cao-AAAAAAAA-'));
+    expect(actions.savedBytes, isNotNull);
+    expect(find.text('Đã lưu tệp PDF.'), findsOneWidget);
+  });
+
+  testWidgets('shares the generated PDF through the injected share action', (
+    tester,
+  ) async {
+    final report = _report();
+    final generator = _FakeReportPdfGenerator();
+    final actions = _FakeReportPdfActions();
+
+    await tester.pumpWidget(
+      _detailApp(
+        _FakeReportRepository(reports: [report]),
+        report.id,
+        generator: generator,
+        actions: actions,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('report-detail-share-pdf-button')));
+    await tester.pumpAndSettle();
+
+    expect(actions.sharedFileName, startsWith('bao-cao-AAAAAAAA-'));
+    expect(actions.sharedBytes, isNotNull);
+    expect(find.text('Đã mở bảng chia sẻ PDF.'), findsOneWidget);
+  });
+
+  testWidgets('asks before exporting without an unreadable photo', (
+    tester,
+  ) async {
+    final report = _report(photoPath: _photoPath);
+    final generator = _FakeReportPdfGenerator();
+    final actions = _FakeReportPdfActions();
+    final repository = _FakeReportRepository(reports: [report])
+      ..nextPhotoError = const ReportStorageException(
+        ReportStorageFailure.photo,
+        'Không thể đọc ảnh đã lưu. Nội dung báo cáo vẫn được giữ.',
+      );
+
+    await tester.pumpWidget(
+      _detailApp(repository, report.id, generator: generator, actions: actions),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('report-detail-save-pdf-button')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(find.text('Không thể đính kèm ảnh'), findsOneWidget);
+
+    await tester.tap(find.text('Xuất không ảnh'));
+    await tester.pumpAndSettle();
+
+    expect(generator.photoOmissionConfirmed, isTrue);
+    expect(generator.lastPhotoBytes, isNull);
+    expect(actions.savedBytes, isNotNull);
+  });
+
+  testWidgets('reports save failures without changing the stored report', (
+    tester,
+  ) async {
+    final report = _report();
+    final actions = _FakeReportPdfActions()..saveError = StateError('failure');
+    final repository = _FakeReportRepository(reports: [report]);
+
+    await tester.pumpWidget(
+      _detailApp(
+        repository,
+        report.id,
+        actions: actions,
+        generator: _FakeReportPdfGenerator(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('report-detail-save-pdf-button')));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Không thể tạo hoặc xuất PDF. Hãy thử lại.'),
+      findsOneWidget,
+    );
+    expect(repository.reports, contains(report));
+    expect(find.text('Cầu dao tầng 2 bị nóng'), findsOneWidget);
+  });
 }
 
-Widget _detailApp(_FakeReportRepository repository, String reportId) =>
-    MaterialApp(
-      home: ReportDetailScreen(repository: repository, reportId: reportId),
-    );
+Widget _detailApp(
+  _FakeReportRepository repository,
+  String reportId, {
+  ReportPdfGenerator? generator,
+  ReportPdfActions? actions,
+}) => MaterialApp(
+  home: ReportDetailScreen(
+    repository: repository,
+    reportId: reportId,
+    pdfGenerator: generator,
+    pdfActions: actions,
+  ),
+);
 
 Future<void> _scrollTo(WidgetTester tester, Finder target) async {
   final scrollable = find.byKey(const Key('report-detail-content'));
+  await tester.drag(scrollable, const Offset(0, 4000));
+  await tester.pumpAndSettle();
   for (var attempt = 0; attempt < 12 && target.evaluate().isEmpty; attempt++) {
     await tester.drag(scrollable, const Offset(0, -400));
     await tester.pumpAndSettle();
@@ -438,3 +562,44 @@ const _tinyPngBytes = <int>[
   0x60,
   0x82,
 ];
+
+class _FakeReportPdfGenerator implements ReportPdfGenerator {
+  Report? lastReport;
+  Uint8List? lastPhotoBytes;
+  bool photoOmissionConfirmed = false;
+
+  @override
+  Future<Uint8List> generate({
+    required Report report,
+    Uint8List? photoBytes,
+    bool photoOmissionConfirmed = false,
+  }) async {
+    lastReport = report;
+    lastPhotoBytes = photoBytes;
+    this.photoOmissionConfirmed = photoOmissionConfirmed;
+    return Uint8List.fromList(utf8.encode('%PDF-1.7 fake'));
+  }
+}
+
+class _FakeReportPdfActions implements ReportPdfActions {
+  Uint8List? savedBytes;
+  Uint8List? sharedBytes;
+  String? savedFileName;
+  String? sharedFileName;
+  Object? saveError;
+  ReportPdfSaveResult saveResult = ReportPdfSaveResult.saved;
+
+  @override
+  Future<ReportPdfSaveResult> save(Uint8List bytes, String fileName) async {
+    if (saveError case final error?) throw error;
+    savedBytes = bytes;
+    savedFileName = fileName;
+    return saveResult;
+  }
+
+  @override
+  Future<void> share(Uint8List bytes, String fileName) async {
+    sharedBytes = bytes;
+    sharedFileName = fileName;
+  }
+}

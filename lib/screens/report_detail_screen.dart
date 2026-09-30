@@ -6,6 +6,8 @@ import 'package:flutter/material.dart';
 import '../models/report.dart';
 import '../models/report_priority.dart';
 import '../repositories/report_repository.dart';
+import '../services/report_pdf_actions.dart';
+import '../services/report_pdf_service.dart';
 import '../widgets/status_notice.dart';
 
 /// Reads and displays a previously saved, user-confirmed report.
@@ -14,10 +16,18 @@ class ReportDetailScreen extends StatefulWidget {
     super.key,
     required this.repository,
     required this.reportId,
+    this.pdfGenerator,
+    this.pdfActions,
   });
 
   final ReportRepository repository;
   final String reportId;
+
+  @visibleForTesting
+  final ReportPdfGenerator? pdfGenerator;
+
+  @visibleForTesting
+  final ReportPdfActions? pdfActions;
 
   @override
   State<ReportDetailScreen> createState() => _ReportDetailScreenState();
@@ -32,6 +42,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
   String? _photoErrorMessage;
   int _loadGeneration = 0;
   int _photoGeneration = 0;
+  bool _isPdfActionRunning = false;
 
   @override
   void initState() {
@@ -153,7 +164,157 @@ class _ReportDetailScreenState extends State<ReportDetailScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Chi tiết báo cáo')),
       body: _buildBody(),
+      bottomNavigationBar: _buildPdfActions(),
     );
+  }
+
+  Widget? _buildPdfActions() {
+    if (_report == null) return null;
+    final isPhotoBusy = _report?.photoPath != null && _isPhotoLoading;
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+        child: Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                key: const Key('report-detail-save-pdf-button'),
+                onPressed: _isPdfActionRunning || isPhotoBusy
+                    ? null
+                    : () => _runPdfAction(share: false),
+                icon: _isPdfActionRunning
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.download_outlined),
+                label: Text(_isPdfActionRunning ? 'Đang xuất…' : 'Lưu PDF'),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton.icon(
+                key: const Key('report-detail-share-pdf-button'),
+                onPressed: _isPdfActionRunning || isPhotoBusy
+                    ? null
+                    : () => _runPdfAction(share: true),
+                icon: _isPdfActionRunning
+                    ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.share_outlined),
+                label: Text(_isPdfActionRunning ? 'Đang xuất…' : 'Chia sẻ PDF'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _runPdfAction({required bool share}) async {
+    final report = _report;
+    if (report == null || _isPdfActionRunning) return;
+
+    setState(() => _isPdfActionRunning = true);
+    try {
+      final bytes = await _generatePdfWithPhotoChoice(report);
+      if (bytes == null || !mounted) return;
+
+      final fileName = _pdfFileName(report);
+      if (share) {
+        await (widget.pdfActions ?? PlatformReportPdfActions()).share(
+          bytes,
+          fileName,
+        );
+        if (mounted) _showPdfMessage('Đã mở bảng chia sẻ PDF.');
+      } else {
+        final result = await (widget.pdfActions ?? PlatformReportPdfActions())
+            .save(bytes, fileName);
+        if (!mounted || result == ReportPdfSaveResult.cancelled) return;
+        _showPdfMessage('Đã lưu tệp PDF.');
+      }
+    } on Object {
+      if (mounted) {
+        _showPdfMessage(
+          'Không thể tạo hoặc xuất PDF. Hãy thử lại.',
+          isError: true,
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isPdfActionRunning = false);
+    }
+  }
+
+  Future<Uint8List?> _generatePdfWithPhotoChoice(Report report) async {
+    var photoBytes = _photoBytes;
+    var photoOmissionConfirmed = false;
+
+    if (report.photoPath != null && photoBytes == null) {
+      if (_isPhotoLoading) return null;
+      if (!await _confirmPhotoOmission()) return null;
+      photoOmissionConfirmed = true;
+    }
+
+    final generator = widget.pdfGenerator ?? const ReportPdfService();
+    try {
+      return await generator.generate(
+        report: report,
+        photoBytes: photoBytes,
+        photoOmissionConfirmed: photoOmissionConfirmed,
+      );
+    } on ReportPdfPhotoException {
+      if (photoOmissionConfirmed || !await _confirmPhotoOmission()) return null;
+      photoBytes = null;
+      return generator.generate(
+        report: report,
+        photoBytes: photoBytes,
+        photoOmissionConfirmed: true,
+      );
+    }
+  }
+
+  Future<bool> _confirmPhotoOmission() async =>
+      await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Không thể đính kèm ảnh'),
+          content: const Text(
+            'Ảnh của báo cáo chưa đọc được. Bạn có muốn tiếp tục xuất PDF không kèm ảnh không?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Hủy'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('Xuất không ảnh'),
+            ),
+          ],
+        ),
+      ) ??
+      false;
+
+  String _pdfFileName(Report report) {
+    final local = report.createdAt.toLocal();
+    String twoDigits(int value) => value.toString().padLeft(2, '0');
+    final date =
+        '${local.year}${twoDigits(local.month)}${twoDigits(local.day)}';
+    return 'bao-cao-${report.id.substring(0, 8)}-$date.pdf';
+  }
+
+  void _showPdfMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: isError ? Theme.of(context).colorScheme.error : null,
+        ),
+      );
   }
 
   Widget _buildBody() {

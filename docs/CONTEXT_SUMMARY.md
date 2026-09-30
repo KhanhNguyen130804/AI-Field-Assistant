@@ -1,5 +1,13 @@
 # Tóm tắt dự án — trạng thái sau Day 5 Task 7
 
+## Follow-up: Xuất PDF (30/09/2026)
+
+- Đang triển khai trên nhánh `codex/report-pdf-export`, tạo từ HEAD `eb54b34` của `codex/day5`; chưa commit. Checklist chưa theo dõi `docs/HOME_DEVICE_TEST_CHECKLIST.md` được giữ nguyên.
+- Đã nối PDF đầy đủ từ màn detail cho report đã xác nhận/lưu; tạo cục bộ từ các trường report, mô tả gốc và ảnh (nếu có). Lưu dùng document picker Android; chia sẻ dùng share sheet Android; không có API Zalo trực tiếp.
+- Đã thêm font Roboto có license, `pdf`, `printing`, `flutter_file_saver`, `image`; ảnh WebP được chuyển sang PNG để nhúng.
+- Host vừa kiểm tra: `flutter test --no-pub --reporter compact` PASS 126/126; `flutter analyze --no-pub` PASS; `dart format --output=none --set-exit-if-changed lib test` PASS 29 file/0 đổi; `git diff --check` PASS. APK debug build PASS.
+- `flutter devices` chỉ nhận Windows/Chrome/Edge trong lượt này; chưa cài APK, kiểm tra Android Save As/share sheet hay thử gửi Zalo. Tính năng đã có mã và build được, nhưng thiết bị chưa nghiệm thu.
+
 > Trạng thái được đối chiếu ngày 30/09/2026: HEAD `b6bd2e5` (`docs(day5): record task 6 UX checks`) trên `codex/day5`, đồng bộ với `origin/codex/day5` trước cập nhật tài liệu Task 7. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi, dựa trên snapshot cũ và chưa được chỉnh sửa. Kiểm tra host Day 5 Task 6 vừa chạy trong phiên trước; kiểm tra thiết bị Android chưa chạy vì build APK bị automatic approval review từ chối trước khi lệnh khởi chạy.
 
 ## Trạng thái hiện tại — Day 5 Task 1–7

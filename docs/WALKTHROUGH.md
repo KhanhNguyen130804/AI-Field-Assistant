@@ -83,6 +83,12 @@ Task 3–6 là lịch sử theo từng entry trong worklog: SQLite FFI, editor/r
 
 Day 5 Task 6 (30/09/2026) vừa chạy lại trên host: `flutter analyze` sạch, `flutter test` 117/117 và format check 26 file/0 đổi. Flutter nhận PKG110 Android 16/API 36 qua ADB Wireless, nhưng build APK từ source hiện tại bị automatic approval review chặn trước khi chạy. Vì vậy chưa cài APK hoặc kiểm tra giao diện trên thiết bị; các kết quả Task 7 Android text-only là bằng chứng lịch sử source/APK trước Day 5, không phải xác minh UX hiện tại. Ảnh persistence và offline vẫn chưa được kiểm chứng.
 
+## Xuất PDF báo cáo đã xác nhận (nhánh `codex/report-pdf-export`)
+
+Trong màn **Chi tiết báo cáo**, hai nút **Lưu PDF** và **Chia sẻ PDF** xuất report đã lưu, gồm các trường đã xác nhận, thời gian, mô tả gốc và ảnh nếu có. Tệp sinh cục bộ; khi ảnh có lỗi, app yêu cầu xác nhận trước khi tạo PDF không ảnh. Lưu mở document picker Android; chia sẻ mở Android share sheet, nơi có thể chọn Zalo nếu thiết bị đã cài và liệt kê Zalo cho MIME PDF.
+
+Kiểm tra host vừa chạy trên nhánh này: `flutter test --no-pub --reporter compact` 126/126; `flutter analyze --no-pub` sạch; format check 29 file/0 đổi. `flutter build apk --debug --no-pub` thành công. `flutter devices` trong cùng lượt chỉ nhận Windows, Chrome và Edge; chưa cài APK hoặc thử lưu/mở/chia sẻ PDF trên Android. Vì vậy share sheet, document picker, xem PDF và Zalo vẫn cần kiểm tra trên điện thoại thật.
+
 ### Kết quả kiểm tra/build đã ghi nhận
 
 `flutter build web --release` và APK debug build đã thành công ở các task trước (lịch sử Ngày 2–3). Ngày 3 Task 3: analyze sạch, `flutter test` 13/13, build web thành công, khởi tạo Firebase/App Check kiểm chứng trên Android thật qua `adb logcat`. Ngày 3 Task 4: analyze sạch, `flutter test` 33/33, build web + APK thành công. Ngày 3 Task 5 (26–27/09/2026): analyze sạch, `flutter test` **45/45**, build web + APK thành công; **request Gemini thật đã chạy đầu-cuối trên thiết bị Android** (agent lái qua adb) — draft mở, không bịa trường, fallback quota hoạt động theo log. Chủ dự án xác nhận kiểm thử thủ công Task 5 PASS; bảng 31 case chưa được điền chi tiết. Task 5 đã commit tại `c440da4`. Task 6 (27/09/2026): format dry-run 11 file/0 thay đổi, `flutter analyze` No issues, `flutter test` 45/45; không gửi request mới vì đã có bằng chứng E2E và thiết bị đang giữ ảnh không rõ nội dung. Đây đều là kết quả lịch sử ghi nhận trong tài liệu; mô tả/ảnh chưa lưu khi draft chưa được xác nhận/lưu.
