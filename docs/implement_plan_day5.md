@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 5: Độ tin cậy, kiểm thử lỗi và hoàn thiện UX
 
-> **Trạng thái:** Task 1 đã hoàn tất preflight; Task 2 kiểm tra được picker/preview nhưng persistence ảnh và offline còn BLOCKED; Task 3 đã triển khai và kiểm thử service/parser ngày 29/09/2026; Task 4 hoàn tất kiểm tra host ngày 30/09/2026 (full suite 117/117, analyzer sạch); Task 5 đã rà call site, dữ liệu/log và bỏ log exception SDK thô ngày 30/09/2026. Còn xác minh API restrictions trong Console; Firebase App Check debug provider vẫn ghi debug token vào log cục bộ. Task 6–8 chưa thực hiện. Ngày 4 Task 7 được chủ dự án đóng với ngoại lệ được chấp nhận; đây không phải nghiệm thu đầy đủ Ngày 4.
+> **Trạng thái:** Task 1 đã hoàn tất preflight; Task 2 kiểm tra được picker/preview nhưng persistence ảnh và offline còn BLOCKED; Task 3 đã triển khai và kiểm thử service/parser ngày 29/09/2026; Task 4 hoàn tất kiểm tra host ngày 30/09/2026 (full suite 117/117, analyzer sạch); Task 5 đã rà call site, dữ liệu/log và bỏ log exception SDK thô ngày 30/09/2026; Task 6 kiểm tra host đạt ngày 30/09/2026 nhưng kiểm tra Android chưa chạy vì build APK bị automatic approval review từ chối. Còn xác minh API restrictions trong Console; Firebase App Check debug provider vẫn ghi debug token vào log cục bộ. Task 7 tính năng cộng thêm chưa thực hiện. Ngày 4 Task 7 được chủ dự án đóng với ngoại lệ được chấp nhận; đây không phải nghiệm thu đầy đủ Ngày 4.
 >
 > **Baseline theo hồ sơ ngày 29/09/2026:** `flutter analyze` sạch, `flutter test` 99/99, SQLite FFI 10/10 và APK debug build thành công. Trên Android đã kiểm chứng một report text-only qua save → History → detail → force-stop/relaunch. Đây là kết quả lịch sử, không phải kiểm tra mới của kế hoạch này. Lưu/đọc report có ảnh trên Android và save/read offline chưa được xác minh.
 >
@@ -174,6 +174,8 @@ Nhập mô tả / chọn ảnh
 4. Nếu không thể tạo lỗi mạng an toàn hoặc không có control channel, dùng fake test cho nhánh code và để case Android ở trạng thái tương ứng; không phá dữ liệu thật để tạo lỗi.
 
 **Tiêu chí hoàn tất:** không có lỗi layout chưa phân loại; các giới hạn thiết bị/ADB được ghi rõ; test host và Android evidence không bị nhập làm một.
+
+**Kết quả cập nhật 30/09/2026:** phần host được kiểm tra trong phiên: `flutter --suppress-analytics analyze --no-pub` — PASS, No issues found; `flutter --suppress-analytics test --no-pub --reporter compact` — PASS, 117/117; `dart format --output=none --set-exit-if-changed lib test` — PASS, 26 file/0 đổi. `flutter devices` tìm thấy PKG110 Android 16/API 36 qua ADB Wireless. Build APK từ source hiện tại bị automatic approval review từ chối trước khi lệnh chạy; vì vậy không cài APK, không thao tác UI/ADB trên điện thoại và không có Android UX case nào được đánh dấu PASS trong Task 6. Task 6 **một phần**: host đạt, kiểm tra thiết bị còn chờ. Không phát hiện lỗi layout qua kiểm tra host; đây không phải xác nhận layout trên thiết bị.
 
 ### Task 7 — Quyết định tính năng cộng thêm
 

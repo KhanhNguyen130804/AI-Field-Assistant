@@ -32,7 +32,7 @@ flutter analyze
 flutter test
 ```
 
-Widget tests bao gồm điều hướng, validation đầu vào rỗng, form/input, permission/picker, ảnh lỗi, editor/review/save, retry, Back, double-tap và viewport 320×568/bàn phím. `test/history_screen_test.dart` kiểm tra loading/empty/error/retry, refresh, ID được chọn và save → refresh bằng fake repository. `test/report_detail_screen_test.dart` kiểm tra đọc report theo ID, thông tin đã xác nhận, field trống, loading/not-found/error/retry, ảnh và điều hướng Back bằng fake repository. Service tests ở `test/gemini_report_service_test.dart` dùng fake sender, không cần Firebase/network. `test/local_report_repository_test.dart` kiểm tra repository bằng SQLite FFI thật trên Windows. Task 6 vừa chạy `flutter analyze` — No issues found và toàn suite `flutter test --reporter compact` **99/99 đạt**. Task 5 trước đó đạt 90/90; lượt ADB Wireless của Task 5 build/cài APK và kiểm tra thao tác thiết bị, nhưng không chạy lại Flutter test/analyze. Task 4 đạt 85/85; repository FFI 10/10, suite 77/77 và các con số 45/45 bên dưới là bằng chứng lịch sử.
+Widget tests bao gồm điều hướng, validation đầu vào rỗng, form/input, permission/picker, ảnh lỗi, editor/review/save, retry, Back, double-tap và viewport 320×568/bàn phím. `test/history_screen_test.dart` kiểm tra loading/empty/error/retry, refresh, ID được chọn và save → refresh bằng fake repository. `test/report_detail_screen_test.dart` kiểm tra đọc report theo ID, thông tin đã xác nhận, field trống, loading/not-found/error/retry, ảnh và điều hướng Back bằng fake repository. Service tests ở `test/gemini_report_service_test.dart` dùng fake sender, không cần Firebase/network. `test/local_report_repository_test.dart` kiểm tra repository bằng SQLite FFI thật trên Windows. Bằng chứng **Day 4 Task 6 (29/09/2026)** là `flutter analyze` sạch và toàn suite `flutter test --reporter compact` 99/99. Task 5 trước đó đạt 90/90; lượt ADB Wireless của Task 5 build/cài APK và kiểm tra thao tác thiết bị, nhưng không chạy lại Flutter test/analyze. Task 4 đạt 85/85; repository FFI 10/10, suite 77/77 và các con số 45/45 bên dưới là bằng chứng lịch sử.
 
 ## 4. Build APK debug
 
@@ -67,7 +67,7 @@ Bản APK debug đã được chủ dự án kiểm thử thủ công trên thi�
 
 Model dùng: **chính `gemini-3.8-flash`** (chất lượng cao, free 20 request/ngày/model); khi hết quota tự thử **`gemini-3.5-flash-lite`** (500 request/ngày, chất lượng thấp hơn — draft có thể cần xác nhận nhiều hơn) trong cùng lần bấm. Lỗi không phải quota không kích hoạt fallback. Chi tiết và bằng chứng log ở `docs/SESSION_2026-09-26_TASK5.md` mục 4–6; bộ test case thủ công cho luồng này ở `docs/MANUAL_TESTCASES_TASK5.md`.
 
-Debug build in log chẩn đoán `ReportDraft request failed: <lỗi SDK>` qua `adb logcat` — dùng để xác định nguyên nhân thật khi test thiết bị; không log prompt/ảnh.
+Service không còn ghi exception SDK thô vào log; lỗi được ánh xạ sang thông báo chung trong UI. Debug App Check provider có thể ghi debug token cục bộ theo hành vi SDK. Không chia sẻ raw log/token; chỉ kiểm tra log có mục đích và giới hạn khi cần.
 
 ## 7. Service Gemini (Ngày 3 Task 4, đã nối UI từ Task 5)
 
@@ -80,6 +80,8 @@ Debug build in log chẩn đoán `ReportDraft request failed: <lỗi SDK>` qua `
 Task 7 (2026-09-29) vừa chạy format check (26 file/0 đổi), flutter analyze (No issues), flutter test --reporter compact (99/99), repository FFI tests (10/10) và flutter build apk --debug (exit 0). Một request Gemini tổng hợp tạo report text-only; save → History → detail đạt. Force-stop/relaunch rồi đọc lại đúng marker ở History/detail cũng đạt. Logcat giới hạn: 1.956 dòng, không có match FATAL EXCEPTION hoặc nhóm SQLite/plugin error đã lọc. Không ghi nhận model cụ thể thực tế của request. Chủ dự án đã đóng Task 7 với ngoại lệ: persistence ảnh và offline chưa được kiểm chứng; xem phiếu test để biết từng trạng thái. Đây không phải bằng chứng nghiệm thu đầy đủ Ngày 4.
 
 Task 3–6 là lịch sử theo từng entry trong worklog: SQLite FFI, editor/review/save, History và detail đã được triển khai; các kết quả PHONE do chủ dự án báo và ADB smoke của từng lượt không thay thế nhau. ADB Task 5 khi đó xác minh save → History trong cùng phiên; Task 6 xác minh điều hướng History → detail. Task 7 hiện đã chứng minh text-only persistence sau restart process nhưng chưa xác minh ảnh hoặc offline; bước tiếp theo là xử lý hai trường hợp này mà không dùng media người dùng hay mất kiểm soát thiết bị. Voice-to-text và GPS chưa triển khai.
+
+Day 5 Task 6 (30/09/2026) vừa chạy lại trên host: `flutter analyze` sạch, `flutter test` 117/117 và format check 26 file/0 đổi. Flutter nhận PKG110 Android 16/API 36 qua ADB Wireless, nhưng build APK từ source hiện tại bị automatic approval review chặn trước khi chạy. Vì vậy chưa cài APK hoặc kiểm tra giao diện trên thiết bị; các kết quả Task 7 Android text-only là bằng chứng lịch sử source/APK trước Day 5, không phải xác minh UX hiện tại. Ảnh persistence và offline vẫn chưa được kiểm chứng.
 
 ### Kết quả kiểm tra/build đã ghi nhận
 

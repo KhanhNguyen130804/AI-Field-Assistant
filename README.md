@@ -4,7 +4,7 @@
 
 ## Trạng thái hiện tại
 
-Snapshot được đối chiếu ngày 30/09/2026 trên nhánh `codex/day5`, tại commit `ec51214` (`feat(day5): complete task 4 resilience`), đồng bộ với `origin/codex/day5`. Task 4 đã được commit. Trước lần cập nhật README/context trong phiên khảo sát, không có tracked changes; `docs/HOME_DEVICE_TEST_CHECKLIST.md` đang chưa được theo dõi và còn một số hướng dẫn Task 4 từ snapshot cũ.
+Snapshot được đối chiếu ngày 30/09/2026 trên nhánh `codex/day5`, tại HEAD `d0f3870` (`fix(day5): harden privacy logging`), đồng bộ với `origin/codex/day5` trước các cập nhật tài liệu Task 6. `docs/HOME_DEVICE_TEST_CHECKLIST.md` vẫn là tệp chưa được theo dõi và dựa trên snapshot cũ.
 
 - Luồng hiện có: nhập mô tả/chọn ảnh → người dùng chủ động gọi AI → xem/sửa/xác nhận draft → lưu cục bộ → History → chi tiết report. Service AI, parser, SQLite repository và các màn UI đã được nối trong app.
 - **Day 5 Task 1:** baseline lịch sử gồm 99/99 test, analyzer sạch, APK debug build/cài trên emulator. Đây là kết quả của Task 1, không phải build mới sau Task 3.
@@ -12,6 +12,7 @@ Snapshot được đối chiếu ngày 30/09/2026 trên nhánh `codex/day5`, t�
 - **Day 5 Task 3:** service từ chối MIME không hỗ trợ hoặc không khớp signature, chuẩn hóa lỗi đọc ảnh và giữ contract parser. Format check 26 file không đổi, analyzer sạch, test service/parser 43/43 và full suite 113/113 đạt; đây là kiểm tra host/fake, không phải Gemini thật.
 - **Day 5 Task 4 hoàn tất ở host:** form giới hạn phân tích ở JPEG/PNG/WebP; ảnh BMP/GIF/HEIF/AVIF bị từ chối và ảnh hợp lệ trước đó được giữ. Widget tests bao phủ lỗi service/App Check/response, loading/retry, lưu lỗi/mơ hồ, double tap và Back. Ngày 30/09/2026, full suite đạt 117/117, `flutter analyze` sạch, format check 2 file Dart không đổi. Không build APK hoặc kiểm tra thiết bị trong Task 4.
 - **Day 5 Task 5:** rà soát call site và dữ liệu gửi; service không còn log exception SDK thô. Analyzer và format check service sạch trong lượt này. Firebase debug provider vẫn ghi debug token vào log cục bộ; API-key restrictions chưa được kiểm tra trong Console, và không gọi Gemini thật.
+- **Day 5 Task 6 (30/09/2026):** kiểm tra hiện có trên host đạt `flutter analyze` (No issues), `flutter test` 117/117 và format check 26 file/0 đổi. Flutter nhận điện thoại PKG110 Android 16/API 36 qua ADB Wireless, nhưng build APK từ source hiện tại bị automatic approval review từ chối trước khi lệnh chạy; vì vậy chưa cài APK mới hay kiểm tra UI Android cho source này. Task 6 mới hoàn tất phần host, phần thiết bị còn chờ.
 - **Ngày 4 Task 7:** trên Android đã xác minh một report text-only còn ở History/detail sau force-stop/relaunch. Day 4 được đóng theo quyết định của chủ dự án với ngoại lệ; ảnh và offline chưa được nghiệm thu.
 
 Firebase và App Check debug được khởi tạo khi mở app; lần gọi thật ngày 27/09/2026 từng trả draft trên Android. Lần thử gần nhất ghi trong Task 2 bị App Check chặn, nên không khẳng định dịch vụ hiện đang thông suốt. Chưa có voice-to-text, GPS, đăng nhập, cloud sync hoặc dashboard.
@@ -152,7 +153,7 @@ Kiểm thử thiết bị thật Task 4 (26/09/2026, APK debug do phiên rà so�
 - App không khai báo quyền runtime camera/ảnh: camera mở qua Intent hệ thống, ảnh qua Photo Picker (xác minh bằng merged manifest APK). Nhánh xử lý permission-denied trong mã giữ lại làm fallback.
 - Kết quả cụ thể theo từng task trong `docs/AI_WORKLOG.md`; tổng kết phiên Task 5 và các sự cố vận hành ở `docs/SESSION_2026-09-26_TASK5.md`.
 
-Task 6 kiểm tra tự động và Task 7 rà soát tài liệu Ngày 3 hoàn tất ngày 27/09/2026. Ngày 4 Task 2–6 đã triển khai. Theo quyết định chủ dự án, Task 7 Ngày 4 được đóng với ngoại lệ được chấp nhận; ảnh Android/offline vẫn chưa được xác minh và Day 4 chưa nghiệm thu đầy đủ. Task 2 Ngày 5 đã thử fixture qua Photo Picker, nhưng App Check chặn tạo draft nên các case persistence ảnh/offline vẫn BLOCKED. Tiếp tục kiểm tra storage bằng dữ liệu tổng hợp và không lặp request AI khi không cần. Chưa có kết quả theo từng dòng cho 31 test case AI Task 5 Ngày 3; không suy ra PASS từng case từ xác nhận PASS tổng thể của chủ dự án.
+Task 6 kiểm tra tự động và Task 7 rà soát tài liệu Ngày 3 hoàn tất ngày 27/09/2026. Ngày 4 Task 2–6 đã triển khai. Theo quyết định chủ dự án, Task 7 Ngày 4 được đóng với ngoại lệ được chấp nhận; ảnh Android/offline vẫn chưa được xác minh và Day 4 chưa nghiệm thu đầy đủ. Task 2 Ngày 5 đã thử fixture qua Photo Picker, nhưng App Check chặn tạo draft nên các case persistence ảnh/offline vẫn BLOCKED. Day 5 Task 6 mới đạt host; UX trên thiết bị cần build/cài đúng source trước khi có thể kết luận. Task 7 tính năng cộng thêm tiếp tục hoãn. Chưa có kết quả theo từng dòng cho 31 test case AI Task 5 Ngày 3; không suy ra PASS từng case từ xác nhận PASS tổng thể của chủ dự án.
 
 ## Tài liệu dự án
 
@@ -170,6 +171,6 @@ Task 6 kiểm tra tự động và Task 7 rà soát tài liệu Ngày 3 hoàn t�
 - `docs/SESSION_2026-09-26_TASK5.md` — tổng kết phiên Task 5: triển khai, sự cố App Check/quota, model fallback.
 - `docs/implement_plan_day3.md` — kế hoạch tích hợp Firebase AI Logic và trạng thái Task 1–7.
 - `docs/implement_plan_day4.md` — task chỉnh sửa/xác nhận, persistence, lịch sử/chi tiết; Task 7 được đóng theo quyết định chủ dự án với ngoại lệ ảnh/offline; Day 4 chưa nghiệm thu đầy đủ.
-- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 1–5 có kết quả host/audit theo giới hạn đã ghi, Task 2 còn blocker ảnh/offline; Task 6–8 đang chờ.
-- `docs/testcase_day5_resilience.txt` — kết quả riêng của Day 5 Task 1–4, gồm test host và blocker Android.
+- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 6 đạt kiểm tra host nhưng Android còn blocked; Task 2 còn blocker ảnh/offline; voice/GPS hoãn.
+- `docs/testcase_day5_resilience.txt` — kết quả riêng của Day 5 Task 1–6, gồm test host và blocker Android.
 - `docs/PROMPT_01.md` — prompt onboarding cho coding agent theo trạng thái dự án hiện tại.

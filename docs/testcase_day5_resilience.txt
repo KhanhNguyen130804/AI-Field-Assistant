@@ -122,3 +122,25 @@ Trong lần chạy test trước khi sửa service, ba test mới tái hiện l�
 | AUTO-D5-13 | `dart format --output=none --set-exit-if-changed lib/screens/create_report_screen.dart test/widget_test.dart` | **PASS — 2 file, 0 thay đổi** |
 
 Test dùng fake service/repository trên Windows host. Không build APK, không chạy ADB/Android, không gọi Gemini/App Check thật; các điểm đó không được suy ra từ kết quả này. PHOTO-D5-02 và OFFLINE-D5-01 vẫn BLOCKED theo kết quả Task 2.
+
+## Day 5 Task 6 — UX regression host và Android (30/09/2026)
+
+### Source và lệnh vừa chạy
+
+| Thuộc tính | Kết quả |
+|---|---|
+| Branch / HEAD trước cập nhật tài liệu | `codex/day5` / `d0f3870` (`fix(day5): harden privacy logging`), đồng bộ với `origin/codex/day5` |
+| Working tree trước kiểm tra | Chỉ có `docs/HOME_DEVICE_TEST_CHECKLIST.md` chưa được theo dõi; không có tracked changes |
+| Thiết bị được liệt kê | PKG110, Android 16/API 36, ADB Wireless; Flutter cũng liệt kê Windows, Chrome và Edge |
+| `flutter --suppress-analytics analyze --no-pub` | **PASS** — No issues found |
+| `flutter --suppress-analytics test --no-pub --reporter compact` | **PASS** — 117/117; host tests hiện có, gồm viewport nhỏ/keyboard và UI trạng thái dùng fake |
+| `dart format --output=none --set-exit-if-changed lib test` | **PASS** — 26 file, 0 đổi |
+| `flutter devices` | **PASS** — thiết bị PKG110 được Flutter nhận diện qua ADB Wireless |
+| Build APK hiện tại | **BLOCKED** — automatic approval review từ chối khởi chạy `flutter --suppress-analytics build apk --debug --no-pub` vì tạo/cập nhật artifact trong `build/`; process không bắt đầu |
+
+### Kết quả và giới hạn
+
+- Không có lỗi test host mới; test suite hiện có không phát hiện regression trong phạm vi widget/service/repository fake và SQLite FFI host.
+- Vì không tạo được APK từ source `d0f3870`, không cài APK, không mở app/kiểm tra UI trên điện thoại trong Task 6. Không có case Android nào được đánh dấu PASS; vùng bấm, bàn phím, cuộn, cỡ chữ, loading/error và giữ input trên thiết bị vẫn **NOT RUN**.
+- Không gửi request Gemini/App Check thật, không đọc log thiết bị, không thay đổi app data hoặc trạng thái mạng. PHOTO-D5-02 và OFFLINE-D5-01 từ Task 2 tiếp tục **BLOCKED**.
+- Task 6 **một phần**: host PASS, thiết bị chưa kiểm chứng. Không dùng kết quả widget để thay cho Android UX evidence.
