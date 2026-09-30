@@ -1,16 +1,29 @@
-# Tóm tắt dự án — trạng thái sau Day 5 Task 7
+# Tóm tắt dự án — snapshot Ngày 6 (30/09/2026)
 
-## Follow-up: Xuất PDF (30/09/2026)
+## Trạng thái hiện tại — Ngày 6
 
-- Đang triển khai trên nhánh `codex/report-pdf-export`, tạo từ HEAD `eb54b34` của `codex/day5`; chưa commit. Checklist chưa theo dõi `docs/HOME_DEVICE_TEST_CHECKLIST.md` được giữ nguyên.
+- Nhánh làm việc `codex/day6`, tạo từ commit `ec35228` có PDF export. Tracked files trước task sạch; `docs/HOME_DEVICE_TEST_CHECKLIST.md` là untracked có trước và được giữ nguyên.
+- Vừa chạy: `dart format --output=none --set-exit-if-changed lib test` — PASS, 29 file/0 đổi; `flutter analyze --no-pub` — PASS; `flutter test --no-pub --reporter compact` — PASS, 126/126; `flutter test test/local_report_repository_test.dart --no-pub --reporter compact` — PASS, 10/10 SQLite FFI host.
+- `flutter build apk --release --no-pub` — PASS, 139 giây; output `build/app/outputs/flutter-apk/app-release.apk`, 59,681,400 bytes, SHA-256 `8715F1F5654318BC6B840BDB6D9559ACD110C629A95735B065150137397A457C`. Release APK được cài đè bằng `adb install -r` lên AVD Android 35, sau đó `MainActivity` mở. Đây không phải clean install, không xóa app data và chưa kiểm tra luồng AI/review/save/History/PDF trên Android. Không có điện thoại vật lý kết nối.
+- Release hiện ký bằng debug key trong `android/app/build.gradle.kts`; APK chỉ là build demo nội bộ, không phải bản phát hành production. Build có cảnh báo KGP của Firebase plugins và restricted Java native access.
+- Script video dưới 5 phút ở `docs/DEMO_SCRIPT_DAY6.md`; chưa quay/xem lại video. Không gọi Gemini thật trong lượt này vì chưa xác nhận App Check sẵn sàng; không có điện thoại Android vật lý kết nối.
+- `codex/day6` đã được tạo local; remote GitHub cần xác thực nhưng môi trường hiện báo Windows Git Credential Manager không có credential (`SEC_E_NO_CREDENTIALS`). Chưa tuyên bố remote branch/push hoàn tất.
+
+## Kế hoạch Ngày 6
+
+`docs/implement_plan_day6.md` ghi trình tự, đầu ra và điều kiện nghiệm thu. Hạng mục cần thiết bị/app recording hoặc GitHub credential chưa được đổi nhãn thành PASS.
+
+## Lịch sử follow-up: Xuất PDF (30/09/2026)
+
+- Ban đầu triển khai trên nhánh `codex/report-pdf-export`, tạo từ HEAD `eb54b34` của `codex/day5`; mã PDF đã commit ở `ec35228` trước khi bắt đầu Day 6. Checklist chưa theo dõi `docs/HOME_DEVICE_TEST_CHECKLIST.md` được giữ nguyên.
 - Đã nối PDF đầy đủ từ màn detail cho report đã xác nhận/lưu; tạo cục bộ từ các trường report, mô tả gốc và ảnh (nếu có). Lưu dùng document picker Android; chia sẻ dùng share sheet Android; không có API Zalo trực tiếp.
 - Đã thêm font Roboto có license, `pdf`, `printing`, `flutter_file_saver`, `image`; ảnh WebP được chuyển sang PNG để nhúng.
 - Host vừa kiểm tra: `flutter test --no-pub --reporter compact` PASS 126/126; `flutter analyze --no-pub` PASS; `dart format --output=none --set-exit-if-changed lib test` PASS 29 file/0 đổi; `git diff --check` PASS. APK debug build PASS.
-- `flutter devices` chỉ nhận Windows/Chrome/Edge trong lượt này; chưa cài APK, kiểm tra Android Save As/share sheet hay thử gửi Zalo. Tính năng đã có mã và build được, nhưng thiết bị chưa nghiệm thu.
+- Trong lượt triển khai PDF ban đầu, `flutter devices` chỉ nhận Windows/Chrome/Edge; chưa thử Save As/share sheet/Zalo. Kiểm tra Ngày 6 sau đó chỉ cài và mở app trên AVD, chưa nghiệm thu PDF.
 
 > Trạng thái được đối chiếu ngày 30/09/2026: HEAD `b6bd2e5` (`docs(day5): record task 6 UX checks`) trên `codex/day5`, đồng bộ với `origin/codex/day5` trước cập nhật tài liệu Task 7. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi, dựa trên snapshot cũ và chưa được chỉnh sửa. Kiểm tra host Day 5 Task 6 vừa chạy trong phiên trước; kiểm tra thiết bị Android chưa chạy vì build APK bị automatic approval review từ chối trước khi lệnh khởi chạy.
 
-## Trạng thái hiện tại — Day 5 Task 1–7
+## Snapshot lịch sử — Day 5 Task 1–7
 
 - Luồng đang có trong ứng dụng: mô tả/chọn ảnh → người dùng chủ động gọi Firebase AI Logic → chỉnh sửa và xác nhận draft → lưu qua repository SQLite Android → History → chi tiết theo ID.
 - **Task 1:** baseline lịch sử gồm 99/99 tests, analyzer sạch và APK debug build/cài trên emulator. Đây không phải kết quả build của Task 3.

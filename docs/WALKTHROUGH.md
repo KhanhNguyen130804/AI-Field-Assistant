@@ -1,4 +1,4 @@
-# Walkthrough — luồng hiện tại, Task 7 đóng với ngoại lệ được chấp nhận
+# Walkthrough — luồng ứng dụng và ranh giới kiểm chứng (30/09/2026)
 
 Hướng dẫn kiểm tra nhập mô tả/chọn ảnh, Firebase/App Check, Gemini draft, review/save, History và detail theo ID. Widget tests History/detail dùng fake repository. Theo quyết định của chủ dự án, Task 7 được đóng với ngoại lệ được chấp nhận: đã xác minh một report text-only còn ở History/detail sau force-stop/relaunch trên PKG110 Android 16/API 36, nhưng ảnh sau restart và offline save/read chưa được kiểm chứng. Fixture ảnh không xuất hiện trong Photo Picker; thiết bị chỉ có ADB Wireless. Day 4 chưa được nghiệm thu đầy đủ.
 
@@ -87,7 +87,16 @@ Day 5 Task 6 (30/09/2026) vừa chạy lại trên host: `flutter analyze` sạc
 
 Trong màn **Chi tiết báo cáo**, hai nút **Lưu PDF** và **Chia sẻ PDF** xuất report đã lưu, gồm các trường đã xác nhận, thời gian, mô tả gốc và ảnh nếu có. Tệp sinh cục bộ; khi ảnh có lỗi, app yêu cầu xác nhận trước khi tạo PDF không ảnh. Lưu mở document picker Android; chia sẻ mở Android share sheet, nơi có thể chọn Zalo nếu thiết bị đã cài và liệt kê Zalo cho MIME PDF.
 
-Kiểm tra host vừa chạy trên nhánh này: `flutter test --no-pub --reporter compact` 126/126; `flutter analyze --no-pub` sạch; format check 29 file/0 đổi. `flutter build apk --debug --no-pub` thành công. `flutter devices` trong cùng lượt chỉ nhận Windows, Chrome và Edge; chưa cài APK hoặc thử lưu/mở/chia sẻ PDF trên Android. Vì vậy share sheet, document picker, xem PDF và Zalo vẫn cần kiểm tra trên điện thoại thật.
+Trong lượt PDF ban đầu, host test đạt 126/126, analyzer/format sạch và APK debug build thành công; lúc đó không có thiết bị Android kết nối. Ngày 30/09/2026, nhánh `codex/day6` build release APK, cài đè lên AVD Android 35 bằng `adb install -r` và mở được `MainActivity`. Đây không phải cài mới và chưa thử Lưu PDF/Chia sẻ PDF, mở tệp hoặc Zalo; AVD không thay thế nghiệm thu trên điện thoại thật. APK release vẫn ký bằng debug key.
+
+## Kiểm chứng Ngày 6 trên source hiện tại
+
+- `dart format --output=none --set-exit-if-changed lib test`: PASS, 29 file/0 đổi.
+- `flutter analyze --no-pub`: PASS, No issues found.
+- `flutter test --no-pub --reporter compact`: PASS, 126/126; `test/local_report_repository_test.dart`: PASS, 10/10 với SQLite FFI trên host.
+- `flutter build apk --release --no-pub`: PASS; artifact `build/app/outputs/flutter-apk/app-release.apk`, 59,681,400 bytes, SHA-256 `8715F1F5654318BC6B840BDB6D9559ACD110C629A95735B065150137397A457C`.
+- `adb install -r` trên AVD Android 35 và mở launcher Activity: PASS. Không xóa app data; chưa thao tác AI, save, History hoặc PDF. Không có điện thoại vật lý kết nối.
+- Kịch bản quay: `docs/DEMO_SCRIPT_DAY6.md`. Video chưa quay; request Gemini mới không chạy. App Check, PDF Android, persistence ảnh và offline vẫn là các giới hạn cần kiểm chứng riêng.
 
 ### Kết quả kiểm tra/build đã ghi nhận
 
