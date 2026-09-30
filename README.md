@@ -4,7 +4,7 @@
 
 ## Trạng thái hiện tại
 
-Nhánh hiện tại là `codex/day6`, tạo từ commit `ec35228` trên `codex/report-pdf-export`; PDF export đã nằm trong commit gốc của nhánh này. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi có trước và được giữ nguyên.
+Nhánh hiện tại `codex/day6` đã được push và đang theo dõi `origin/codex/day6`; nhánh được tạo từ commit `ec35228` trên `codex/report-pdf-export`, nơi PDF export đã được commit. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi có trước và được giữ nguyên.
 
 - Luồng hiện có: nhập mô tả/chọn ảnh → người dùng chủ động gọi AI → xem/sửa/xác nhận draft → lưu cục bộ → History → chi tiết report. Service AI, parser, SQLite repository và các màn UI đã được nối trong app.
 - **Day 5 Task 1:** baseline lịch sử gồm 99/99 test, analyzer sạch, APK debug build/cài trên emulator. Đây là kết quả của Task 1, không phải build mới sau Task 3.

@@ -2,7 +2,7 @@
 
 > Nhánh: `codex/day6`, bắt đầu từ commit `ec35228` (PDF export). Baseline tại lúc lập kế hoạch: tracked tree sạch; `docs/HOME_DEVICE_TEST_CHECKLIST.md` là thay đổi chưa theo dõi có trước và phải giữ nguyên. Các kết quả PDF `126/126`, analyzer và APK build trong worklog là bằng chứng lịch sử, không phải lần chạy của kế hoạch này.
 
-> **Kết quả thực hiện (30/09/2026):** Host formatter/analyzer/full tests/SQLite FFI đều PASS; APK release build thành công, cài đè và mở được trên AVD Android 35. Chưa thao tác các luồng bên trong app trên Android, chưa quay video và chưa xác nhận/push GitHub branch. Vì vậy Ngày 6 chưa đạt 100%; xem từng gate bên dưới.
+> **Kết quả thực hiện (30/09/2026):** Host formatter/analyzer/full tests/SQLite FFI đều PASS; APK release build thành công, cài đè và mở được trên AVD Android 35. GitHub branch được tạo/push và remote SHA đã đối chiếu. Chưa thao tác các luồng bên trong app trên Android, chưa quay video; vì vậy Ngày 6 chưa đạt 100%, xem từng gate bên dưới.
 
 ## 1. Mục tiêu
 
@@ -77,4 +77,4 @@ Chuẩn bị bản demo có thể tái lập, gắn tài liệu với đúng mã
 - **Task 2 — PARTIAL:** format 29/29, analyzer sạch, 126/126 full tests, SQLite FFI 10/10, APK release build thành công; cài đè/mở app trên AVD. Chưa thử tính năng bên trong app trên Android hoặc trên điện thoại thật.
 - **Task 3 — PASS:** README, context summary, walkthrough và worklog được đồng bộ với kết quả mới; ví dụ AI không chính xác chưa được dựng vì chưa có bằng chứng thực.
 - **Task 4 — PARTIAL:** kịch bản 4:40 đã tạo; video chưa quay/xem lại.
-- **Task 5 — IN PROGRESS:** đã stage đúng sáu tệp thuộc Day 6; staged diff check/secret-pattern scan sạch, không còn tracked unstaged diff. Commit/push và remote SHA verification đang chờ.
+- **Task 5 — PASS:** sáu tệp Day 6 đã commit; `git push -u origin codex/day6` thành công và `git ls-remote` khớp local SHA. Untracked checklist có trước không được stage.

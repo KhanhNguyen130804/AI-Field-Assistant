@@ -7,7 +7,7 @@
 - `flutter build apk --release --no-pub` — PASS, 139 giây; output `build/app/outputs/flutter-apk/app-release.apk`, 59,681,400 bytes, SHA-256 `8715F1F5654318BC6B840BDB6D9559ACD110C629A95735B065150137397A457C`. Release APK được cài đè bằng `adb install -r` lên AVD Android 35, sau đó `MainActivity` mở. Đây không phải clean install, không xóa app data và chưa kiểm tra luồng AI/review/save/History/PDF trên Android. Không có điện thoại vật lý kết nối.
 - Release hiện ký bằng debug key trong `android/app/build.gradle.kts`; APK chỉ là build demo nội bộ, không phải bản phát hành production. Build có cảnh báo KGP của Firebase plugins và restricted Java native access.
 - Script video dưới 5 phút ở `docs/DEMO_SCRIPT_DAY6.md`; chưa quay/xem lại video. Không gọi Gemini thật trong lượt này vì chưa xác nhận App Check sẵn sàng; không có điện thoại Android vật lý kết nối.
-- `codex/day6` đã được tạo local; remote GitHub cần xác thực nhưng môi trường hiện báo Windows Git Credential Manager không có credential (`SEC_E_NO_CREDENTIALS`). Chưa tuyên bố remote branch/push hoàn tất.
+- `codex/day6` đã được push lên `origin/codex/day6`; `git ls-remote` xác nhận SHA remote khớp local sau push và upstream đã được thiết lập. Status vẫn có đúng tệp untracked có trước `docs/HOME_DEVICE_TEST_CHECKLIST.md`.
 
 ## Kế hoạch Ngày 6
 
