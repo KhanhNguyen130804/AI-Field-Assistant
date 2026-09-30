@@ -4,7 +4,13 @@
 
 ## Trạng thái hiện tại
 
-UI/UX refresh được thực hiện trên nhánh `codex/ui-ux-refresh`, tạo từ `codex/day6` tại commit `18e3ea7f5dc900bbd8099e9ed99ee54b14c43187`. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi có trước và được giữ nguyên.
+**Release Task 1 (01/10/2026): PARTIAL.** Baseline hiện tại là `codex/day7`, HEAD `fa85658`. Đã chốt APK trực tiếp, người nhận dùng AI không đăng ký debug token từng máy hoặc đăng nhập. Người dùng đã bật reCAPTCHA API, tạo key `ai-field-assistant-android-release` và đăng ký App Check Android: ảnh Apps mới nhất ghi Fraud Defense/Registered, đúng package. IAM có role Owner; billing ở ảnh gần nhất chưa liên kết. Wizard AI Logic trước đó chọn baseline Enforced/replay Monitoring only, chưa có bằng chứng lưu wizard; saved key settings/quota Mobile và runtime release còn cần kiểm chứng. Mã Flutter chưa activate provider release; Task 2/signing/build/device proof chưa thực hiện.
+
+Project trong mã là `ai-field-assistant-7f9dc`, package `com.example.ai_field_assistant`; tránh thao tác nhầm project StudyTrack. Source release vẫn chưa activate App Check và đang ký bằng debug key. Preflight ADB vừa ghi nhận 0 thiết bị online; chưa sửa mã, tạo keystore, chạy test/analyze/build hay gọi AI trong Task 1. Các kết quả test/build bên dưới thuộc những lượt lịch sử. Chi tiết gate và bước hoàn tất preflight ở [kế hoạch release](docs/implement_plan_release_app.md).
+
+Ảnh quota Gemini mới: API Enabled; quota request/ngày free tier `gemini-3.8-flash` 20, usage 25; `gemini-3.5-flash-lite` 500, usage 4. Primary đã vượt giới hạn hiển thị tại thời điểm ảnh; service có fallback quota, chưa có request AI mới để xác minh. Quota/điều kiện reCAPTCHA Mobile vẫn chưa kiểm tra xong; không suy APK sẽ dùng AI không giới hạn.
+
+UI/UX refresh trước đó được thực hiện trên nhánh `codex/ui-ux-refresh`, tạo từ `codex/day6` tại commit `18e3ea7f5dc900bbd8099e9ed99ee54b14c43187`. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi có trước và được giữ nguyên.
 
 - Luồng hiện có: nhập mô tả/chọn ảnh → người dùng chủ động gọi AI → xem/sửa/xác nhận draft → lưu cục bộ → History → chi tiết report. Service AI, parser, SQLite repository và các màn UI đã được nối trong app.
 - **Day 5 Task 1:** baseline lịch sử gồm 99/99 test, analyzer sạch, APK debug build/cài trên emulator. Đây là kết quả của Task 1, không phải build mới sau Task 3.

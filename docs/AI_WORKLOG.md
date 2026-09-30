@@ -755,3 +755,79 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - **Kiểm chứng code (01/10/2026):** `dart format` chạy trên 8 tệp Dart, định dạng lại 7; `flutter analyze --no-pub` thành công với `No issues found!` (137,2 giây). Không chạy `flutter test` trong lượt publish này.
 - **APK debug (01/10/2026):** sau khi sửa thứ bậc CTA, `flutter build apk --debug --no-pub` thành công. Artifact `D:\Download\ai_field_assistant-debug.apk` có kích thước 184.518.504 byte, SHA-256 `6D2650D5AD58BAB54F972F7DA6775D386880E39016D60AE57A7D65575FAC45FA`; bản đích đã được đối chiếu hash với build output. Gradle còn cảnh báo KGP migration của các Firebase plugins và Java native access.
 - **Thiết bị/giới hạn:** AVD được mở để cài/mở app và tạo App Check debug token lưu riêng ngoài repo; giá trị token không ghi vào source, Git hay worklog. AVD đã dừng. Đây không phải kiểm tra UX các luồng tác nghiệp trên thiết bị; không chạy test suite trong lượt này.
+
+## 2026-10-01 — Release Task 1: preflight APK trực tiếp và production App Check
+
+- **Prompt/phạm vi:** người dùng yêu cầu thực hiện Task 1 của plan release, báo cáo chi tiết và cập nhật docs. Mục tiêu đã chốt: người nhận có APK cài và dùng AI, không lấy/đăng ký debug token hoặc login. Người dùng xác nhận có Firebase Console, chưa Play Console. Chỉ thực hiện preflight; chưa làm Task 2/sửa provider hoặc build APK.
+- **Công cụ:** Codex, PowerShell đọc Git/source/config/SDK cache và metadata thiết bị, công cụ web đọc tài liệu Firebase/Google Cloud chính thức, `cua_repl` thử truy cập Console, `apply_patch` cập nhật tài liệu. Không gọi Gemini, không tạo nội dung AI demo/fixture và không lấy log token.
+- **Baseline:** `codex/day7`, HEAD `fa8565818f2c6ecd40e796638669590cc5d06a93`. Hai test modified có trước, `docs/HOME_DEVICE_TEST_CHECKLIST.md` và `docs/implement_plan_release_app.md` untracked. Test/checklist giữ nguyên; không reset, checkout, stash, stage, commit hoặc push.
+- **Vừa xác minh local:** JSON Firebase/options dùng project `ai-field-assistant-7f9dc`, package `com.example.ai_field_assistant`; chỉ xuất metadata, không xuất API key. `main.dart` activate App Check trong `kDebugMode`; release không activate provider. Gradle release vẫn ký debug key; version `0.1.0+1`. Lock App Check 0.4.8 export `AndroidReCaptchaProvider` và native Gradle có `firebase-appcheck-recaptcha`, chưa chứng minh runtime. SDK FlutterExtension có minSdk 24; chưa kiểm tra manifest APK mới.
+- **Signing/môi trường:** `Test-Path` xác nhận chưa có `android/key.properties` hoặc keystore ở đường dẫn dự kiến `$env:USERPROFILE\ai-field-release.jks`; không tìm toàn máy và không kết luận tất cả keystore đều vắng. `Get-Command keytool` không tìm thấy trên PATH; `Test-Path` thấy `C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe`, chưa chạy sinh khóa. `android/.gitignore` đã có `key.properties`, `**/*.jks`, `**/*.keystore`; `git check-ignore` xác nhận key.properties bị ignore, còn tên keystore kiểm tra ở root chưa bị ignore. Tên kiểm tra chỉ là đối số, không tạo file.
+- **Thiết bị vừa kiểm tra:** chạy `adb devices` và chỉ xuất số lượng: online 0, unauthorized 0, offline 0. Không in serial/IP; không gọi logcat, mở app, cài/gỡ, clear data hoặc đổi mạng. Chưa có máy kết nối để thử fresh install; cần ít nhất hai máy tương thích trong nghiệm thu release sau này.
+- **Console bị chặn:** ambient URL là project StudyTrack, khác project trong repo. Automatic approval review từ chối chọn/đọc tab đó vì dữ liệu ngoài phạm vi. Theo phương án an toàn được đề xuất, thử mở trực tiếp project AI Field Assistant nhưng công cụ trả `helper_unknown_error: setup refresh had errors`; reset một lần rồi thử lại vẫn lỗi `trusted Node process exited unexpectedly`. Không có snapshot Console, không đọc token, không đổi project configuration. Chưa xác minh IAM/quyền GCP, API/key, enforcement, quota, tier hoặc billing; lỗi công cụ không chứng minh project thiếu quyền/billing.
+- **Đối chiếu chính thức:** [Firebase Flutter reCAPTCHA](https://firebase.google.com/docs/app-check/flutter/recaptcha-enterprise-provider) mô tả provider Preview, key Android đúng package, Spark có tập score giới hạn; [bảng giá Google Cloud](https://cloud.google.com/security/products/recaptcha#pricing) ghi Mobile SDK ở Premium/Enterprise và Premium có điều kiện billing. Không suy ra miễn phí hay bắt buộc nâng gói cho project này từ hai mô tả; phải xem điều kiện project thật. Không tự liên kết billing/nâng Blaze, không tắt enforcement hoặc dùng token chung.
+- **Điều chỉnh plan từ phát hiện thực tế:** ghi Task 1 PARTIAL và gate chưa xác minh; sửa giả định phải thêm toàn bộ ignore rules vì cây Android đã được bảo vệ; bỏ gợi ý đưa người nhận release sang đăng ký debug token và bỏ mô tả chỉ Play Integrity mới đạt release. E vẫn là đề xuất, chưa là quyết định khả thi đã nghiệm thu.
+- **Docs đã cập nhật:** `docs/implement_plan_release_app.md` có kết quả/gate/checklist hoàn tất preflight; README và context thêm snapshot Task 1 đúng HEAD; worklog ghi lượt thực thi này. Không sửa roadmap/feature, dependency, test hoặc checklist thiết bị có trước.
+- **Rà soát cuối:** `git diff --check` exit 0 (chỉ có cảnh báo LF/CRLF, không format file). Plan untracked được kiểm tra riêng: 0 dòng có whitespace cuối. SHA-256 hai test modified và checklist có trước trùng trước/sau cập nhật docs. Không có staged/deleted files; plan release và checklist vẫn untracked. Ba tài liệu tracked mới modified là README, worklog và context.
+- **Ranh giới kiểm chứng:** chỉ chạy kiểm tra read-only Git/source/SDK/path/ADB discovery và rà diff tài liệu. Không chạy `dart format`, `flutter analyze`, `flutter test`, build, key generation hoặc request AI; số test/hash APK trong các mục trước là lịch sử. Kết quả: **Task 1 PARTIAL, phần Console chưa hoàn tất do lỗi công cụ; chưa chuyển Task 2**.
+
+### Follow-up — thử skill computer-use theo yêu cầu người dùng
+
+- Người dùng gọi rõ skill `computer-use:computer-use` để kiểm tra phần Console còn thiếu. Đọc toàn bộ SKILL và các hướng dẫn runtime, confirmations, API trước khi thao tác; dùng `node_repl` import `@oai/sky` đúng entrypoint, không dựng helper hoặc dùng shell để tự động hóa UI.
+- Initialize lần đầu trả `trusted Node process exited unexpectedly; kernel reset, rerun your request`. Thử initialize lại một lần trả `node_repl kernel exited unexpectedly`, diagnostics: `windows sandbox failed: helper_unknown_error: setup refresh had errors`. Dừng theo recovery của skill; chưa tới list apps/chọn cửa sổ/screenshot, không thực hiện UI input.
+- Không có bằng chứng Console mới, không thay đổi App Check/API/key/billing, không gọi AI hoặc chạy test/build. Task 1 vẫn PARTIAL; cập nhật plan/worklog để người tiếp tục không nhầm lần thử công cụ với kiểm tra project thành công.
+
+### Follow-up — tab Browser được gắn trực tiếp và phần local còn lại
+
+- Người dùng gắn tab Google Cloud đúng project và tab Firebase StudyTrack, yêu cầu thử lại để hoàn tất Task 1. Reset `cua_repl`, gọi `cua.getTab` bằng mention của tab Google Cloud; vẫn lỗi `windows sandbox failed: helper_unknown_error: setup refresh had errors` trước khi có UI/documentation của tab. Không đọc tab Firebase StudyTrack làm bằng chứng cho project AI Field Assistant; không thay đổi cloud.
+- Kiểm tra local mới: `Test-Path` xác nhận thư mục user profile tồn tại và `C:\Users\khanh\ai-field-release.jks` chưa tồn tại. Chọn đường dẫn này ngoài repo cho bước tạo signing key sau; chưa sinh key, ghi mật khẩu hoặc sao lưu. Nơi sao lưu riêng còn cần chuẩn bị. `adb devices` lọc số lượng vẫn 0 online/unauthorized/offline; chưa có hai máy kết nối để nghiệm thu.
+- Cập nhật plan/worklog, giữ nguyên source/test/checklist. Không chạy formatter/analyzer/test/build hoặc request AI. Task 1 còn PARTIAL do quyền/API/Android key/enforcement/quota/billing thực tế chưa đọc được từ Console.
+
+### Follow-up — kiểm tra sáu ảnh Console người dùng cung cấp
+
+- Người dùng yêu cầu kiểm tra trạng thái Register/chưa đăng ký và gửi sáu ảnh; hai ảnh IAM cùng nội dung. Agent đọc trực tiếp ảnh đính kèm, không truy cập Console bằng công cụ và không tự thao tác UI.
+- Project settings xác nhận `ai-field-assistant-7f9dc`, package `com.example.ai_field_assistant`. App Check Android ghi Unregistered/provider `-`. Form Play Integrity chưa có SHA-256; form Fraud Defense (formerly known as reCAPTCHA Enterprise) Preview có site key trống. TTL 1 giờ là giá trị của form chưa lưu, không ghi thành cấu hình đã áp dụng.
+- Metrics Firebase AI Logic hiển thị Verified 153/153 (100%), ba nhóm unverified trên ảnh đều 0, khoảng ngày Sep 24–Oct 2. Nhãn protection chỉ thấy `Basic - En...`; có chỉ báo baseline đang enforced nhưng chưa đọc được nhãn đầy đủ hoặc replay protection. Không coi request metrics là bằng chứng AI trên APK release/máy mới hoặc request vừa chạy trong phiên.
+- IAM có tài khoản cá nhân role Owner. Không sao chép email, danh tính hoặc service account từ ảnh vào tài liệu. Chưa thao tác tạo key/bật API để kiểm tra quyền thực tế. Banner Start free không chứng minh trạng thái liên kết billing; ảnh chưa có reCAPTCHA key/API, billing hoặc quota.
+- Cập nhật README/context/plan/worklog bằng nguồn bằng chứng ảnh; Task 1 vẫn PARTIAL. Hướng dẫn bước tiếp: xem protection đầy đủ, trang reCAPTCHA và Billing của project đúng; chưa lưu Register, bật API/billing hoặc tạo key trong bước khảo sát. Không sửa source/test/checklist hoặc chạy formatter/analyzer/test/build/AI.
+
+### Follow-up — ba ảnh reCAPTCHA API, Billing và Baseline protection
+
+- Người dùng gửi thêm ba ảnh của project AI Field Assistant. reCAPTCHA Enterprise API có nút Enable (chưa bật tại thời điểm ảnh); Billing ghi project không có/liên kết billing account; wizard AI Logic ở bước Baseline protection đang chọn Enforced, phù hợp chỉ báo Basic - En... trước đó. Chưa có ảnh Replay protection, quota/usage hoặc Android key. Không coi giá trên trang API là quota/chi phí thực tế của project; không suy user đã lưu thay đổi wizard.
+- Dùng công cụ web đọc nguồn chính thức: [Prepare environment](https://docs.cloud.google.com/recaptcha/docs/prepare-environment) ghi không cần billing để enable/bắt đầu Fraud Defense nói chung; [Create mobile key](https://docs.cloud.google.com/recaptcha/docs/create-key-mobile) có tùy chọn hỗ trợ phân phối ngoài Google Play và package verification. Bảng giá Mobile SDK vẫn cần đối chiếu tier/Console riêng, không hứa Android dùng miễn phí lâu dài hoặc yêu cầu nâng billing chỉ vì API chưa bật.
+- Cập nhật README/context/plan/worklog với bằng chứng ảnh và giữ Task 1 PARTIAL. Không truy cập cloud qua UI, enable API, link billing, tạo key hoặc lưu wizard; không sửa source/test/checklist, không chạy format/analyze/test/build/AI.
+
+### Follow-up — ảnh Replay protection
+
+- Ảnh người dùng gửi ở bước 2 wizard AI Logic cho thấy Replay protection chọn Monitoring only. Nội dung UI: request tái sử dụng token chưa bị chặn, metrics được thu thập để xem tác động enforce. Chưa có ảnh lưu Confirmation; không khẳng định lựa chọn đã được áp dụng vào cấu hình.
+- Ghi nhận ảnh trong README/context/plan/worklog; hướng dẫn giữ nguyên và đóng wizard bằng Cancel khi chỉ khảo sát. Task 1 PARTIAL vì Android key/quota/mobile tier và chuẩn bị máy thử còn thiếu. Không thay đổi cloud/source/test, không chạy test/build/AI.
+
+### Follow-up — ảnh quota Gemini API
+
+- Người dùng gửi trang Quotas & System Limits của đúng project. Gemini API (`generativelanguage.googleapis.com`) Enabled. Quota request per model per day free tier: `gemini-3.8-flash` Value 20, Current usage 25, UI 100%; `gemini-3.5-flash-lite` Value 500, usage 4, UI 0.8%. Primary vượt giới hạn hiển thị; không có request/lỗi quota mới từ ứng dụng được chạy hoặc quan sát trong lượt này.
+- Đọc lại service: primary/fallback đúng hai model trên, fallback chỉ khi lỗi map thành ReportDraftQuotaException; đây là bằng chứng code, chưa phải runtime mới. Unlimited ở các dòng input-token/ngày không bỏ giới hạn request/ngày. Chưa xác minh quota theo phút hoặc quota/điều kiện Mobile SDK reCAPTCHA.
+- Cập nhật docs; không tạo credentials, disable API, bật billing, gửi AI, chạy test/build hoặc sửa source/test. Task 1 vẫn PARTIAL, phần quota request-ngày Gemini đã có bằng chứng ảnh.
+
+### Follow-up — reCAPTCHA API Enabled và form Android key
+
+- Hai ảnh mới do người dùng cung cấp: reCAPTCHA Enterprise API Status Enabled sau bước người dùng bật API; form tạo `ai-field-assistant-android-release` chọn Android, package đúng, Disable package name verification tắt và Support applications distributed outside of the Google Play Store bật. Agent chỉ đọc ảnh, không thao tác Console. Không đồng nhất bộ lọc API credential “Android key (auto creat...)” với bằng chứng đã tạo App Check reCAPTCHA site key.
+- Additional settings thu gọn, chưa thấy testing/fixed score; chưa có bằng chứng Create key thành công, đăng ký Firebase provider hoặc runtime Android. Hướng dẫn mở phần optional, giữ testing-only/fixed-score tắt trước khi tạo key theo tài liệu Google; dừng nếu yêu cầu link billing để kiểm tra điều kiện cụ thể.
+- Cập nhật docs; Task 1 PARTIAL. Không tạo key/link billing qua công cụ, không sửa source/test, chạy test/build hoặc request AI.
+
+### Follow-up — key đã tạo, chuẩn bị đăng ký Firebase App Check
+
+- Ảnh Key details do người dùng gửi xác nhận key `ai-field-assistant-android-release` tồn tại, Integration Android app, thông báo Incomplete/request tokens và Scores chưa có dữ liệu trong khoảng chọn. Không lưu key ID hoặc ảnh vào repo. Chưa có saved settings/fixed-score, Firebase Registered hoặc runtime release mới.
+- Đối chiếu tài liệu Firebase Flutter reCAPTCHA: đăng ký key trong App Check > Apps, mặc định TTL 1 giờ, threshold khuyến nghị 0.5. Hướng dẫn người dùng thực hiện bước Console này; không tự sửa source hoặc mở rộng backend. Provider release của Flutter/signing/build/device proof là các task tiếp theo, chưa thực hiện.
+- Cập nhật docs, giữ Task 1 PARTIAL. Không thay đổi cloud qua công cụ, không chạy formatter/analyzer/test/build/AI. Trạng thái billing/quota Mobile vẫn cần bằng chứng riêng, không suy từ key creation thành công.
+
+### Follow-up — Firebase App Check Android Registered
+
+- Ảnh Apps do người dùng gửi xác nhận package `com.example.ai_field_assistant`, provider Fraud Defense và Status Registered; đăng ký provider Console đã thành công. Web app còn chưa đăng ký, không thuộc release APK Android. Không ghi key/token vào docs; ảnh chưa chứng minh saved TTL/threshold hoặc cấu hình replay đã lưu.
+- Đọc lại `lib/main.dart`: vẫn chỉ activate AndroidDebugProvider trong kDebugMode. Đối chiếu hướng dẫn Firebase Flutter: bước sau đăng ký là initialize AndroidReCaptchaProvider trước dùng các dịch vụ Firebase. Đề xuất Task 2 sửa mã release, tiếp đó signing/build/device proof; chưa thực thi các task này hoặc gọi AI.
+- Cập nhật docs với Registered; Task 1 vẫn PARTIAL ở saved settings/điều kiện Mobile/quota và chuẩn bị máy thử/bản sao signing. Giữ nguyên source/test/checklist; không tạo nhánh, key, build hoặc thay đổi cloud qua công cụ.
+
+### Rà soát docs trước commit/push — 01/10/2026
+
+- Người dùng yêu cầu kiểm tra nhanh và commit/push docs. Phạm vi publication: README, CONTEXT_SUMMARY, AI_WORKLOG và implement_plan_release_app; loại trừ hai tệp test đã sửa và HOME_DEVICE_TEST_CHECKLIST chưa theo dõi có trước.
+- Rà diff và sửa phần tóm tắt kế hoạch còn ghi Console chưa xác minh: bằng chứng mới là ảnh do người dùng gửi xác nhận Android Registered, không phải agent truy cập Console hoặc runtime release. Giữ Task 1 PARTIAL và Task 2 chưa triển khai.
+- Đã chạy `git diff --check` thành công; quét mẫu credentials trên bốn docs không có kết quả khớp. Đây là kiểm tra docs, không thay thế kiểm chứng runtime. Không chạy Flutter format/analyze/test/build hoặc request AI trong lượt publication này; kết quả lịch sử vẫn được ghi là lịch sử. Commit/push và SHA remote được xác nhận riêng sau bước kiểm tra.
