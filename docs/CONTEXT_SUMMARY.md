@@ -1,8 +1,8 @@
-# Tóm tắt dự án — trạng thái sau Day 5 Task 6
+# Tóm tắt dự án — trạng thái sau Day 5 Task 7
 
-> Trạng thái được đối chiếu ngày 30/09/2026: HEAD `d0f3870` (`fix(day5): harden privacy logging`) trên `codex/day5`, đồng bộ với `origin/codex/day5` trước cập nhật tài liệu Task 6. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi, dựa trên snapshot cũ và chưa được chỉnh sửa. Kiểm tra host Day 5 Task 6 vừa chạy trong phiên này; kiểm tra thiết bị Android chưa chạy vì build APK bị automatic approval review từ chối trước khi lệnh khởi chạy.
+> Trạng thái được đối chiếu ngày 30/09/2026: HEAD `b6bd2e5` (`docs(day5): record task 6 UX checks`) trên `codex/day5`, đồng bộ với `origin/codex/day5` trước cập nhật tài liệu Task 7. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi, dựa trên snapshot cũ và chưa được chỉnh sửa. Kiểm tra host Day 5 Task 6 vừa chạy trong phiên trước; kiểm tra thiết bị Android chưa chạy vì build APK bị automatic approval review từ chối trước khi lệnh khởi chạy.
 
-## Trạng thái hiện tại — Day 5 Task 1–6
+## Trạng thái hiện tại — Day 5 Task 1–7
 
 - Luồng đang có trong ứng dụng: mô tả/chọn ảnh → người dùng chủ động gọi Firebase AI Logic → chỉnh sửa và xác nhận draft → lưu qua repository SQLite Android → History → chi tiết theo ID.
 - **Task 1:** baseline lịch sử gồm 99/99 tests, analyzer sạch và APK debug build/cài trên emulator. Đây không phải kết quả build của Task 3.
@@ -11,10 +11,11 @@
 - **Task 4 (30/09/2026):** form giới hạn ảnh phân tích ở JPEG/PNG/WebP, thông báo rõ khi loại ảnh không hỗ trợ và giữ preview trước. Tests bao phủ lỗi App Check/response/service/timeout/quota, giữ input và retry, loading/double tap, validation review/save, lỗi lưu/retry cùng ID, kết quả lưu mơ hồ khớp/conflict, Back khi có chỉnh sửa/đang save, và form chỉ xóa sau save thành công. Full suite đạt 117/117; `flutter analyze` sạch; format check 2 file Dart không đổi. Đây là kiểm chứng host/fake; không gọi Gemini thật, không build APK, không kiểm tra Android trong lượt này.
 - **Task 5 (30/09/2026):** rà call site xác nhận yêu cầu AI chỉ phát sinh từ CTA phân tích, chỉ gửi mô tả/ảnh người dùng cùng prompt/schema cố định, không tự thêm GPS/tài khoản/report đã lưu. Đã bỏ log exception SDK thô; log fallback còn lại là thông báo tĩnh về chuyển model. Quét marker secret trong source/config/test/tài liệu hiện tại phát hiện cấu hình Firebase client; không phát hiện Gemini Developer API key/private key trong phạm vi quét. Chưa kiểm tra API restrictions trong Console, không quét lịch sử Git hoặc APK. Firebase App Check debug provider vẫn ghi debug token vào log cục bộ theo hành vi SDK; không chia sẻ raw log. Không gọi Gemini/App Check thật trong Task 5.
 - **Task 6 (30/09/2026):** vừa chạy `flutter --suppress-analytics analyze --no-pub` (No issues found), `flutter --suppress-analytics test --no-pub --reporter compact` (117/117), `dart format --output=none --set-exit-if-changed lib test` (26 file, 0 đổi) và `flutter devices` (PKG110, Android 16/API 36, ADB Wireless). Build APK từ source hiện tại bị automatic approval review từ chối trước khi process bắt đầu, nên chưa cài hoặc kiểm tra UI trên thiết bị. Task 6 đạt phần host, còn thiếu phần Android UX.
+- **Task 7 (30/09/2026):** quyết định hoãn voice-to-text và GPS theo gate của kế hoạch. PHOTO-D5-02/OFFLINE-D5-01 còn BLOCKED và phần Android UX của Task 6 chưa chạy, nên chưa mở task tính năng cộng thêm. Không thêm dependency hoặc quyền mới.
 
 Khóa Firebase client trong cấu hình là để nhận diện project và không thay thế cơ chế authorization; cần giữ API restrictions phù hợp. Không tìm thấy Gemini Developer API key trong phạm vi quét. Phân loại dựa theo [Firebase API key guidance](https://firebase.google.com/docs/projects/api-keys) và [Firebase AI Logic security checklist](https://firebase.google.com/docs/ai-logic/security-checklist); cấu hình restrictions thực tế chưa được kiểm tra trong Console.
 - **Giới hạn cần giữ:** preview vẫn có thể fallback nếu bytes không giải mã được dù chữ ký hợp lệ; ngưỡng preview là 10 MiB còn gửi AI là 4 MiB. Request Gemini thật từng thành công trên Android ngày 27/09/2026, nhưng không chứng minh lần gọi mới nhất hoạt động.
-- **Ưu tiên tiếp theo:** hoàn tất kiểm tra UX Android khi có thể build/cài APK đúng source; ghi từng case theo bằng chứng. Giữ PHOTO-D5-02 và OFFLINE-D5-01 ở BLOCKED; không mở voice/GPS trong Task 7 khi các khoảng trống P0 còn đó.
+- **Ưu tiên tiếp theo:** hoàn tất kiểm tra UX Android khi có thể build/cài APK đúng source; tiếp tục xử lý PHOTO-D5-02 và OFFLINE-D5-01 theo bằng chứng. Chỉ cân nhắc voice/GPS trong task riêng sau khi gate P0 đạt hoặc có ngoại lệ được chấp nhận rõ ràng.
 
 ## Bằng chứng lịch sử — Ngày 4 Task 7 (đóng theo quyết định chủ dự án, 2026-09-29)
 
@@ -139,6 +140,6 @@ Trong Windows workspace này, Kotlin incremental cache từng lỗi khi project 
 - `docs/implement_plan_day2.md` — phạm vi và tiêu chí triển khai Ngày 2.
 - `docs/implement_plan_day3.md` — kế hoạch Ngày 3 theo Firebase AI Logic và trạng thái Task 1–5.
 - `docs/implement_plan_day4.md` — hợp đồng đã chốt ở Task 1 và kế hoạch Task 2–8, gồm tiến độ một phần của Task 7.
-- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 6 đạt kiểm tra host nhưng Android chưa chạy; Task 2 còn blocker ảnh/offline; Task 7 tính năng cộng thêm chưa thực hiện.
+- `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 7 quyết định hoãn voice/GPS do gate P0 chưa đạt; Task 2 còn blocker ảnh/offline và Task 6 Android chưa chạy.
 - `docs/testcase_day5_resilience.txt` — evidence/case Day 5 Task 1–4, gồm kiểm tra host và blocker Android.
 - `docs/PROMPT_01.md` — prompt onboarding coding agent theo trạng thái repo hiện tại.

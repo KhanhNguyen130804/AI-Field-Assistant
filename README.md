@@ -4,7 +4,7 @@
 
 ## Trạng thái hiện tại
 
-Snapshot được đối chiếu ngày 30/09/2026 trên nhánh `codex/day5`, tại HEAD `d0f3870` (`fix(day5): harden privacy logging`), đồng bộ với `origin/codex/day5` trước các cập nhật tài liệu Task 6. `docs/HOME_DEVICE_TEST_CHECKLIST.md` vẫn là tệp chưa được theo dõi và dựa trên snapshot cũ.
+Snapshot được đối chiếu ngày 30/09/2026 trên nhánh `codex/day5`, tại HEAD `b6bd2e5` (`docs(day5): record task 6 UX checks`), đồng bộ với `origin/codex/day5` trước cập nhật tài liệu Task 7. `docs/HOME_DEVICE_TEST_CHECKLIST.md` vẫn là tệp chưa được theo dõi và dựa trên snapshot cũ.
 
 - Luồng hiện có: nhập mô tả/chọn ảnh → người dùng chủ động gọi AI → xem/sửa/xác nhận draft → lưu cục bộ → History → chi tiết report. Service AI, parser, SQLite repository và các màn UI đã được nối trong app.
 - **Day 5 Task 1:** baseline lịch sử gồm 99/99 test, analyzer sạch, APK debug build/cài trên emulator. Đây là kết quả của Task 1, không phải build mới sau Task 3.
@@ -13,6 +13,7 @@ Snapshot được đối chiếu ngày 30/09/2026 trên nhánh `codex/day5`, t�
 - **Day 5 Task 4 hoàn tất ở host:** form giới hạn phân tích ở JPEG/PNG/WebP; ảnh BMP/GIF/HEIF/AVIF bị từ chối và ảnh hợp lệ trước đó được giữ. Widget tests bao phủ lỗi service/App Check/response, loading/retry, lưu lỗi/mơ hồ, double tap và Back. Ngày 30/09/2026, full suite đạt 117/117, `flutter analyze` sạch, format check 2 file Dart không đổi. Không build APK hoặc kiểm tra thiết bị trong Task 4.
 - **Day 5 Task 5:** rà soát call site và dữ liệu gửi; service không còn log exception SDK thô. Analyzer và format check service sạch trong lượt này. Firebase debug provider vẫn ghi debug token vào log cục bộ; API-key restrictions chưa được kiểm tra trong Console, và không gọi Gemini thật.
 - **Day 5 Task 6 (30/09/2026):** kiểm tra hiện có trên host đạt `flutter analyze` (No issues), `flutter test` 117/117 và format check 26 file/0 đổi. Flutter nhận điện thoại PKG110 Android 16/API 36 qua ADB Wireless, nhưng build APK từ source hiện tại bị automatic approval review từ chối trước khi lệnh chạy; vì vậy chưa cài APK mới hay kiểm tra UI Android cho source này. Task 6 mới hoàn tất phần host, phần thiết bị còn chờ.
+- **Day 5 Task 7 (30/09/2026):** quyết định hoãn voice-to-text và GPS. PHOTO-D5-02/OFFLINE-D5-01 vẫn BLOCKED, còn Android UX Task 6 chưa chạy; gate P0 của kế hoạch chưa đạt. Không thêm dependency, quyền hay tính năng cộng thêm.
 - **Ngày 4 Task 7:** trên Android đã xác minh một report text-only còn ở History/detail sau force-stop/relaunch. Day 4 được đóng theo quyết định của chủ dự án với ngoại lệ; ảnh và offline chưa được nghiệm thu.
 
 Firebase và App Check debug được khởi tạo khi mở app; lần gọi thật ngày 27/09/2026 từng trả draft trên Android. Lần thử gần nhất ghi trong Task 2 bị App Check chặn, nên không khẳng định dịch vụ hiện đang thông suốt. Chưa có voice-to-text, GPS, đăng nhập, cloud sync hoặc dashboard.

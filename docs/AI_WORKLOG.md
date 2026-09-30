@@ -706,3 +706,10 @@ Voice/GPS chỉ được cân nhắc sau khi luồng tạo → kiểm tra/chỉn
 - **Thiết bị:** `flutter devices` tìm thấy PKG110 Android 16/API 36 qua ADB Wireless (cùng Windows, Chrome, Edge). Chưa cài APK hay thao tác UI trên thiết bị.
 - **Build bị chặn:** lệnh `flutter --suppress-analytics build apk --debug --no-pub` bị automatic approval review từ chối trước khi process khởi chạy, với lý do tạo/cập nhật artifact trong `build/`. Không thử đường vòng. Do không có APK từ source đang kiểm tra, Android UX cases được giữ `NOT RUN`; không dùng APK cũ làm bằng chứng cho HEAD này.
 - **Kết luận:** Task 6 đạt host checks, còn thiếu kiểm tra trên điện thoại nên chỉ hoàn tất một phần. Không phát hiện lỗi host trong suite hiện có; chưa phân loại layout trên thiết bị. PHOTO-D5-02 và OFFLINE-D5-01 tiếp tục BLOCKED; Task 7 voice/GPS vẫn hoãn. Lệnh test/analyze cần quyền truy cập SDK/Pub cache ngoài workspace; sau khi chạy với quyền đó, các lệnh trên hoàn tất thành công.
+
+## 2026-09-30 — Ngày 5 Task 7: quyết định hoãn tính năng cộng thêm
+
+- **Phạm vi:** đối chiếu gate Task 7 trong `docs/implement_plan_day5.md` với trạng thái Task 2–6; không mở voice-to-text/GPS, không sửa mã/dependency/quyền, không gọi Firebase/Gemini, không build hoặc chạy test.
+- **Bằng chứng gate:** Task 2 PHOTO-D5-02 và OFFLINE-D5-01 còn BLOCKED; Task 6 mới đạt host checks, Android UX chưa chạy vì automatic approval review từ chối build APK từ source hiện tại. Ngoại lệ được chủ dự án chấp nhận cho Day 4 Task 7 không làm các tiêu chí Day 5 này thành PASS.
+- **Quyết định:** hoãn cả voice-to-text lẫn GPS; không tạo task triển khai tính năng phụ cho tới khi blocker P0 được giải quyết hoặc có ngoại lệ được chấp nhận rõ ràng. Nếu mở task riêng sau này, plan yêu cầu chỉ chọn một tính năng, chốt dữ liệu/quyền/UX/test trước khi triển khai.
+- **Tài liệu:** cập nhật README, context summary và plan Day 5 để ghi quyết định cùng căn cứ; không chỉnh sửa checklist thiết bị chưa được theo dõi. Không chạy formatter/analyzer/tests/build vì thay đổi chỉ là tài liệu và quyết định phạm vi.

@@ -1,6 +1,6 @@
 # Kế hoạch triển khai — Ngày 5: Độ tin cậy, kiểm thử lỗi và hoàn thiện UX
 
-> **Trạng thái:** Task 1 đã hoàn tất preflight; Task 2 kiểm tra được picker/preview nhưng persistence ảnh và offline còn BLOCKED; Task 3 đã triển khai và kiểm thử service/parser ngày 29/09/2026; Task 4 hoàn tất kiểm tra host ngày 30/09/2026 (full suite 117/117, analyzer sạch); Task 5 đã rà call site, dữ liệu/log và bỏ log exception SDK thô ngày 30/09/2026; Task 6 kiểm tra host đạt ngày 30/09/2026 nhưng kiểm tra Android chưa chạy vì build APK bị automatic approval review từ chối. Còn xác minh API restrictions trong Console; Firebase App Check debug provider vẫn ghi debug token vào log cục bộ. Task 7 tính năng cộng thêm chưa thực hiện. Ngày 4 Task 7 được chủ dự án đóng với ngoại lệ được chấp nhận; đây không phải nghiệm thu đầy đủ Ngày 4.
+> **Trạng thái:** Task 1 đã hoàn tất preflight; Task 2 kiểm tra được picker/preview nhưng persistence ảnh và offline còn BLOCKED; Task 3 đã triển khai và kiểm thử service/parser ngày 29/09/2026; Task 4 hoàn tất kiểm tra host ngày 30/09/2026 (full suite 117/117, analyzer sạch); Task 5 đã rà call site, dữ liệu/log và bỏ log exception SDK thô ngày 30/09/2026; Task 6 kiểm tra host đạt ngày 30/09/2026 nhưng kiểm tra Android chưa chạy vì build APK bị automatic approval review từ chối; Task 7 quyết định hoãn voice/GPS vì gate P0 chưa đạt. Còn xác minh API restrictions trong Console; Firebase App Check debug provider vẫn ghi debug token vào log cục bộ. Ngày 4 Task 7 được chủ dự án đóng với ngoại lệ được chấp nhận; đây không phải nghiệm thu đầy đủ Ngày 4.
 >
 > **Baseline theo hồ sơ ngày 29/09/2026:** `flutter analyze` sạch, `flutter test` 99/99, SQLite FFI 10/10 và APK debug build thành công. Trên Android đã kiểm chứng một report text-only qua save → History → detail → force-stop/relaunch. Đây là kết quả lịch sử, không phải kiểm tra mới của kế hoạch này. Lưu/đọc report có ảnh trên Android và save/read offline chưa được xác minh.
 >
@@ -189,6 +189,8 @@ Nếu được mở task riêng:
 - Trước khi thêm dependency/quyền, viết scope, dữ liệu được thu thập, nền tảng hỗ trợ và bộ test riêng.
 
 Không triển khai tính năng cộng thêm trong cùng lát sửa service, privacy hoặc persistence.
+
+**Quyết định ngày 30/09/2026:** hoãn cả voice-to-text và GPS. PHOTO-D5-02 và OFFLINE-D5-01 của Task 2 vẫn BLOCKED; Task 6 đạt host checks nhưng phần UX Android chưa chạy do APK build bị automatic approval review từ chối. Vì gate P0 “Tasks 2–6 đạt” chưa thỏa, Task 7 kết thúc bằng quyết định hoãn, không tạo task triển khai, không thêm dependency/quyền và không đổi mã sản phẩm. Có thể cân nhắc một tính năng riêng sau khi các blocker được xử lý hoặc chủ dự án chấp nhận ngoại lệ rõ ràng.
 
 ## 5. Kế hoạch chạy kiểm tra khi bắt đầu thực thi
 
