@@ -1,16 +1,36 @@
-# Tóm tắt dự án — trạng thái sau Day 5 Task 7
+# Tóm tắt dự án — snapshot Ngày 6 (30/09/2026)
 
-## Follow-up: Xuất PDF (30/09/2026)
+## Cập nhật mới nhất — UI/UX refresh
 
-- Đang triển khai trên nhánh `codex/report-pdf-export`, tạo từ HEAD `eb54b34` của `codex/day5`; chưa commit. Checklist chưa theo dõi `docs/HOME_DEVICE_TEST_CHECKLIST.md` được giữ nguyên.
+- Nhánh UI/UX: `codex/ui-ux-refresh`, tạo từ `codex/day6` commit `18e3ea7f5dc900bbd8099e9ed99ee54b14c43187`. Giữ nguyên `docs/HOME_DEVICE_TEST_CHECKLIST.md` untracked có trước.
+- Thêm `.agents/skills/field-assistant-apple-gallery-ui/SKILL.md` để áp dụng style reference theo ngữ cảnh mobile; kế hoạch chi tiết ở `docs/implement_plan_ui_ux.md`.
+- Theme/shell/form/review/history/detail/notices và Android launcher identity được làm mới về mặt trình bày. Không thay đổi service AI, schema, quyền, repository, dữ liệu hoặc thao tác PDF.
+- Nhánh đã được format và `flutter analyze --no-pub` sạch ngày 01/10; APK debug được build lại sau chỉnh CTA. Test suite chưa chạy; AVD chỉ dùng để tạo App Check debug token, không phải UX acceptance. Chi tiết và cảnh báo build nằm trong `docs/AI_WORKLOG.md`; các kết quả Day 6 bên dưới thuộc source/commit trước đó.
+
+## Trạng thái hiện tại — Ngày 6
+
+- Nhánh làm việc `codex/day6`, tạo từ commit `ec35228` có PDF export. Tracked files trước task sạch; `docs/HOME_DEVICE_TEST_CHECKLIST.md` là untracked có trước và được giữ nguyên.
+- Các kiểm tra host đã chạy trong lượt Day 6 ban đầu: `dart format --output=none --set-exit-if-changed lib test` — PASS, 29 file/0 đổi; `flutter analyze --no-pub` — PASS; `flutter test --no-pub --reporter compact` — PASS, 126/126; `flutter test test/local_report_repository_test.dart --no-pub --reporter compact` — PASS, 10/10 SQLite FFI host. Không chạy lại trong follow-up OnePlus.
+- `flutter build apk --release --no-pub` — PASS, 139 giây; output `build/app/outputs/flutter-apk/app-release.apk`, 59,681,400 bytes, SHA-256 `8715F1F5654318BC6B840BDB6D9559ACD110C629A95735B065150137397A457C`. Release APK được cài đè bằng `adb install -r` lên AVD Android 35; đây không phải clean install và không xóa app data. Lần chụp UI đầu hiện hộp **System UI isn't responding**; chọn **Wait** thì hệ thống hồi phục, form hiển thị. Bấm CTA AI khi không có mô tả/ảnh cho thấy thông báo validation đúng; không phát sinh request. Follow-up cùng ngày xác nhận OnePlus PKG110 Android 16/API 36, app debug v0.1.0 và ADB USB độc lập; đã mở MainActivity trong task riêng, không dừng task nền cũ. Cây UI không được đọc, không thao tác form và không gọi AI/lưu/PDF; do đó chưa có UX evidence trên điện thoại.
+- Release hiện ký bằng debug key trong `android/app/build.gradle.kts`; APK chỉ là build demo nội bộ, không phải bản phát hành production. Build có cảnh báo KGP của Firebase plugins và restricted Java native access.
+- Script video dưới 5 phút ở `docs/DEMO_SCRIPT_DAY6.md`; chưa quay/xem lại video. Không gọi Gemini thật: lượt follow-up trên OnePlus chỉ xác minh metadata/kết nối và không đọc UI.
+- `codex/day6` đã được push lên `origin/codex/day6`; `git ls-remote` xác nhận SHA remote khớp local sau push và upstream đã được thiết lập. Status vẫn có đúng tệp untracked có trước `docs/HOME_DEVICE_TEST_CHECKLIST.md`.
+
+## Kế hoạch Ngày 6
+
+`docs/implement_plan_day6.md` ghi trình tự, đầu ra và điều kiện nghiệm thu. Hạng mục cần thiết bị/app recording hoặc GitHub credential chưa được đổi nhãn thành PASS.
+
+## Lịch sử follow-up: Xuất PDF (30/09/2026)
+
+- Ban đầu triển khai trên nhánh `codex/report-pdf-export`, tạo từ HEAD `eb54b34` của `codex/day5`; mã PDF đã commit ở `ec35228` trước khi bắt đầu Day 6. Checklist chưa theo dõi `docs/HOME_DEVICE_TEST_CHECKLIST.md` được giữ nguyên.
 - Đã nối PDF đầy đủ từ màn detail cho report đã xác nhận/lưu; tạo cục bộ từ các trường report, mô tả gốc và ảnh (nếu có). Lưu dùng document picker Android; chia sẻ dùng share sheet Android; không có API Zalo trực tiếp.
 - Đã thêm font Roboto có license, `pdf`, `printing`, `flutter_file_saver`, `image`; ảnh WebP được chuyển sang PNG để nhúng.
 - Host vừa kiểm tra: `flutter test --no-pub --reporter compact` PASS 126/126; `flutter analyze --no-pub` PASS; `dart format --output=none --set-exit-if-changed lib test` PASS 29 file/0 đổi; `git diff --check` PASS. APK debug build PASS.
-- `flutter devices` chỉ nhận Windows/Chrome/Edge trong lượt này; chưa cài APK, kiểm tra Android Save As/share sheet hay thử gửi Zalo. Tính năng đã có mã và build được, nhưng thiết bị chưa nghiệm thu.
+- Trong lượt triển khai PDF ban đầu, `flutter devices` chỉ nhận Windows/Chrome/Edge; chưa thử Save As/share sheet/Zalo. Kiểm tra Ngày 6 sau đó chỉ cài và mở app trên AVD, chưa nghiệm thu PDF.
 
 > Trạng thái được đối chiếu ngày 30/09/2026: HEAD `b6bd2e5` (`docs(day5): record task 6 UX checks`) trên `codex/day5`, đồng bộ với `origin/codex/day5` trước cập nhật tài liệu Task 7. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi, dựa trên snapshot cũ và chưa được chỉnh sửa. Kiểm tra host Day 5 Task 6 vừa chạy trong phiên trước; kiểm tra thiết bị Android chưa chạy vì build APK bị automatic approval review từ chối trước khi lệnh khởi chạy.
 
-## Trạng thái hiện tại — Day 5 Task 1–7
+## Snapshot lịch sử — Day 5 Task 1–7
 
 - Luồng đang có trong ứng dụng: mô tả/chọn ảnh → người dùng chủ động gọi Firebase AI Logic → chỉnh sửa và xác nhận draft → lưu qua repository SQLite Android → History → chi tiết theo ID.
 - **Task 1:** baseline lịch sử gồm 99/99 tests, analyzer sạch và APK debug build/cài trên emulator. Đây không phải kết quả build của Task 3.

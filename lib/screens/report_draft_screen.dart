@@ -7,6 +7,7 @@ import '../models/report.dart';
 import '../models/report_draft.dart';
 import '../models/report_review.dart';
 import '../repositories/report_repository.dart';
+import '../theme/app_theme.dart';
 import '../widgets/status_notice.dart';
 
 /// Lets the user review and edit an AI proposal before saving it locally.
@@ -364,7 +365,7 @@ class _ReportDraftScreenState extends State<ReportDraftScreen> {
       color: Colors.white,
       margin: EdgeInsets.zero,
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -398,10 +399,7 @@ class _ReportDraftScreenState extends State<ReportDraftScreen> {
                 key: const Key('draft-editor-field-priority'),
                 initialValue: _review.priority,
                 isExpanded: true,
-                decoration: const InputDecoration(
-                  labelText: 'Mức độ ưu tiên',
-                  border: OutlineInputBorder(),
-                ),
+                decoration: const InputDecoration(labelText: 'Mức độ ưu tiên'),
                 items: [
                   const DropdownMenuItem<ReportPriority?>(
                     value: null,
@@ -431,7 +429,6 @@ class _ReportDraftScreenState extends State<ReportDraftScreen> {
                 decoration: InputDecoration(
                   labelText: label,
                   alignLabelWithHint: true,
-                  border: const OutlineInputBorder(),
                 ),
                 onChanged: (value) => _updateText(field, value),
               ),
@@ -548,18 +545,14 @@ class _ReportDraftScreenState extends State<ReportDraftScreen> {
                   Text(
                     'Bản nháp AI — cần kiểm tra, chưa lưu',
                     key: const Key('draft-title'),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      color: const Color(0xFF17211F),
-                      fontWeight: FontWeight.w800,
-                    ),
+                    style: theme.textTheme.headlineSmall,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     'AI chỉ đề xuất nội dung. Hãy kiểm tra từng trường, '
                     'chỉnh sửa nếu cần rồi xác nhận trước khi lưu.',
                     style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF52615D),
-                      height: 1.45,
+                      color: AppColors.slate,
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -578,11 +571,36 @@ class _ReportDraftScreenState extends State<ReportDraftScreen> {
                     ),
                   ],
                   const SizedBox(height: 16),
-                  Text(
-                    'Đã xác nhận $_reviewedFieldCount/${Report.fieldNames.length} trường',
-                    key: const Key('review-progress'),
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Tiến độ xác nhận',
+                            style: theme.textTheme.titleMedium,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Đã xác nhận $_reviewedFieldCount/${Report.fieldNames.length} trường',
+                            key: const Key('review-progress'),
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: AppColors.slate,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(999),
+                            child: LinearProgressIndicator(
+                              value:
+                                  _reviewedFieldCount /
+                                  Report.fieldNames.length,
+                              minHeight: 5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -615,7 +633,7 @@ class _ReportDraftScreenState extends State<ReportDraftScreen> {
                     ),
                     const SizedBox(height: 8),
                     ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
+                      borderRadius: BorderRadius.circular(28),
                       child: Image.memory(
                         Uint8List.fromList(widget.imageBytes!),
                         key: const Key('draft-source-image'),
@@ -624,7 +642,7 @@ class _ReportDraftScreenState extends State<ReportDraftScreen> {
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => Container(
                           height: 120,
-                          color: const Color(0xFFEAF3F0),
+                          color: AppColors.paperFrost,
                           alignment: Alignment.center,
                           child: const Text('Không hiển thị được ảnh này.'),
                         ),

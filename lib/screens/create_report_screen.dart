@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../models/report.dart';
 import '../repositories/report_repository.dart';
 import '../services/gemini_report_service.dart';
+import '../theme/app_theme.dart';
 import '../widgets/status_notice.dart';
 import 'report_draft_screen.dart';
 
@@ -488,19 +489,18 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               Text(
                 'Ghi nhận sự cố',
                 style: textTheme.headlineMedium?.copyWith(
-                  color: const Color(0xFF17211F),
-                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
+                  fontSize: 34,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: -0.7,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Nhập mô tả và thêm ảnh nếu có. Bạn có thể xem lại đầu vào trước khi tiếp tục.',
-                style: textTheme.bodyLarge?.copyWith(
-                  color: const Color(0xFF52615D),
-                  height: 1.45,
-                ),
+                style: textTheme.bodyLarge?.copyWith(color: AppColors.slate),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 28),
               TextField(
                 key: const Key('incident-description-field'),
                 controller: _descriptionController,
@@ -519,44 +519,55 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                       'Ví dụ: Điều hòa tại khu vực lễ tân không hoạt động.',
                   alignLabelWithHint: true,
                   helperText: 'Mô tả và ảnh chỉ được gửi khi bạn bấm "Phân tích bằng AI".',
-                  filled: true,
-                  fillColor: Colors.white,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
                 ),
               ),
               const SizedBox(height: 24),
-              Text(
-                'Ảnh sự cố (không bắt buộc)',
-                style: textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: AppColors.galleryWhite,
+                  borderRadius: BorderRadius.circular(28),
                 ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'Ảnh JPEG, PNG hoặc WebP. Xem trước tối đa 10 MiB; gửi AI tối đa 4 MiB.',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Ảnh sự cố (không bắt buộc)',
+                      style: textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Ảnh JPEG, PNG hoặc WebP. Xem trước tối đa 10 MiB; gửi AI tối đa 4 MiB.',
+                      style: textTheme.bodySmall,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            key: const Key('take-photo-button'),
+                            onPressed: _isPickingImage || _isAnalyzing
+                                ? null
+                                : () => _pickImage(ImageSource.camera),
+                            icon: const Icon(Icons.photo_camera_outlined),
+                            label: const Text('Chụp ảnh'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            key: const Key('choose-photo-button'),
+                            onPressed: _isPickingImage || _isAnalyzing
+                                ? null
+                                : () => _pickImage(ImageSource.gallery),
+                            icon: const Icon(Icons.photo_library_outlined),
+                            label: const Text('Chọn ảnh'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                key: const Key('take-photo-button'),
-                onPressed: _isPickingImage || _isAnalyzing
-                    ? null
-                    : () => _pickImage(ImageSource.camera),
-                icon: const Icon(Icons.photo_camera_outlined),
-                label: const Text('Chụp ảnh'),
-              ),
-              const SizedBox(height: 8),
-              OutlinedButton.icon(
-                key: const Key('choose-photo-button'),
-                onPressed: _isPickingImage || _isAnalyzing
-                    ? null
-                    : () => _pickImage(ImageSource.gallery),
-                icon: const Icon(Icons.photo_library_outlined),
-                label: const Text('Chọn ảnh'),
               ),
               if (_isPickingImage) ...[
                 const SizedBox(height: 12),
@@ -569,7 +580,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                 Semantics(
                   label: 'Ảnh sự cố đã chọn',
                   child: ClipRRect(
-                    borderRadius: BorderRadius.circular(18),
+                    borderRadius: BorderRadius.circular(28),
                     child: Image.memory(
                       imageBytes,
                       key: const Key('selected-image-preview'),
@@ -611,7 +622,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                 ),
               ],
               const SizedBox(height: 16),
-              FilledButton.icon(
+              OutlinedButton.icon(
                 key: const Key('review-input-button'),
                 onPressed: _isPickingImage || _isAnalyzing
                     ? null
@@ -646,7 +657,7 @@ class _ImageReadError extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: 180,
-      color: const Color(0xFFEAF3F0),
+      color: AppColors.paperFrost,
       alignment: Alignment.center,
       child: const Text('Không thể hiển thị ảnh này. Hãy chọn ảnh khác.'),
     );

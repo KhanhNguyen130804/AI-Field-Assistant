@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/report.dart';
 import '../models/report_priority.dart';
 import '../repositories/report_repository.dart';
+import '../theme/app_theme.dart';
 import '../widgets/status_notice.dart';
 
 /// Displays reports returned by the shared local repository.
@@ -129,15 +130,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
               ],
             ),
           ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Báo cáo đã lưu',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${_reports.length} báo cáo đã được xác nhận',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ],
+          ),
+        ),
         Expanded(
           child: RefreshIndicator(
             onRefresh: _loadReports,
             child: ListView.separated(
               key: const Key('history-report-list'),
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
               itemCount: _reports.length,
-              separatorBuilder: (context, index) => const SizedBox(height: 10),
+              separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final report = _reports[index];
                 return _ReportListTile(
@@ -177,13 +195,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         width: 88,
                         height: 88,
                         decoration: const BoxDecoration(
-                          color: Color(0xFFEAF3F0),
+                          color: AppColors.paperFrost,
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
                           Icons.inbox_outlined,
                           size: 40,
-                          color: Color(0xFF176B5B),
+                          color: AppColors.appleBlue,
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -191,15 +209,14 @@ class _HistoryScreenState extends State<HistoryScreen> {
                         'Chưa có báo cáo đã lưu',
                         key: const Key('history-empty-state'),
                         textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.titleLarge
-                            ?.copyWith(fontWeight: FontWeight.w700),
+                        style: Theme.of(context).textTheme.titleLarge,
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'Báo cáo bạn xác nhận và lưu trên thiết bị sẽ xuất hiện tại đây.',
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.bodyMedium
-                            ?.copyWith(height: 1.5),
+                            ?.copyWith(color: AppColors.slate),
                       ),
                     ],
                   ),
@@ -283,12 +300,15 @@ class _ReportListTile extends StatelessWidget {
       child: ListTile(
         key: Key('history-list-tile-${report.id}'),
         onTap: onTap,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 20,
+          vertical: 12,
+        ),
         title: Text(
           report.issue,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
-          style: const TextStyle(fontWeight: FontWeight.w700),
+          style: Theme.of(context).textTheme.titleMedium,
         ),
         subtitle: Padding(
           padding: const EdgeInsets.only(top: 8),
@@ -317,7 +337,10 @@ class _ReportListTile extends StatelessWidget {
                     avatar: Icon(Icons.verified_outlined, size: 18),
                     label: Text('Đã xác nhận'),
                   ),
-                  Text(_formatLocalDateTime(report.createdAt)),
+                  Text(
+                    _formatLocalDateTime(report.createdAt),
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
               ),
             ],

@@ -4,7 +4,7 @@
 
 ## Trạng thái hiện tại
 
-Snapshot lịch sử của Day 5 được đối chiếu ngày 30/09/2026 trên `codex/day5`; Task 7 sau đó được ghi ở commit `eb54b34`. Công việc PDF hiện tiếp tục trên nhánh chưa commit `codex/report-pdf-export`, được tạo từ `eb54b34`. `docs/HOME_DEVICE_TEST_CHECKLIST.md` vẫn là tệp chưa được theo dõi, được giữ nguyên.
+UI/UX refresh được thực hiện trên nhánh `codex/ui-ux-refresh`, tạo từ `codex/day6` tại commit `18e3ea7f5dc900bbd8099e9ed99ee54b14c43187`. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi có trước và được giữ nguyên.
 
 - Luồng hiện có: nhập mô tả/chọn ảnh → người dùng chủ động gọi AI → xem/sửa/xác nhận draft → lưu cục bộ → History → chi tiết report. Service AI, parser, SQLite repository và các màn UI đã được nối trong app.
 - **Day 5 Task 1:** baseline lịch sử gồm 99/99 test, analyzer sạch, APK debug build/cài trên emulator. Đây là kết quả của Task 1, không phải build mới sau Task 3.
@@ -14,8 +14,11 @@ Snapshot lịch sử của Day 5 được đối chiếu ngày 30/09/2026 trên 
 - **Day 5 Task 5:** rà soát call site và dữ liệu gửi; service không còn log exception SDK thô. Analyzer và format check service sạch trong lượt này. Firebase debug provider vẫn ghi debug token vào log cục bộ; API-key restrictions chưa được kiểm tra trong Console, và không gọi Gemini thật.
 - **Day 5 Task 6 (30/09/2026):** kiểm tra hiện có trên host đạt `flutter analyze` (No issues), `flutter test` 117/117 và format check 26 file/0 đổi. Flutter nhận điện thoại PKG110 Android 16/API 36 qua ADB Wireless, nhưng build APK từ source hiện tại bị automatic approval review từ chối trước khi lệnh chạy; vì vậy chưa cài APK mới hay kiểm tra UI Android cho source này. Task 6 mới hoàn tất phần host, phần thiết bị còn chờ.
 - **Day 5 Task 7 (30/09/2026):** quyết định hoãn voice-to-text và GPS. PHOTO-D5-02/OFFLINE-D5-01 vẫn BLOCKED, còn Android UX Task 6 chưa chạy; gate P0 của kế hoạch chưa đạt. Không thêm dependency, quyền hay tính năng cộng thêm.
-- **PDF export trên `codex/report-pdf-export`:** màn chi tiết hiện có thao tác tạo PDF bản đầy đủ cho report đã xác nhận, lưu qua Android document picker và mở Android share sheet. Host suite đạt 126/126, analyzer sạch, format check 29 file/0 đổi và APK debug build thành công. Lượt này không phát hiện Android device; lưu tệp trên máy, gửi qua share sheet và Zalo chưa được kiểm tra thiết bị.
+- **PDF export (mã bắt đầu trên `codex/report-pdf-export`):** màn chi tiết có thao tác tạo PDF bản đầy đủ cho report đã xác nhận, lưu qua Android document picker và mở Android share sheet. Host suite từng đạt 126/126, analyzer sạch, format check 29 file/0 đổi và APK debug build thành công. Trong lượt triển khai ban đầu không có Android device; lượt Day 6 sau đó cài/mở release APK trên AVD nhưng chưa thử PDF, Zalo hoặc share sheet.
 - **Ngày 4 Task 7:** trên Android đã xác minh một report text-only còn ở History/detail sau force-stop/relaunch. Day 4 được đóng theo quyết định của chủ dự án với ngoại lệ; ảnh và offline chưa được nghiệm thu.
+- **Ngày 6 (30/09/2026):** kiểm tra mới trên host: formatter 29 file/0 đổi, `flutter analyze --no-pub` sạch, `flutter test --no-pub --reporter compact` 126/126, repository SQLite FFI 10/10. `flutter build apk --release --no-pub` thành công (59,681,400 bytes; SHA-256 `8715F1F5654318BC6B840BDB6D9559ACD110C629A95735B065150137397A457C`). APK được cài đè bằng `adb install -r` lên AVD Android 35. Sau một hộp cảnh báo **System UI isn't responding** được khôi phục bằng **Wait**, form render và CTA AI trên input rỗng hiện đúng validation; không phát sinh request. Follow-up cùng ngày xác nhận OnePlus PKG110 Android 16/API 36, app debug v0.1.0 và ADB USB độc lập; đã mở một task Android riêng nhưng không đọc hoặc thao tác nội dung UI. Vì vậy chưa có kiểm chứng UX vật lý, AI/review/save/History/PDF. Release build hiện ký bằng debug key, không dùng để phát hành production.
+- Kịch bản demo dưới 5 phút đã chuẩn bị tại [`docs/DEMO_SCRIPT_DAY6.md`](docs/DEMO_SCRIPT_DAY6.md); video chưa quay/xem lại. Kế hoạch và tiêu chí Ngày 6 nằm tại [`docs/implement_plan_day6.md`](docs/implement_plan_day6.md).
+- **UI/UX refresh:** nhánh hiện tại áp dụng hệ thống thị giác lấy cảm hứng từ Apple product gallery, chuyển thành giao diện tác nghiệp mobile; xem [kế hoạch](docs/implement_plan_ui_ux.md) và skill nội bộ [.agents/skills/field-assistant-apple-gallery-ui/SKILL.md](.agents/skills/field-assistant-apple-gallery-ui/SKILL.md). Phần này chỉ thay trình bày/nhận diện; không đổi luồng AI, review, lưu hoặc PDF.
 
 Firebase và App Check debug được khởi tạo khi mở app; lần gọi thật ngày 27/09/2026 từng trả draft trên Android. Lần thử gần nhất ghi trong Task 2 bị App Check chặn, nên không khẳng định dịch vụ hiện đang thông suốt. Chưa có voice-to-text, GPS, đăng nhập, cloud sync hoặc dashboard.
 
@@ -36,11 +39,17 @@ Flutter Material 3 app
 
 App shell ở `lib/main.dart` — `main()` async khởi tạo Firebase (`DefaultFirebaseOptions.currentPlatform`) và App Check debug provider trong `kDebugMode`; shell tạo một repository dùng chung cho form, lịch sử và màn chi tiết. Form nằm trong `lib/screens/create_report_screen.dart`; màn draft/editor ở `lib/screens/report_draft_screen.dart`; lịch sử ở `lib/screens/history_screen.dart`; chi tiết ở `lib/screens/report_detail_screen.dart`; widget thông báo ở `lib/widgets/status_notice.dart`. PDF được dựng bởi `lib/services/report_pdf_service.dart`; lưu/chia sẻ qua `lib/services/report_pdf_actions.dart`. Font Roboto tiếng Việt được bundle ở `assets/fonts/` cùng license. Schema/parser draft ở `lib/models/report_draft.dart`; model đã xác nhận, review state và priority ở `lib/models/report.dart`, `lib/models/report_review.dart`, `lib/models/report_priority.dart`. Prompt ở `lib/services/report_draft_prompt.dart`; service gọi Gemini qua Firebase AI Logic ở `lib/services/gemini_report_service.dart` (đã nối UI từ Task 5 Ngày 3). Repository contract, factory Android/Web và SQLite implementation ở `lib/repositories/`. Widget tests liên quan ở `test/widget_test.dart`, `test/history_screen_test.dart` và `test/report_detail_screen_test.dart`; model/review tests ở `test/report_draft_test.dart`, `test/report_test.dart`, `test/report_review_test.dart`; service tests ở `test/gemini_report_service_test.dart`, `test/report_pdf_service_test.dart`; SQLite repository tests ở `test/local_report_repository_test.dart`.
 
+## Ngôn ngữ giao diện
+
+UI dùng nền trắng và xám sương `#ffffff` / `#f5f5f7`, chữ Ink `#1d1d1f`, viền mảnh `#d6d6d6` và xanh `#0066cc` cho điểm nhấn. Typography giữ font hệ thống Android; khoảng cách theo bước 4dp, card bo góc lớn không đổ bóng, nút dạng pill và input nhiều dòng bo góc. Hệ thống được áp dụng cho Tạo báo cáo, Bản nháp AI, Lịch sử, Chi tiết, notice/dialog, PDF action bar, AppBar và launcher icon. Không dùng logo Apple, font proprietary hay hình sản phẩm gập; ưu tiên tương phản, target chạm và thao tác nhanh trên điện thoại.
+
+Theme dùng chung tại `lib/theme/app_theme.dart`; app mark tại `lib/widgets/field_assistant_logo.dart`; launcher Android dùng vector/adaptive resources dưới `android/app/src/main/res/`. Kế hoạch và nguyên tắc tái sử dụng nằm ở [implement_plan_ui_ux.md](docs/implement_plan_ui_ux.md) và [skill UI nội bộ](.agents/skills/field-assistant-apple-gallery-ui/SKILL.md).
+
 ## Xuất PDF báo cáo đã lưu
 
-Trên nhánh `codex/report-pdf-export`, màn **Chi tiết báo cáo** có nút **Lưu PDF** và **Chia sẻ PDF** cho report đã xác nhận/lưu. Tệp gồm sáu trường, thời gian tạo, mô tả gốc và ảnh nếu có; các giá trị đã xác nhận không có được ghi rõ, còn `suggested_action` luôn được gắn nhãn đề xuất. PDF được tạo cục bộ, hỗ trợ tiếng Việt qua font Roboto kèm theo, và chuyển ảnh WebP sang định dạng PDF hỗ trợ. Nếu ảnh không đọc được, người dùng phải xác nhận trước khi xuất bản không kèm ảnh.
+Mã PDF được thêm trên `codex/report-pdf-export` và kế thừa vào `codex/day6`. Màn **Chi tiết báo cáo** có nút **Lưu PDF** và **Chia sẻ PDF** cho report đã xác nhận/lưu. Tệp gồm sáu trường, thời gian tạo, mô tả gốc và ảnh nếu có; các giá trị đã xác nhận không có được ghi rõ, còn `suggested_action` luôn được gắn nhãn đề xuất. PDF được tạo cục bộ, hỗ trợ tiếng Việt qua font Roboto kèm theo, và chuyển ảnh WebP sang định dạng PDF hỗ trợ. Nếu ảnh không đọc được, người dùng phải xác nhận trước khi xuất bản không kèm ảnh.
 
-Lưu mở Android document picker để người dùng chọn vị trí/tên. Chia sẻ mở bảng chia sẻ Android; ứng dụng đích (ví dụ Zalo) chỉ hiện nếu đã cài và hệ điều hành hỗ trợ nhận PDF. APK debug đã build và host tests đã đạt, nhưng lượt triển khai chưa có thiết bị Android kết nối; thao tác lưu/mở/chia sẻ thực tế và Zalo chưa được xác minh. Web repository hiện không hỗ trợ báo cáo cục bộ.
+Lưu mở Android document picker để người dùng chọn vị trí/tên. Chia sẻ mở bảng chia sẻ Android; ứng dụng đích (ví dụ Zalo) chỉ hiện nếu đã cài và hệ điều hành hỗ trợ nhận PDF. Ngày 30/09/2026, release APK được build, cài đè và mở trên AVD Android 35; chưa thao tác nút PDF, mở lại tệp, share sheet hoặc Zalo. Web repository hiện không hỗ trợ báo cáo cục bộ.
 
 ## Ngày 4 — editor/review/save, lịch sử và chi tiết đã triển khai
 
@@ -125,7 +134,9 @@ Xem trước trên Chrome bằng `flutter run -d chrome`. Nếu Flutter yêu c�
 flutter build apk --debug
 ```
 
-`android/gradle.properties` tắt Kotlin incremental để tránh lỗi cache khi project Windows và Pub Cache nằm ở hai ổ đĩa khác nhau. Điều này làm một số lần build Kotlin biên dịch lại lâu hơn, nhưng không cần thêm tham số cho Android Studio hoặc `flutter run`. APK được tạo tại `build/app/outputs/flutter-apk/app-debug.apk`.
+Tạo APK release để kiểm tra demo bằng `flutter build apk --release`; output là `build/app/outputs/flutter-apk/app-release.apk`. Cấu hình hiện tại ký release bằng debug key, nên APK này không phải artifact phát hành production.
+
+`android/gradle.properties` tắt Kotlin incremental để tránh lỗi cache khi project Windows và Pub Cache nằm ở hai ổ đĩa khác nhau. Điều này làm một số lần build Kotlin biên dịch lại lâu hơn, nhưng không cần thêm tham số cho Android Studio hoặc `flutter run`. APK debug được tạo tại `build/app/outputs/flutter-apk/app-debug.apk`.
 
 ## Kiểm tra
 
@@ -180,6 +191,8 @@ Task 6 kiểm tra tự động và Task 7 rà soát tài liệu Ngày 3 hoàn t�
 - `docs/implement_plan_day3.md` — kế hoạch tích hợp Firebase AI Logic và trạng thái Task 1–7.
 - `docs/implement_plan_day4.md` — task chỉnh sửa/xác nhận, persistence, lịch sử/chi tiết; Task 7 được đóng theo quyết định chủ dự án với ngoại lệ ảnh/offline; Day 4 chưa nghiệm thu đầy đủ.
 - `docs/implement_plan_day5.md` — kế hoạch Day 5; Task 6 đạt kiểm tra host nhưng Android còn blocked; Task 2 còn blocker ảnh/offline; voice/GPS hoãn.
+- `docs/implement_plan_day6.md` — kế hoạch chi tiết đóng gói/tài liệu/demo, tiêu chí nghiệm thu và ranh giới bằng chứng.
+- `docs/DEMO_SCRIPT_DAY6.md` — kịch bản demo mục tiêu 4:40; video chưa quay trong lượt Ngày 6.
 - `docs/implement_plan_pdf_export.md` — kế hoạch và trạng thái triển khai xuất PDF cho report đã xác nhận, lưu qua document picker và chia sẻ Android.
 - `docs/testcase_day5_resilience.txt` — kết quả riêng của Day 5 Task 1–6, gồm test host và blocker Android.
 - `docs/PROMPT_01.md` — prompt onboarding cho coding agent theo trạng thái dự án hiện tại.
