@@ -1,0 +1,682 @@
+import 'dart:async';
+import 'dart:io';
+import 'dart:typed_data';
+
+import 'package:ai_field_assistant/models/report_draft.dart';
+import 'package:ai_field_assistant/services/gemini_report_service.dart';
+import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:image_picker/image_picker.dart';
+
+const _validDraftJson = '''
+{
+  "category": "Hỏng hóc thiết bị",
+  "location": "Khu vực lễ tân",
+  "priority": "high",
+  "issue": "Điều hòa không hoạt động",
+  "suggested_action": "Cử nhân viên bảo trì kiểm tra.",
+  "summary": "Điều hòa lễ tân không hoạt động, khách phàn nàn.",
+  "needs_confirmation": []
+}
+''';
+
+// Minimal PNG signature and IHDR header so the service can sniff the MIME
+// type when XFile carries none. Tests use a fake sender, not a real model.
+const _pngHeaderBytes = <int>[
+  0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, //
+  0x00, 0x00, 0x00, 0x0d, 0x49, 0x48, 0x44, 0x52,
+  0x00, 0x00, 0x00, 0x01, // width
+  0x00, 0x00, 0x00, 0x01, // height
+  0x08,
+  0x02,
+  0x00,
+  0x00,
+  0x00, // bit depth, color type, compression, filter, interlace
+  0x00, 0x00, 0x00, 0x00, // placeholder CRC for signature-only tests
+];
+
+void main() {
+  GeminiReportService buildService(
+    ReportDraftRequestSender sender, {
+    Duration? timeout,
+  }) {
+    return GeminiReportService(
+      requestSender: sender,
+      requestTimeout: timeout ?? const Duration(seconds: 5),
+    );
+  }
+
+  test('mô tả không kèm ảnh: gửi một TextPart và parse draft', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    final draft = await service.createReportDraft(
+      description: '  Điều hòa lễ tân không chạy.  ',
+    );
+
+    expect(draft.category, 'Hỏng hóc thiết bị');
+    expect(draft.priority, ReportPriority.high);
+    expect(draft.needsConfirmation, isEmpty);
+    expect(sender.callCount, 1);
+    final prompt = sender.lastPrompt;
+    expect(prompt.parts.whereType<TextPart>(), hasLength(1));
+    expect(
+      prompt.parts.whereType<TextPart>().single.text,
+      'Điều hòa lễ tân không chạy.',
+    );
+    expect(prompt.parts.whereType<InlineDataPart>(), isEmpty);
+  });
+
+  test('chỉ có ảnh: gửi InlineDataPart không kèm TextPart', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    final draft = await service.createReportDraft(
+      image: XFile.fromData(
+        Uint8List.fromList(_pngHeaderBytes),
+        name: 'photo.png',
+        mimeType: 'image/png',
+      ),
+    );
+
+    expect(draft.issue, 'Điều hòa không hoạt động');
+    expect(sender.callCount, 1);
+    final prompt = sender.lastPrompt;
+    expect(prompt.parts.whereType<InlineDataPart>(), hasLength(1));
+    expect(
+      prompt.parts.whereType<InlineDataPart>().single.mimeType,
+      'image/png',
+    );
+    expect(prompt.parts.whereType<TextPart>(), isEmpty);
+  });
+
+  test('có cả mô tả và ảnh: thứ tự TextPart trước InlineDataPart', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await service.createReportDraft(
+      description: 'Điều hòa lễ tân không chạy.',
+      image: XFile.fromData(
+        Uint8List.fromList(_pngHeaderBytes),
+        name: 'photo.png',
+        mimeType: 'image/png',
+      ),
+    );
+
+    final parts = sender.lastPrompt.parts;
+    expect(
+      parts.whereType<TextPart>().single.text,
+      'Điều hòa lễ tân không chạy.',
+    );
+    expect(
+      parts.whereType<InlineDataPart>().single.bytes,
+      Uint8List.fromList(_pngHeaderBytes),
+    );
+    expect(
+      parts.indexOf(parts.whereType<TextPart>().single),
+      lessThan(parts.indexOf(parts.whereType<InlineDataPart>().single)),
+    );
+  });
+
+  test('ảnh không khai báo MIME: nhận diện từ signature PNG', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await service.createReportDraft(
+      image: XFile.fromData(Uint8List.fromList(_pngHeaderBytes), name: 'photo'),
+    );
+
+    expect(
+      sender.lastPrompt.parts.whereType<InlineDataPart>().single.mimeType,
+      'image/png',
+    );
+  });
+
+  test('ảnh khai báo MIME chung: nhận diện từ signature PNG', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await service.createReportDraft(
+      image: XFile.fromData(
+        Uint8List.fromList(_pngHeaderBytes),
+        name: 'photo',
+        mimeType: 'application/octet-stream',
+      ),
+    );
+
+    expect(sender.callCount, 1);
+    expect(
+      sender.lastPrompt.parts.whereType<InlineDataPart>().single.mimeType,
+      'image/png',
+    );
+  });
+
+  test('JPEG khai báo MIME đúng: gửi với image/jpeg', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await service.createReportDraft(
+      image: XFile.fromData(
+        Uint8List.fromList([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x00]),
+        name: 'photo.jpg',
+        mimeType: 'image/jpeg',
+      ),
+    );
+
+    expect(sender.callCount, 1);
+    expect(
+      sender.lastPrompt.parts.whereType<InlineDataPart>().single.mimeType,
+      'image/jpeg',
+    );
+  });
+
+  test('WebP khai báo MIME đúng: gửi với image/webp', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await service.createReportDraft(
+      image: XFile.fromData(
+        Uint8List.fromList([
+          0x52,
+          0x49,
+          0x46,
+          0x46,
+          0x00,
+          0x00,
+          0x00,
+          0x00,
+          0x57,
+          0x45,
+          0x42,
+          0x50,
+        ]),
+        name: 'photo.webp',
+        mimeType: 'image/webp',
+      ),
+    );
+
+    expect(sender.callCount, 1);
+    expect(
+      sender.lastPrompt.parts.whereType<InlineDataPart>().single.mimeType,
+      'image/webp',
+    );
+  });
+
+  test('cả mô tả và ảnh đều trống: chặn trước khi gửi', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: '   '),
+      throwsA(isA<InvalidReportDraftInputException>()),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test('ảnh vượt 4 MiB: chặn trước khi gửi', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(
+        image: XFile.fromData(
+          Uint8List(4 * 1024 * 1024 + 1),
+          name: 'big.png',
+          mimeType: 'image/png',
+        ),
+      ),
+      throwsA(
+        isA<InvalidReportDraftInputException>().having(
+          (error) => error.userMessage,
+          'userMessage',
+          contains('4 MiB'),
+        ),
+      ),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test('ảnh đúng 4 MiB: được gửi nguyên vẹn', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+    final bytes = Uint8List(maxImageBytesForAi)
+      ..setRange(0, _pngHeaderBytes.length, _pngHeaderBytes);
+
+    await service.createReportDraft(
+      image: XFile.fromData(bytes, name: 'exact.png', mimeType: 'image/png'),
+    );
+
+    expect(sender.callCount, 1);
+    expect(
+      sender.lastPrompt.parts.whereType<InlineDataPart>().single.bytes,
+      hasLength(maxImageBytesForAi),
+    );
+  });
+
+  test('ảnh rỗng: chặn với thông báo ảnh không đọc được', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(
+        image: XFile.fromData(Uint8List(0), name: 'empty.png'),
+      ),
+      throwsA(isA<InvalidReportDraftInputException>()),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test('bytes không phải ảnh: chặn với thông báo loại ảnh', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(
+        image: XFile.fromData(Uint8List.fromList([1, 2, 3, 4]), name: 'x'),
+      ),
+      throwsA(isA<InvalidReportDraftInputException>()),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test('PNG thiếu IHDR: chặn trước khi gửi', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(
+        image: XFile.fromData(
+          Uint8List.fromList(_pngHeaderBytes.take(16).toList()),
+          name: 'truncated.png',
+          mimeType: 'image/png',
+        ),
+      ),
+      throwsA(isA<InvalidReportDraftInputException>()),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test(
+    'MIME ảnh không được Firebase AI Logic hỗ trợ: chặn trước khi gửi',
+    () async {
+      final sender = _FakeSender(responseText: _validDraftJson);
+      final service = buildService(sender);
+
+      await expectLater(
+        service.createReportDraft(
+          image: XFile.fromData(
+            Uint8List.fromList(_pngHeaderBytes),
+            name: 'vector.svg',
+            mimeType: 'image/svg+xml',
+          ),
+        ),
+        throwsA(isA<InvalidReportDraftInputException>()),
+      );
+      expect(sender.callCount, 0);
+    },
+  );
+
+  test('BMP không được gửi với Firebase AI Logic inline data', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(
+        image: XFile.fromData(
+          Uint8List.fromList([0x42, 0x4d, 0x00, 0x00]),
+          name: 'photo.bmp',
+          mimeType: 'image/bmp',
+        ),
+      ),
+      throwsA(isA<InvalidReportDraftInputException>()),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test('MIME khai báo không khớp signature: chặn trước khi gửi', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(
+        image: XFile.fromData(
+          Uint8List.fromList(_pngHeaderBytes),
+          name: 'photo.jpg',
+          mimeType: 'image/jpeg',
+        ),
+      ),
+      throwsA(isA<InvalidReportDraftInputException>()),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test('lỗi đọc file ảnh được ánh xạ thành lỗi input', () async {
+    final sender = _FakeSender(responseText: _validDraftJson);
+    final service = buildService(sender);
+    final missingPath =
+        '${Directory.systemTemp.path}${Platform.pathSeparator}'
+        'ai-field-missing-${DateTime.now().microsecondsSinceEpoch}.png';
+
+    await expectLater(
+      service.createReportDraft(image: XFile(missingPath)),
+      throwsA(
+        isA<InvalidReportDraftInputException>().having(
+          (error) => error.userMessage,
+          'userMessage',
+          contains('đọc'),
+        ),
+      ),
+    );
+    expect(sender.callCount, 0);
+  });
+
+  test('response rỗng: báo lỗi phản hồi AI', () async {
+    final sender = _FakeSender(responseText: '   ');
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+  });
+
+  test('response null: báo lỗi phản hồi AI', () async {
+    final sender = _FakeSender();
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+    expect(sender.callCount, 1);
+  });
+
+  test('response không phải JSON: báo lỗi phản hồi AI', () async {
+    final sender = _FakeSender(responseText: 'Xin chào, tôi không thể giúp.');
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+  });
+
+  test('JSON root không phải object: báo lỗi phản hồi AI', () async {
+    final sender = _FakeSender(responseText: '["category"]');
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+  });
+
+  test('needs_confirmation có phần tử sai kiểu: báo lỗi phản hồi AI', () async {
+    final sender = _FakeSender(
+      responseText:
+          '{"category":"", "location":"", "priority":null,'
+          '"issue":"Rò rỉ nước", "suggested_action":"", "summary":"",'
+          '"needs_confirmation":[1]}',
+    );
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Rò rỉ nước.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+  });
+
+  test(
+    'thiếu needs_confirmation: mọi field được đánh dấu cần xem lại',
+    () async {
+      final sender = _FakeSender(
+        responseText:
+            '{"category":"","location":"","priority":null,"issue":"Rò rỉ nước",'
+            '"suggested_action":"","summary":"","priority2":null}',
+      );
+      final service = buildService(sender);
+
+      final draft = await service.createReportDraft(description: 'Rò rỉ nước.');
+
+      expect(draft.issue, 'Rò rỉ nước');
+      expect(draft.needsConfirmation, ReportDraft.confirmableFields);
+    },
+  );
+
+  test('priority null: draft giữ null và đưa vào needs_confirmation', () async {
+    final sender = _FakeSender(
+      responseText:
+          '{"category":"","location":"","priority":null,"issue":"Rò rỉ nước",'
+          '"suggested_action":"","summary":"","needs_confirmation":["priority"]}',
+    );
+    final service = buildService(sender);
+
+    final draft = await service.createReportDraft(description: 'Rò rỉ nước.');
+
+    expect(draft.priority, isNull);
+    expect(draft.needsConfirmation, contains('priority'));
+  });
+
+  test('QuotaExceeded: ánh xạ thành lỗi quota', () async {
+    final sender = _FakeSender(error: QuotaExceeded('resource exhausted'));
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftQuotaException>()),
+    );
+  });
+
+  test('TimeoutException từ sender: ánh xạ thành lỗi timeout', () async {
+    final sender = _FakeSender(error: TimeoutException('deadline', null));
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftTimeoutException>()),
+    );
+  });
+
+  test('sender treo quá thời hạn: timeout của service', () async {
+    final sender = _HangingSender();
+    final service = buildService(
+      sender,
+      timeout: const Duration(milliseconds: 50),
+    );
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftTimeoutException>()),
+    );
+  });
+
+  test('ServiceApiNotEnabled: ánh xạ thành lỗi cấu hình', () async {
+    final sender = _FakeSender(error: ServiceApiNotEnabled('project'));
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftConfigException>()),
+    );
+  });
+
+  test('lỗi App Check: ánh xạ thành lỗi App Check', () async {
+    final sender = _FakeSender(
+      error: FirebaseAIException('App Check token was rejected.'),
+    );
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftAppCheckException>()),
+    );
+  });
+
+  test(
+    'FirebaseException 403 App attestation failed: ánh xạ thành lỗi App Check',
+    () async {
+      // Lỗi thật gặp trên thiết bị 27/09/2026: firebase_app_check ném
+      // FirebaseException (không phải FirebaseAIException) với message
+      // "App attestation failed" — trước đây rơi vào nhánh lỗi mạng.
+      final sender = _FakeSender(
+        error: FirebaseException(
+          plugin: 'firebase_app_check',
+          code: 'unknown',
+          message:
+              'Error returned from API. code: 403 body: '
+              'App attestation failed.',
+        ),
+      );
+      final service = buildService(sender);
+
+      await expectLater(
+        service.createReportDraft(description: 'Điều hòa hỏng.'),
+        throwsA(
+          isA<ReportDraftAppCheckException>().having(
+            (error) => error.userMessage,
+            'userMessage',
+            contains('App Check'),
+          ),
+        ),
+      );
+    },
+  );
+
+  test('response bị block: ánh xạ thành lỗi phản hồi AI', () async {
+    final sender = _FakeSender(
+      error: FirebaseAIException('Response was blocked due to SAFETY'),
+    );
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+  });
+
+  test('lỗi server chung: ánh xạ thành lỗi dịch vụ/mạng', () async {
+    final sender = _FakeSender(error: ServerException('503'));
+    final service = buildService(sender);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftServiceException>()),
+    );
+  });
+
+  test(
+    'model chính hết quota: tự thử model dự phòng trong cùng lần gọi',
+    () async {
+      final spy = _SenderFactorySpy();
+      final primary = _RecordingSender(
+        'gemini-3.8-flash',
+        error: QuotaExceeded('[429 RESOURCE_EXHAUSTED] per-day request limit'),
+      );
+      final fallback = _RecordingSender(
+        'gemini-3.5-flash-lite',
+        responseText: _validDraftJson,
+      );
+      spy.senders[primary.modelName] = primary;
+      spy.senders[fallback.modelName] = fallback;
+
+      final service = GeminiReportService(senderFactory: spy.call);
+      final draft = await service.createReportDraft(
+        description: 'Điều hòa hỏng.',
+      );
+
+      expect(draft.issue, 'Điều hòa không hoạt động');
+      expect(primary.callCount, 1);
+      expect(fallback.callCount, 1);
+      expect(spy.senders.keys.toSet(), {
+        'gemini-3.8-flash',
+        'gemini-3.5-flash-lite',
+      });
+    },
+  );
+
+  test('lỗi không phải quota: KHÔNG fallback, báo lỗi như thường', () async {
+    final spy = _SenderFactorySpy();
+    spy.senders['gemini-3.8-flash'] = _RecordingSender(
+      'gemini-3.8-flash',
+      error: FirebaseAIException('Response was blocked due to SAFETY'),
+    );
+
+    final service = GeminiReportService(senderFactory: spy.call);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftResponseException>()),
+    );
+    expect(spy.senders, hasLength(1));
+  });
+
+  test('model dự phòng cũng hết quota: ánh xạ thành lỗi quota', () async {
+    final spy = _SenderFactorySpy();
+    spy.senders['gemini-3.8-flash'] = _RecordingSender(
+      'gemini-3.8-flash',
+      error: QuotaExceeded('429 RESOURCE_EXHAUSTED quota exceeded.'),
+    );
+    spy.senders['gemini-3.5-flash-lite'] = _RecordingSender(
+      'gemini-3.5-flash-lite',
+      error: QuotaExceeded('429 RESOURCE_EXHAUSTED quota exceeded.'),
+    );
+
+    final service = GeminiReportService(senderFactory: spy.call);
+
+    await expectLater(
+      service.createReportDraft(description: 'Điều hòa hỏng.'),
+      throwsA(isA<ReportDraftQuotaException>()),
+    );
+    expect(spy.senders, hasLength(2));
+  });
+}
+
+class _FakeSender implements ReportDraftRequestSender {
+  _FakeSender({this.responseText, this.error});
+
+  final String? responseText;
+  final Object? error;
+  Content lastPrompt = Content.text('');
+  int callCount = 0;
+
+  @override
+  Future<String?> send(Content prompt) async {
+    callCount++;
+    lastPrompt = prompt;
+    if (error != null) throw error!;
+    return responseText;
+  }
+}
+
+class _HangingSender implements ReportDraftRequestSender {
+  final Completer<String?> _never = Completer<String?>();
+
+  @override
+  Future<String?> send(Content prompt) => _never.future;
+}
+
+class _RecordingSender implements ReportDraftRequestSender {
+  _RecordingSender(this.modelName, {this.responseText, this.error});
+
+  final String modelName;
+  final String? responseText;
+  final Object? error;
+  int callCount = 0;
+  Content? lastPrompt;
+
+  @override
+  Future<String?> send(Content prompt) async {
+    callCount++;
+    lastPrompt = prompt;
+    if (error != null) throw error!;
+    return responseText;
+  }
+}
+
+class _SenderFactorySpy {
+  final Map<String, _RecordingSender> senders = {};
+
+  ReportDraftRequestSender call(String modelName) =>
+      senders.putIfAbsent(modelName, () => _RecordingSender(modelName));
+}

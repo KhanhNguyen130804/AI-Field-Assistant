@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "938895149011",
+    "project_id": "ai-field-assistant-7f9dc",
+    "storage_bucket": "ai-field-assistant-7f9dc.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:938895149011:android:f96ca5fdf1255bb3e3d126",
+        "android_client_info": {
+          "package_name": "com.example.ai_field_assistant"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeHjN4OdLCM3PVlFAfjS83V06OgR0Y-BQ"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

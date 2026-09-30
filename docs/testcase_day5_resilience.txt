@@ -1,0 +1,146 @@
+# Day 5 — Phiếu kiểm chứng Task 1–3
+
+> Ngày thực hiện: 29/09/2026. Mỗi mục ghi riêng môi trường, lệnh và kết quả; không suy rộng bằng chứng từ task này sang task khác.
+
+## Source và Git trước kiểm tra
+
+| Thuộc tính | Kết quả |
+|---|---|
+| Branch / HEAD | `codex/day4-preflight` / `37c0b0c` (`docs(task8): complete day4 handoff`) |
+| Upstream | `origin/codex/day4-preflight`; HEAD đồng bộ |
+| Working tree có trước lượt này | `README.md` và `docs/CONTEXT_SUMMARY.md` modified; `docs/PROMPT_01.md` deleted; `docs/implement_plan_day5.md` untracked |
+| Bảo toàn thay đổi | Có; không reset/clean/stash/checkout, không stage hoặc commit |
+| Thay đổi source/config/test trong Task 1 | Không |
+
+## Kiểm tra tự động trên host Windows
+
+| ID | Lệnh | Kết quả |
+|---|---|---|
+| AUTO-D5-01 | `dart format --output=none --set-exit-if-changed lib test` | **PASS** — 26 file Dart, 0 file đổi. Lượt thường trong sandbox quá một phút không trả tiến độ; dừng an toàn và chạy lại với quyền SDK/cache. |
+| AUTO-D5-02 | `flutter analyze` | **PASS** — No issues found. |
+| AUTO-D5-03 | `flutter test --reporter compact` | **PASS** — 99/99. Service tests dùng fake sender; không phải request Gemini thật. |
+| AUTO-D5-04 | `flutter test test/local_report_repository_test.dart --reporter compact` | **PASS** — 10/10 trên SQLite FFI host Windows; không phải test plugin `sqflite` Android. |
+| BUILD-D5-01 | `flutter build apk --debug` | **PASS** — exit 0, APK được tạo. Có cảnh báo restricted Java native access và Firebase plugins sử dụng Kotlin Gradle Plugin. |
+
+## APK và cài đặt Android
+
+| Thuộc tính | Kết quả |
+|---|---|
+| APK | `build/app/outputs/flutter-apk/app-debug.apk` |
+| Kích thước | 178,604,382 bytes |
+| SHA-256 | `6E84D74E20027B08CE7A04B0E93626A00AB872D8064B89D62E97D2DBD9A59804` |
+| Version source/cài đặt | `0.1.0` / versionCode `1` |
+| Môi trường | Android emulator API 35 (x86_64), boot completed; không có thiết bị Android vật lý online |
+| Cài đặt | `adb install -r` — **PASS**, `Success`; package chưa cài trước đó |
+| App data | Không gỡ cài, không xóa dữ liệu, không force-stop; app chưa được mở để kiểm tra UI |
+
+ADB ban đầu không có trên PATH; Android Platform Tools được tìm thấy trong Android SDK. Lần chạy thường bị sandbox từ chối truy cập executable; lần liệt kê thiết bị sau đó chạy qua quyền thực thi được duyệt và chỉ dùng trạng thái, không ghi serial/IP. AVD hiện được để chạy cho bước tiếp theo.
+
+## Kết luận và giới hạn
+
+- **Task 1: hoàn tất trong scope.** Git/source baseline, format, analyze, full tests, SQLite FFI, APK build và cài đặt lên emulator đều được xác minh trong phiên này.
+- Đây không phải kiểm tra UI/runtime hay persistence Android. Không xác minh lưu/đọc ảnh, offline save/read, App Check hoặc chất lượng Gemini trong Task 1.
+- Không gửi request Gemini; không đưa dữ liệu hiện trường thật, serial/IP, debug token, prompt/response hoặc log thô vào phiếu.
+- APK/build và test counts trong phiếu này là kết quả ngày 29/09/2026; các kết quả sau này cần ghi riêng, gắn với đúng source/commit.
+
+## Day 5 Task 2 — Carry-over persistence Android (29/09/2026)
+
+### Môi trường và baseline
+
+| Thuộc tính | Kết quả |
+|---|---|
+| Branch / HEAD khi kiểm tra | `codex/day5` / `1b53614` (`docs(day5): record task 1 baseline`) |
+| Thiết bị | Android emulator API 35, x86_64; ADB local; boot completed |
+| Package cài trên emulator | `com.example.ai_field_assistant`, versionName `0.1.0`, versionCode `1` |
+| APK host | SHA-256 khớp baseline Task 1: `6E84D74E20027B08CE7A04B0E93626A00AB872D8064B89D62E97D2DBD9A59804`; không build/cài lại trong Task 2 |
+| Report sẵn có | Không có; tab History tải xong và hiện trạng thái rỗng “Chưa có báo cáo đã lưu” |
+| Fixture trên thiết bị | Bản sao synthetic `AI_Field_Day5_Task2_Synthetic.png` được chép vào `/sdcard/Pictures/` và MediaScanner index để Photo Picker cung cấp; giữ nguyên file này trên emulator sau kiểm tra |
+
+### Kết quả từng case
+
+| ID | Thao tác và quan sát | Trạng thái |
+|---|---|---|
+| PHOTO-D5-01 | Lần mở đầu Photo Picker trống. Sau khi chép fixture tổng hợp hiện có trên host (`ai_field_task7_synthetic.png`, 8,513 bytes, ảnh có nhãn TEST ONLY) thành tên mới trong Pictures công khai và yêu cầu MediaScanner index, mở picker lại; fixture hiện ra, được chọn bằng UI Photo Picker chuẩn và preview hiển thị trong form. | **PASS** — picker/preview với fixture tổng hợp đã kiểm chứng; không dùng ảnh cá nhân hay truy cập vượt quyền. |
+| AI-D5-01 | Nhập mô tả chỉ rõ đây là sự cố tổng hợp, chọn fixture TEST ONLY và bấm CTA **Phân tích bằng AI** đúng một lần. UI tải rồi báo ứng dụng chưa được xác minh với dịch vụ AI (App Check); form vẫn giữ mô tả và preview. Không retry. | **BLOCKED** — không có draft; không xác minh model Gemini có nhận request hay không. |
+| PHOTO-D5-02 | Không thể tạo report có ảnh sau AI-D5-01; do đó chưa save, chưa mở History/detail cho record ảnh và chưa force-stop/relaunch để kiểm tra ảnh lưu. | **BLOCKED** — chưa có report ảnh để kiểm tra persistence Android. |
+| OFFLINE-D5-01 | History ban đầu rỗng. Sau App Check error vẫn không có report tổng hợp đã xác nhận để đọc/lưu offline. | **BLOCKED** — chưa thể kiểm tra local save/read offline vì chưa tạo được draft/report. |
+
+### Giới hạn và kết luận
+
+- Đã xác nhận UI khởi chạy, History empty state tải xong, fixture tổng hợp đi qua Photo Picker và preview hiển thị. Đây không phải bằng chứng lưu/đọc report có ảnh hoặc thao tác offline.
+- Một lần bấm CTA gửi đầu vào tổng hợp; app trả lỗi App Check. Không retry và không suy luận rằng Gemini model đã xử lý payload. Không đọc/ghi App Check token, database/app-private data hoặc dùng media cá nhân. Trạng thái mạng không bị đổi.
+- Fixture bổ sung được giữ tại `/sdcard/Pictures/AI_Field_Day5_Task2_Synthetic.png`; đây là file test tổng hợp do lượt này chép vào emulator, không phải ảnh người dùng.
+- APK SHA được so với giá trị đã ghi ở Task 1; build không chạy lại và APK đã cài không được pull/hash độc lập trong lượt này.
+- Không chạy `dart format`, `flutter analyze`, `flutter test` hoặc `flutter build apk` trong Task 2. Không có thay đổi mã nguồn/cấu hình; kết quả test/build Task 1 vẫn chỉ là bằng chứng lịch sử Task 1.
+- **Task 2 mới đạt phần fixture/picker/preview.** Persistence ảnh và local save/read offline vẫn chưa nghiệm thu; PHOTO-D5-02, OFFLINE-D5-01 và AI-D5-01 còn BLOCKED, không tính là PASS.
+
+## Day 5 Task 3 — Audit service/parser (29/09/2026)
+
+### Môi trường, phạm vi và thay đổi
+
+| Thuộc tính | Kết quả |
+|---|---|
+| Branch / HEAD trước Task 3 | `codex/day5` / `077c943` (`docs(day5): record task 2 persistence check`) |
+| Môi trường | Windows host, Flutter/Dart; fake request sender; không gửi mạng |
+| Thay đổi mã | MIME inline giới hạn PNG/JPEG/WebP; chữ ký phải khớp MIME; PNG cần signature và IHDR header; lỗi đọc file thành lỗi input có thông báo an toàn |
+| Contract parser | Không đổi schema; field thiếu vẫn rỗng/null và cần xác nhận; key lạ bị bỏ qua; field đã biết sai kiểu bị từ chối |
+| Git có trước Task 3 | README/CONTEXT_SUMMARY modified, `docs/PROMPT_01.md` deleted, `docs/implement_plan_day5.md` untracked; giữ nguyên, không stage/commit/push |
+
+### Kết quả kiểm tra vừa chạy
+
+| ID | Lệnh | Kết quả |
+|---|---|---|
+| AUTO-D5-05 | `flutter test test/gemini_report_service_test.dart test/report_draft_test.dart --reporter compact` | **PASS — 43/43**; fake sender, không chứng minh Gemini thật |
+| AUTO-D5-06 | `flutter test --reporter compact` | **PASS — 113/113** |
+| AUTO-D5-07 | `flutter analyze` | **PASS — No issues found** |
+| AUTO-D5-08 | `dart format lib/services/gemini_report_service.dart test/gemini_report_service_test.dart test/report_draft_test.dart` | **PASS** — 3 file được format |
+| AUTO-D5-09 | `dart format --output=none --set-exit-if-changed lib test` | **PASS** — 26 file, 0 thay đổi |
+
+Trong lần chạy test trước khi sửa service, ba test mới tái hiện lỗi: MIME SVG/không khớp signature vẫn được gửi; `PathNotFoundException` từ đọc ảnh thoát khỏi service thay vì thành lỗi input. Sau sửa, các test đó đạt. Không chạy APK build, ADB hoặc kiểm tra Firebase/Gemini/App Check thật trong Task 3.
+
+### Ranh giới và đầu việc liên quan
+
+- Firebase AI Logic công bố `image/png`, `image/jpeg`, `image/webp` cho ảnh inline; mã được căn theo [tài liệu input-file requirements](https://firebase.google.com/docs/ai-logic/input-file-requirements). Ảnh BMP/GIF/HEIF/AVIF có thể được form hiện preview nhưng bị service từ chối khi phân tích; cần đồng bộ lựa chọn/thông báo form trong Task 4.
+- Task 2 vẫn giữ PHOTO-D5-02 và OFFLINE-D5-01 ở trạng thái **BLOCKED** do chưa có draft/report trên emulator; Task 3 không thay đổi trạng thái đó.
+- Không có build/APK mới, request AI thật, debug token, prompt/response hoặc dữ liệu hiện trường trong kiểm chứng này.
+
+## Day 5 Task 4 — UI resilience, bảo toàn dữ liệu và retry (30/09/2026)
+
+### Thay đổi và kiểm tra host
+
+| ID | Nội dung | Kết quả |
+|---|---|---|
+| UI-D5-04-01 | Chỉ nhận JPEG/PNG/WebP; BMP/GIF/HEIF/AVIF báo không hỗ trợ và giữ ảnh hợp lệ trước đó | Widget test PASS |
+| UI-D5-04-02 | Lỗi service/App Check/response/timeout/quota giữ mô tả/ảnh; loading kết thúc; retry chỉ sau thao tác người dùng | Widget tests PASS |
+| UI-D5-04-03 | Chặn gọi AI lặp khi đang xử lý; draft mở chưa lưu, form chỉ xóa sau save thành công | Widget tests PASS |
+| UI-D5-04-04 | Review/issue bắt buộc; lỗi save giữ nội dung và ảnh; retry dùng cùng ID | Widget tests PASS |
+| UI-D5-04-05 | Kết quả save mơ hồ: cùng ID/nội dung được xác nhận là đã lưu; cùng ID/nội dung khác báo conflict, không retry save | Widget tests PASS |
+| UI-D5-04-06 | Back khi có chỉnh sửa hỏi xác nhận; Back trong lúc save bị chặn; double tap save không tạo save thứ hai | Widget tests PASS |
+| AUTO-D5-10 | `flutter --suppress-analytics test --no-pub test/widget_test.dart --reporter compact` | **PASS — 28/28** |
+| AUTO-D5-11 | `flutter --suppress-analytics test --no-pub --reporter compact` | **PASS — 117/117** |
+| AUTO-D5-12 | `flutter --suppress-analytics analyze --no-pub` | **PASS — No issues found** |
+| AUTO-D5-13 | `dart format --output=none --set-exit-if-changed lib/screens/create_report_screen.dart test/widget_test.dart` | **PASS — 2 file, 0 thay đổi** |
+
+Test dùng fake service/repository trên Windows host. Không build APK, không chạy ADB/Android, không gọi Gemini/App Check thật; các điểm đó không được suy ra từ kết quả này. PHOTO-D5-02 và OFFLINE-D5-01 vẫn BLOCKED theo kết quả Task 2.
+
+## Day 5 Task 6 — UX regression host và Android (30/09/2026)
+
+### Source và lệnh vừa chạy
+
+| Thuộc tính | Kết quả |
+|---|---|
+| Branch / HEAD trước cập nhật tài liệu | `codex/day5` / `d0f3870` (`fix(day5): harden privacy logging`), đồng bộ với `origin/codex/day5` |
+| Working tree trước kiểm tra | Chỉ có `docs/HOME_DEVICE_TEST_CHECKLIST.md` chưa được theo dõi; không có tracked changes |
+| Thiết bị được liệt kê | PKG110, Android 16/API 36, ADB Wireless; Flutter cũng liệt kê Windows, Chrome và Edge |
+| `flutter --suppress-analytics analyze --no-pub` | **PASS** — No issues found |
+| `flutter --suppress-analytics test --no-pub --reporter compact` | **PASS** — 117/117; host tests hiện có, gồm viewport nhỏ/keyboard và UI trạng thái dùng fake |
+| `dart format --output=none --set-exit-if-changed lib test` | **PASS** — 26 file, 0 đổi |
+| `flutter devices` | **PASS** — thiết bị PKG110 được Flutter nhận diện qua ADB Wireless |
+| Build APK hiện tại | **BLOCKED** — automatic approval review từ chối khởi chạy `flutter --suppress-analytics build apk --debug --no-pub` vì tạo/cập nhật artifact trong `build/`; process không bắt đầu |
+
+### Kết quả và giới hạn
+
+- Không có lỗi test host mới; test suite hiện có không phát hiện regression trong phạm vi widget/service/repository fake và SQLite FFI host.
+- Vì không tạo được APK từ source `d0f3870`, không cài APK, không mở app/kiểm tra UI trên điện thoại trong Task 6. Không có case Android nào được đánh dấu PASS; vùng bấm, bàn phím, cuộn, cỡ chữ, loading/error và giữ input trên thiết bị vẫn **NOT RUN**.
+- Không gửi request Gemini/App Check thật, không đọc log thiết bị, không thay đổi app data hoặc trạng thái mạng. PHOTO-D5-02 và OFFLINE-D5-01 từ Task 2 tiếp tục **BLOCKED**.
+- Task 6 **một phần**: host PASS, thiết bị chưa kiểm chứng. Không dùng kết quả widget để thay cho Android UX evidence.

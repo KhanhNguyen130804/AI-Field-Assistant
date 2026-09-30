@@ -1,0 +1,48 @@
+# Kiểm thử Task 7 — persistence Android Ngày 4
+
+> Cập nhật ngày 29/09/2026. Đây là phiếu kết quả thực tế trong phiên Task 7. Theo quyết định của chủ dự án, Task 7 được đóng với ngoại lệ được chấp nhận; PARTIAL/BLOCKED/NOT RUN bên dưới vẫn giữ nguyên và không được tính là PASS hay nghiệm thu đầy đủ Ngày 4.
+
+## Môi trường và dữ liệu
+
+- Thiết bị: PKG110, Android 16/API 36, ADB Wireless. ADB liệt kê hai transport wireless cho cùng thiết bị; dùng transport wireless đang điều khiển app. Không ghi serial/IP/pairing code.
+- APK debug: version 0.1.0 (versionCode 1), 178,604,382 bytes, SHA-256 6E84D74E20027B08CE7A04B0E93626A00AB872D8064B89D62E97D2DBD9A59804. APK build trong phiên có hash trùng APK đã cài; không cần cài lại.
+- Dữ liệu AI: một request qua Firebase AI Logic với mô tả hoàn toàn tổng hợp về đèn chỉ báo nhấp nháy ở khu B2. Model thực tế của request không được ghi nhận độc lập; service cấu hình gemini-3.8-flash làm primary và gemini-3.5-flash-lite làm fallback.
+- Báo cáo test text-only có marker SYNTHETIC-TEST-B2-INDICATOR-BLINK còn được lưu trên thiết bị để có thể nhận diện. Không xóa báo cáo hoặc kiểm tra các bản ghi khác.
+- Không lưu prompt/đầu ra AI, ảnh, serial/IP, token hoặc log thô vào phiếu.
+
+## Kiểm tra tự động trên máy phát triển
+
+| ID | Lệnh / phạm vi | Kết quả |
+|---|---|---|
+| AUTO-D4-07-01 | dart format --output=none --set-exit-if-changed lib test | PASS — exit 0; 26 file Dart, không cần format. |
+| AUTO-D4-07-02 | flutter analyze | PASS — No issues found. |
+| AUTO-D4-07-03 | flutter test --reporter compact | PASS — 99/99. |
+| AUTO-D4-07-04 | flutter test test/local_report_repository_test.dart --reporter compact | PASS — 10/10 với SQLite FFI trên host Windows; có kiểm tra round-trip, ảnh qua close/reopen, file/DB lỗi, ảnh mất và JSON hỏng. Đây không phải Android plugin test. |
+| AUTO-D4-07-05 | flutter build apk --debug | PASS — exit 0; có cảnh báo Java restricted native access và Firebase plugin Kotlin Gradle Plugin migration. |
+
+## Kiểm tra trên điện thoại
+
+| ID | Thao tác | Kết quả / bằng chứng |
+|---|---|---|
+| PHONE-D4-PER-01 | Tạo draft AI bằng dữ liệu tổng hợp, sửa sự cố, review trường, xác nhận priority chưa xác định và summary, xác nhận lưu cuối. | PASS — một request AI thành công; báo cáo text-only được lưu, app quay về form trống. suggested_action vẫn được đọc như đề xuất. |
+| PHONE-D4-PER-02 | Thử để issue rỗng rồi khôi phục giá trị tổng hợp hợp lệ. | PARTIAL — editor từng hiển thị issue rỗng; chưa xác minh độc lập nút lưu bị vô hiệu hóa hoặc thử lưu khi các trường còn lại đã review. Widget tests bao phủ validation này. |
+| PHONE-D4-PER-03 | Mở History, tìm marker test, vào chi tiết. | PASS — đúng marker xuất hiện trong History và màn chi tiết; không kiểm tra dòng khác. |
+| PHONE-D4-PER-04 | Force-stop app, xác nhận process kết thúc, mở lại bằng launcher/monkey, mở History và chi tiết cùng marker. | PASS — marker vẫn xuất hiện sau restart process. Bằng chứng cho text-only report/SQLite Android; không chứng minh ảnh. |
+| PHONE-D4-PER-05 | Chọn ảnh tổng hợp từ Photo Picker, lưu report có ảnh, restart và mở lại ảnh. | BLOCKED — các fixture do phiên test tạo trong thư mục công khai không xuất hiện trong Photo Picker sau media-scan; không chọn ảnh có sẵn của người dùng và không tạo report có ảnh. |
+| PHONE-D4-PER-06 | Sau khi tạo draft, ngắt mạng, lưu và mở History/chi tiết offline. | BLOCKED / NOT RUN — chỉ có ADB Wireless transports; tắt Wi-Fi sẽ làm mất kênh điều khiển. Không thay đổi trạng thái mạng và không coi restart khi mạng còn bật là offline test. |
+
+## ADB và log giới hạn
+
+| ID | Thao tác | Kết quả |
+|---|---|---|
+| ADB-D4-PER-01 | Build APK, so hash APK cài đặt với APK vừa build, mở app qua ADB Wireless. | PASS — hash cài đặt trùng APK build; process/activity chạy được. Không cần cài đè. |
+| ADB-D4-PER-02 | Force-stop rồi mở app lại, kiểm tra marker riêng của report test ở History/detail. | PASS — app mở lại; marker vẫn đọc được. |
+| ADB-D4-PER-03 | Đọc adb logcat -d -t 1800 trong bộ nhớ và chỉ đếm nhóm crash/storage. | PASS — 1.956 dòng được kiểm tra, 0 match FATAL EXCEPTION, 0 match SQLite/plugin error đã lọc. Không xuất log thô, không xóa buffer. |
+
+## Kết luận / giới hạn
+
+- Đã kiểm chứng text-only: AI draft → review → local save → History → detail → force-stop/relaunch → History/detail.
+- Chưa kiểm chứng lưu/đọc ảnh trên Android và thao tác offline thật. Task 7 được chủ dự án đóng với ngoại lệ được chấp nhận; nghiệm thu đầy đủ Ngày 4 vẫn chưa hoàn tất.
+- Unit/repository tests mô phỏng lỗi trên host, không phải lỗi SQLite/path_provider được tạo trên điện thoại.
+- Một báo cáo test tổng hợp được giữ lại trong app. Fixture ảnh ai_field_task7_synthetic*.png và một số ảnh màn hình trong thư mục Temp chưa dọn được: thao tác dọn bị automatic approval review chặn vì kết hợp xóa trên máy phát triển và filesystem Android qua ADB. Không có lệnh xóa nào chạy.
+- Trong lượt chạy test được ghi ở phiếu này, không commit/push; deletion có sẵn docs/PROMPT_01.md được giữ nguyên. Quyết định đóng task và publish sau đó được ghi trong docs/AI_WORKLOG.md.

@@ -1,16 +1,43 @@
+import 'package:firebase_app_check/firebase_app_check.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import 'firebase_options.dart';
+import 'repositories/report_repository.dart';
+import 'repositories/report_repository_factory.dart';
 import 'screens/create_report_screen.dart';
+import 'screens/report_detail_screen.dart';
+import 'screens/history_screen.dart';
+import 'services/gemini_report_service.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  if (kDebugMode) {
+    // Debug provider chỉ dùng cho local; token debug phải được đăng ký trong
+    // Firebase Console (App Check → Apps → Manage debug tokens) trước khi
+    // request được chấp nhận. Provider production thuộc bước phát hành.
+    await FirebaseAppCheck.instance.activate(
+      providerAndroid: const AndroidDebugProvider(),
+      providerWeb: WebDebugProvider(),
+    );
+  }
   runApp(const AiFieldAssistantApp());
 }
 
 class AiFieldAssistantApp extends StatelessWidget {
-  const AiFieldAssistantApp({super.key, this.imagePicker});
+  const AiFieldAssistantApp({
+    super.key,
+    this.imagePicker,
+    this.reportService,
+    this.reportRepository,
+  });
 
   final ImagePicker? imagePicker;
+  final GeminiReportService? reportService;
+  final ReportRepository? reportRepository;
 
   @override
   Widget build(BuildContext context) {
@@ -33,15 +60,25 @@ class AiFieldAssistantApp extends StatelessWidget {
           ),
         ),
       ),
-      home: _HomeScreen(imagePicker: imagePicker),
+      home: _HomeScreen(
+        imagePicker: imagePicker,
+        reportService: reportService,
+        reportRepository: reportRepository,
+      ),
     );
   }
 }
 
 class _HomeScreen extends StatefulWidget {
-  const _HomeScreen({this.imagePicker});
+  const _HomeScreen({
+    this.imagePicker,
+    this.reportService,
+    this.reportRepository,
+  });
 
   final ImagePicker? imagePicker;
+  final GeminiReportService? reportService;
+  final ReportRepository? reportRepository;
 
   @override
   State<_HomeScreen> createState() => _HomeScreenState();
@@ -49,6 +86,14 @@ class _HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<_HomeScreen> {
   int _selectedIndex = 0;
+  int _historyRefreshToken = 0;
+  late final ReportRepository _reportRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _reportRepository = widget.reportRepository ?? createReportRepository();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,8 +102,18 @@ class _HomeScreenState extends State<_HomeScreen> {
       body: IndexedStack(
         index: _selectedIndex,
         children: [
-          CreateReportScreen(imagePicker: widget.imagePicker),
-          const _HistoryScreen(),
+          CreateReportScreen(
+            imagePicker: widget.imagePicker,
+            reportService: widget.reportService,
+            reportRepository: _reportRepository,
+            onReportSaved: _refreshHistory,
+          ),
+          HistoryScreen(
+            repository: _reportRepository,
+            isActive: _selectedIndex == 1,
+            refreshToken: _historyRefreshToken,
+            onReportSelected: _openReportDetail,
+          ),
         ],
       ),
       bottomNavigationBar: MediaQuery.viewInsetsOf(context).bottom > 0
@@ -66,7 +121,10 @@ class _HomeScreenState extends State<_HomeScreen> {
           : NavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: (index) {
-                setState(() => _selectedIndex = index);
+                setState(() {
+                  _selectedIndex = index;
+                  if (index == 1) _historyRefreshToken++;
+                });
               },
               destinations: const [
                 NavigationDestination(
@@ -83,57 +141,17 @@ class _HomeScreenState extends State<_HomeScreen> {
             ),
     );
   }
-}
 
-class _HistoryScreen extends StatelessWidget {
-  const _HistoryScreen();
+  void _refreshHistory() {
+    setState(() => _historyRefreshToken++);
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 360),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 88,
-                height: 88,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFEAF3F0),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.inbox_outlined,
-                  size: 40,
-                  color: Color(0xFF176B5B),
-                ),
-              ),
-              const SizedBox(height: 24),
-              Text(
-                'Chưa có báo cáo',
-                textAlign: TextAlign.center,
-                style: textTheme.titleLarge?.copyWith(
-                  color: const Color(0xFF17211F),
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Các báo cáo đã lưu sẽ xuất hiện tại đây khi tính năng '
-                'lưu trữ được tích hợp.',
-                textAlign: TextAlign.center,
-                style: textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF65716E),
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
+  Future<void> _openReportDetail(String reportId) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (context) => ReportDetailScreen(
+          repository: _reportRepository,
+          reportId: reportId,
         ),
       ),
     );

@@ -5,11 +5,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/report.dart';
+import '../repositories/report_repository.dart';
+import '../services/gemini_report_service.dart';
+import '../widgets/status_notice.dart';
+import 'report_draft_screen.dart';
+
 class CreateReportScreen extends StatefulWidget {
-  const CreateReportScreen({super.key, this.imagePicker});
+  const CreateReportScreen({
+    super.key,
+    this.imagePicker,
+    this.reportService,
+    this.onReportSaved,
+    required this.reportRepository,
+  });
 
   @visibleForTesting
   final ImagePicker? imagePicker;
+
+  @visibleForTesting
+  final GeminiReportService? reportService;
+
+  @visibleForTesting
+  final ReportRepository reportRepository;
+
+  final VoidCallback? onReportSaved;
 
   static const maxImageBytes = 10 * 1024 * 1024;
 
@@ -20,6 +40,7 @@ class CreateReportScreen extends StatefulWidget {
 class _CreateReportScreenState extends State<CreateReportScreen> {
   late final TextEditingController _descriptionController;
   late final ImagePicker _imagePicker;
+  late final GeminiReportService _reportService;
 
   XFile? _selectedImage;
   Uint8List? _selectedImageBytes;
@@ -29,12 +50,14 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   int? _handledDecodeErrorGeneration;
   String? _feedbackMessage;
   bool _isPickingImage = false;
+  bool _isAnalyzing = false;
 
   @override
   void initState() {
     super.initState();
     _descriptionController = TextEditingController();
     _imagePicker = widget.imagePicker ?? ImagePicker();
+    _reportService = widget.reportService ?? GeminiReportService();
 
     if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
       unawaited(_restoreLostPickerData());
@@ -72,7 +95,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    if (_isPickingImage) return;
+    if (_isPickingImage || _isAnalyzing) return;
 
     setState(() {
       _isPickingImage = true;
@@ -130,8 +153,12 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         _showFeedback(_imageTooLargeMessage);
         return;
       }
-      if (!_hasSupportedImageSignature(bytes)) {
-        _showFeedback(_unreadableImageMessage);
+      if (!_hasSupportedAiImageSignature(bytes)) {
+        _showFeedback(
+          _hasUnsupportedImageSignature(bytes)
+              ? _unsupportedImageFormatMessage
+              : _unreadableImageMessage,
+        );
         return;
       }
 
@@ -156,6 +183,10 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       ? 'Không đọc được ảnh. Hãy thử chọn hoặc chụp ảnh khác.'
       : 'Ảnh mới không thể đọc được. Ảnh trước đó vẫn được giữ.';
 
+  String get _unsupportedImageFormatMessage => _selectedImage == null
+      ? 'Chỉ hỗ trợ ảnh JPEG, PNG hoặc WebP để phân tích.'
+      : 'Ảnh mới chưa hỗ trợ để phân tích. Hãy chọn JPEG, PNG hoặc WebP; ảnh trước đó vẫn được giữ.';
+
   void _handleImageDecodeError(int generation) {
     if (_handledDecodeErrorGeneration == generation) return;
     _handledDecodeErrorGeneration = generation;
@@ -175,7 +206,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     });
   }
 
-  bool _hasSupportedImageSignature(Uint8List bytes) {
+  bool _hasSupportedAiImageSignature(Uint8List bytes) {
     bool startsWith(List<int> signature) {
       if (bytes.length < signature.length) return false;
       for (var i = 0; i < signature.length; i++) {
@@ -194,16 +225,19 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
       0x1a,
       0x0a,
     ])) {
-      // Require the PNG signature and IHDR chunk before accepting the bytes.
-      return bytes.length >= 33;
+      // Match the service's minimum PNG check: signature and IHDR chunk.
+      return bytes.length >= 33 &&
+          bytes[8] == 0x00 &&
+          bytes[9] == 0x00 &&
+          bytes[10] == 0x00 &&
+          bytes[11] == 0x0d &&
+          bytes[12] == 0x49 &&
+          bytes[13] == 0x48 &&
+          bytes[14] == 0x44 &&
+          bytes[15] == 0x52;
     }
 
-    if (startsWith(const <int>[0xff, 0xd8, 0xff]) ||
-        startsWith(const <int>[0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
-        startsWith(const <int>[0x47, 0x49, 0x46, 0x38, 0x39, 0x61]) ||
-        startsWith(const <int>[0x42, 0x4d])) {
-      return true;
-    }
+    if (startsWith(const <int>[0xff, 0xd8, 0xff])) return true;
 
     if (bytes.length >= 12 &&
         startsWith(const <int>[0x52, 0x49, 0x46, 0x46]) &&
@@ -211,6 +245,24 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
         bytes[9] == 0x45 &&
         bytes[10] == 0x42 &&
         bytes[11] == 0x50) {
+      return true;
+    }
+
+    return false;
+  }
+
+  bool _hasUnsupportedImageSignature(Uint8List bytes) {
+    bool startsWith(List<int> signature) {
+      if (bytes.length < signature.length) return false;
+      for (var i = 0; i < signature.length; i++) {
+        if (bytes[i] != signature[i]) return false;
+      }
+      return true;
+    }
+
+    if (startsWith(const <int>[0x42, 0x4d]) ||
+        startsWith(const <int>[0x47, 0x49, 0x46, 0x38, 0x37, 0x61]) ||
+        startsWith(const <int>[0x47, 0x49, 0x46, 0x38, 0x39, 0x61])) {
       return true;
     }
 
@@ -253,6 +305,92 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   void _showFeedback(String message) {
     if (!mounted) return;
     setState(() => _feedbackMessage = message);
+  }
+
+  Future<void> _analyzeWithAi() async {
+    if (_isAnalyzing || _isPickingImage) return;
+
+    final description = _descriptionController.text.trim();
+    if (description.isEmpty && _selectedImage == null) {
+      _showFeedback('Nhập mô tả hoặc chọn ảnh trước khi phân tích.');
+      return;
+    }
+
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _isAnalyzing = true;
+      _feedbackMessage = null;
+    });
+
+    try {
+      final image = _selectedImage;
+      // The service re-checks the 4 MiB send limit, but the service error
+      // keeps the form limit ambiguous. Check it here too, after locking the
+      // form and inside the error boundary so picker I/O failures are safe.
+      if (image != null) {
+        final int fileLength;
+        try {
+          fileLength = await image.length();
+        } on Object {
+          _showFeedback(
+            'Không thể đọc ảnh đã chọn. Mô tả và ảnh vẫn được giữ nguyên.',
+          );
+          return;
+        }
+        if (fileLength > maxImageBytesForAi) {
+          _showFeedback(
+            'Ảnh vượt quá giới hạn 4 MiB để gửi phân tích. '
+            'Hãy chọn ảnh nhỏ hơn hoặc chụp lại.',
+          );
+          return;
+        }
+      }
+
+      final draft = await _reportService.createReportDraft(
+        description: description.isEmpty ? null : description,
+        image: image,
+      );
+      if (!mounted) return;
+      final savedReport = await Navigator.of(context).push<Report>(
+        MaterialPageRoute<Report>(
+          builder: (context) => ReportDraftScreen(
+            draft: draft,
+            description: description,
+            imageBytes: _selectedImageBytes,
+            repository: widget.reportRepository,
+          ),
+        ),
+      );
+      if (savedReport != null && mounted) {
+        setState(() {
+          _descriptionController.clear();
+          _selectedImage = null;
+          _selectedImageBytes = null;
+          _previousSelectedImage = null;
+          _previousSelectedImageBytes = null;
+          _imageGeneration++;
+          _feedbackMessage = null;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Đã lưu trên thiết bị. Mở tab Lịch sử để xem báo cáo.',
+            ),
+          ),
+        );
+        widget.onReportSaved?.call();
+      }
+    } on InvalidReportDraftInputException catch (error) {
+      _showFeedback(error.userMessage);
+    } on ReportDraftException catch (error) {
+      _showFeedback(error.userMessage);
+    } on Exception {
+      _showFeedback(
+        'Không thể phân tích lúc này. Kiểm tra kết nối mạng rồi thử lại.',
+      );
+    } finally {
+      if (mounted) setState(() => _isAnalyzing = false);
+    }
   }
 
   Future<void> _reviewInput() async {
@@ -316,7 +454,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                     ),
                   ],
                   const SizedBox(height: 16),
-                  const _StatusNotice(
+                  const StatusNotice(
                     message: 'Đầu vào này chưa được gửi tới AI và chưa được lưu thành báo cáo.',
                   ),
                   const SizedBox(height: 16),
@@ -380,7 +518,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                   hintText:
                       'Ví dụ: Điều hòa tại khu vực lễ tân không hoạt động.',
                   alignLabelWithHint: true,
-                  helperText: 'Không gửi thông tin cho AI trong bước này.',
+                  helperText: 'Mô tả và ảnh chỉ được gửi khi bạn bấm "Phân tích bằng AI".',
                   filled: true,
                   fillColor: Colors.white,
                   border: OutlineInputBorder(
@@ -397,7 +535,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               ),
               const SizedBox(height: 4),
               Text(
-                'Chọn một ảnh, tối đa 10 MiB sau xử lý.',
+                'Ảnh JPEG, PNG hoặc WebP. Xem trước tối đa 10 MiB; gửi AI tối đa 4 MiB.',
                 style: textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
@@ -405,7 +543,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               const SizedBox(height: 12),
               OutlinedButton.icon(
                 key: const Key('take-photo-button'),
-                onPressed: _isPickingImage
+                onPressed: _isPickingImage || _isAnalyzing
                     ? null
                     : () => _pickImage(ImageSource.camera),
                 icon: const Icon(Icons.photo_camera_outlined),
@@ -414,7 +552,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               const SizedBox(height: 8),
               OutlinedButton.icon(
                 key: const Key('choose-photo-button'),
-                onPressed: _isPickingImage
+                onPressed: _isPickingImage || _isAnalyzing
                     ? null
                     : () => _pickImage(ImageSource.gallery),
                 icon: const Icon(Icons.photo_library_outlined),
@@ -453,18 +591,40 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
               ],
               if (_feedbackMessage case final message?) ...[
                 const SizedBox(height: 16),
-                _StatusNotice(message: message, isError: true),
+                StatusNotice(message: message, isError: true),
               ],
               const SizedBox(height: 24),
               FilledButton.icon(
+                key: const Key('analyze-button'),
+                onPressed: _isPickingImage || _isAnalyzing
+                    ? null
+                    : _analyzeWithAi,
+                icon: const Icon(Icons.auto_awesome_outlined),
+                label: const Text('Phân tích bằng AI'),
+              ),
+              if (_isAnalyzing) ...[
+                const SizedBox(height: 12),
+                const LinearProgressIndicator(key: Key('analyze-progress')),
+                const SizedBox(height: 8),
+                const Text(
+                  'Đang phân tích… Không tắt ứng dụng, kết quả sẽ hiện sau ít phút.',
+                ),
+              ],
+              const SizedBox(height: 16),
+              FilledButton.icon(
                 key: const Key('review-input-button'),
-                onPressed: _isPickingImage ? null : _reviewInput,
+                onPressed: _isPickingImage || _isAnalyzing
+                    ? null
+                    : _reviewInput,
                 icon: const Icon(Icons.fact_check_outlined),
                 label: const Text('Xem lại đầu vào'),
               ),
               const SizedBox(height: 16),
-              const _StatusNotice(
-                message: 'Mô tả chỉ giữ tạm trong màn hình; ảnh dùng file tạm. AI và lưu báo cáo chưa được tích hợp.',
+              const StatusNotice(
+                message:
+                    'Mô tả và ảnh được gửi tới Gemini qua Firebase '
+                    'khi bạn bấm "Phân tích bằng AI". Chỉ dùng nội dung '
+                    'tổng hợp khi thử; bản nháp AI cần được kiểm tra trước.',
               ),
             ],
           ),
@@ -476,48 +636,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   Widget _buildImageReadError(int generation) {
     _handleImageDecodeError(generation);
     return const _ImageReadError();
-  }
-}
-
-class _StatusNotice extends StatelessWidget {
-  const _StatusNotice({required this.message, this.isError = false});
-
-  final String message;
-  final bool isError;
-
-  @override
-  Widget build(BuildContext context) {
-    final backgroundColor = isError
-        ? const Color(0xFFFFF0ED)
-        : const Color(0xFFFFF7E8);
-    final foregroundColor = isError
-        ? const Color(0xFF8B2D1B)
-        : const Color(0xFF684916);
-
-    return Container(
-      key: isError ? const Key('input-error-message') : null,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            isError ? Icons.error_outline_rounded : Icons.info_outline_rounded,
-            color: foregroundColor,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(color: foregroundColor, height: 1.4),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
