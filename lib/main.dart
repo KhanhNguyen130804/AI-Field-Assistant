@@ -10,23 +10,37 @@ import 'repositories/report_repository_factory.dart';
 import 'screens/create_report_screen.dart';
 import 'screens/report_detail_screen.dart';
 import 'screens/history_screen.dart';
+import 'services/app_check_initializer.dart';
 import 'services/gemini_report_service.dart';
 import 'theme/app_theme.dart';
+import 'widgets/app_bootstrap.dart';
 import 'widgets/field_assistant_logo.dart';
 
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  if (kDebugMode) {
-    // Debug provider chỉ dùng cho local; token debug phải được đăng ký trong
-    // Firebase Console (App Check → Apps → Manage debug tokens) trước khi
-    // request được chấp nhận. Provider production thuộc bước phát hành.
-    await FirebaseAppCheck.instance.activate(
-      providerAndroid: const AndroidDebugProvider(),
-      providerWeb: WebDebugProvider(),
+  runApp(
+    AppBootstrap(
+      initialize: _initializeFirebase,
+      appBuilder: (_) => const AiFieldAssistantApp(),
+    ),
+  );
+}
+
+Future<void> _initializeFirebase() async {
+  // A retry after App Check failure reuses the already initialized Firebase app.
+  if (Firebase.apps.isEmpty) {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
     );
   }
-  runApp(const AiFieldAssistantApp());
+  await initializeAppCheck(
+    isDebug: kDebugMode,
+    isWeb: kIsWeb,
+    platform: defaultTargetPlatform,
+    activate: ({required providerAndroid, providerWeb}) => FirebaseAppCheck
+        .instance
+        .activate(providerAndroid: providerAndroid, providerWeb: providerWeb),
+  );
 }
 
 class AiFieldAssistantApp extends StatelessWidget {

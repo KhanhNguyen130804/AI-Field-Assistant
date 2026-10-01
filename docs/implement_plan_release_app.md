@@ -1,5 +1,7 @@
 # Kế hoạch triển khai — Phát hành APK và cấu hình App Check cho tính năng AI
 
+> **Cập nhật mới nhất — Release Task 2 (01/10/2026): mã + kiểm tra liên quan đã hoàn tất, chưa nghiệm thu Android release.** Nhánh `codex/release-app-check` từ `6bb3a1e`; scope commit loại trừ hai test modified và checklist có trước. Android profile/release đã có reCAPTCHA với site key công khai truyền lúc build; debug giữ provider riêng. Task 1 vẫn PARTIAL, signing/build/token/AI trên máy mới chưa thực hiện. Snapshot Task 1 và các follow-up bên dưới là lịch sử trước triển khai Task 2.
+
 > Cập nhật ngày 01/10/2026: **Task 1: PARTIAL**. Ảnh người dùng cung cấp xác nhận reCAPTCHA API Enabled, Android key đã tạo và Firebase App Check Android Fraud Defense Registered; agent chưa truy cập Console trực tiếp thành công. Baseline trước publication docs: `codex/day7`, HEAD `fa85658`; hai tệp test đang modified, checklist thiết bị và kế hoạch này đang untracked. Giữ nguyên các thay đổi có trước. Agent chỉ kiểm tra local/tài liệu công khai/ảnh và cập nhật docs; chưa sửa mã sản phẩm, tạo keystore, build APK, đổi Console hoặc chạy test/request AI. Kết quả chi tiết và phần chưa xác minh ở mục Task 1 bên dưới.
 >
 > Nguồn phạm vi: `AGENTS.md` (bảo mật/bí mật), `docs/CHALLENGE_VI_ROADMAP.md` (mục 6 sản phẩm cần nộp, mục 10 checklist), `lib/main.dart`, `lib/services/gemini_report_service.dart`, `android/app/build.gradle.kts`, `docs/AI_WORKLOG.md` và `docs/CONTEXT_SUMMARY.md`.
@@ -165,6 +167,24 @@ Nếu RELEASE-AI-02 chưa đạt, mục tiêu phân phối APK dùng được AI
 
 ### Task 2 — Sửa App Check cho bản release (thay đổi mã sản phẩm)
 
+#### Phạm vi triển khai được giao — 01/10/2026
+
+- Người dùng chọn rõ **Release Task 2**, không phải Task 2 Day 7 build/demo. Baseline `6bb3a1e`; nhánh triển khai `codex/release-app-check`, giữ nguyên hai test modified và checklist untracked có trước.
+- Chọn hướng E ở mức mã nguồn dựa trên bằng chứng Android Fraud Defense Registered và API đã có trong SDK. Đây chưa phải kết luận provider chạy được trên project/thiết bị; Task 1 vẫn PARTIAL ở saved settings/quota Mobile và chuẩn bị thiết bị/signing. Yêu cầu triển khai lần này cho phép chuẩn bị mã, không cho phép tự bật billing hoặc đổi Console.
+- Thay đổi dự kiến: `main.dart`, helper khởi tạo App Check và màn chờ/lỗi khởi tạo có retry; test mới cho cấu hình, chặn mở app khi khởi tạo thất bại và retry. Giữ service AI/error mapping, schema, storage, dependency và signing.
+- Android debug dùng Debug provider; Android profile/release dùng reCAPTCHA với site key công khai từ `--dart-define=APP_CHECK_ANDROID_SITE_KEY=...`. Thiếu key thì báo lỗi khởi tạo, không fallback debug. Web debug giữ nguyên; web production ngoài phạm vi.
+- Kiểm tra: format các tệp mới/đổi, analyze, test mới + service/parser; có thể chạy suite để ghi rõ lỗi từ hai test có trước nhưng không sửa chúng. Không build release, tạo signing key hoặc thử AI trong Task 2.
+- Một build debug đã khởi động trước khi người dùng trả lời lựa chọn Task 2; đã dừng sau khi nhận lựa chọn Release (exit 1), không có artifact PASS từ lượt đó. Không dùng artifact cũ làm bằng chứng mới.
+
+#### Kết quả thực thi Task 2
+
+- `lib/main.dart`: AppBootstrap chờ Firebase rồi initializeAppCheck trước xây app/services; retry sử dụng Firebase app đã khởi tạo. Helper mới chọn provider theo platform/build mode và trim site key công khai từ APP_CHECK_ANDROID_SITE_KEY; key rỗng hoặc activate lỗi được truyền tới startup UI, không fallback debug. Không gọi getToken để coi activate là bằng chứng attestation.
+- `lib/widgets/app_bootstrap.dart`: loading, thông báo khởi tạo lỗi chung không lộ lỗi thô, retry một attempt; appBuilder chưa chạy nếu init pending/fail. `lib/services/app_check_initializer.dart` giữ web debug, không mở production web/Apple. Không sửa service AI/error mapping, signing, dependency, schema hoặc storage.
+- 9 test mới: provider/config thiếu, lỗi không fallback, ranh giới web/non-Android, app không xây trước init, failure/retry và lỗi synchronous. Test lần đầu phát hiện callback setState trả Future; đổi sang callback void và test lại đạt.
+- `dart format` trên 5 tệp mới/đổi; `flutter --suppress-analytics analyze --no-pub`: PASS, No issues (26.6 giây). `flutter --suppress-analytics test --no-pub test/app_check_initializer_test.dart test/app_bootstrap_test.dart test/gemini_report_service_test.dart test/report_draft_test.dart --reporter expanded`: PASS, 52/52 sau sửa retry.
+- `flutter --suppress-analytics test --no-pub --reporter expanded`: 133 PASS/2 FAIL, exit 1. Fail: detail `loads the selected report and shows confirmed details` thiếu scroll tới suggested_action; widget `trong lúc phân tích: hiện loading, khóa nút, giữ input` cast FilledButton thay vì OutlinedButton. Cả hai ở test modified có trước, Task 2 không đổi những vùng UI/test đó; giữ nguyên và không tuyên bố suite sạch.
+- Trạng thái: **hoàn tất phần mã + kiểm tra liên quan của Task 2**; full-suite chưa sạch do hai lỗi nêu trên. Chưa build/cài release, chưa cấp token hoặc gọi AI thật; site key thực tế cần được người build truyền đúng từ Console. Quota/billing/saved settings còn theo gate Task 1; không tự enable/link billing. Không chuyển Task 3–6 trong lượt này.
+
 1. Sửa `lib/main.dart` để activate App Check trên Android cho debug và release, chọn provider theo build mode/kênh đã chốt (dùng class provider của `firebase_app_check` 0.4.8):
    - `kDebugMode` → `AndroidDebugProvider()` (và `WebDebugProvider()` nếu vẫn test web).
    - bản release B1/B2 → `AndroidPlayIntegrityProvider()`; nhánh E → `AndroidReCaptchaProvider(siteKey)`.
@@ -194,9 +214,9 @@ Nếu RELEASE-AI-02 chưa đạt, mục tiêu phân phối APK dùng được AI
 1. Bump `version` trong `pubspec.yaml` (ví dụ `0.1.0+1` → `0.2.0+2` hoặc `1.0.0+3`) cho bản nộp.
 2. Build:
    ```powershell
-   flutter build apk --release --no-pub
-   # (tùy chọn) flutter build apk --release --split-per-abi --no-pub
-   # (tùy chọn cho Play) flutter build appbundle --release --no-pub
+   flutter build apk --release --no-pub "--dart-define=APP_CHECK_ANDROID_SITE_KEY=<ANDROID_SITE_KEY_PUBLIC>"
+   # (tùy chọn) flutter build apk --release --split-per-abi --no-pub "--dart-define=APP_CHECK_ANDROID_SITE_KEY=<ANDROID_SITE_KEY_PUBLIC>"
+   # (tùy chọn cho Play) flutter build appbundle --release --no-pub "--dart-define=APP_CHECK_ANDROID_SITE_KEY=<ANDROID_SITE_KEY_PUBLIC>"
    ```
 3. Ghi version, kích thước, SHA-256, cảnh báo build; đối chiếu artifact đích với output.
 4. **Không commit** APK/AAB vào Git; lưu ở thư mục ngoài repo hoặc kênh phân phối.
@@ -300,9 +320,9 @@ keytool -genkeypair -v -keystore $env:USERPROFILE\ai-field-release.jks `
 adb logcat | Select-String "App Check debug token"
 
 # Build
-flutter build apk --release --no-pub
-flutter build apk --release --split-per-abi --no-pub
-flutter build appbundle --release --no-pub
+flutter build apk --release --no-pub "--dart-define=APP_CHECK_ANDROID_SITE_KEY=<ANDROID_SITE_KEY_PUBLIC>"
+flutter build apk --release --split-per-abi --no-pub "--dart-define=APP_CHECK_ANDROID_SITE_KEY=<ANDROID_SITE_KEY_PUBLIC>"
+flutter build appbundle --release --no-pub "--dart-define=APP_CHECK_ANDROID_SITE_KEY=<ANDROID_SITE_KEY_PUBLIC>"
 
 # Checksum
 Get-FileHash build\app\outputs\flutter-apk\app-release.apk -Algorithm SHA256
@@ -317,7 +337,7 @@ adb install -r build\app\outputs\flutter-apk\app-debug.apk
 - Đã có bằng chứng ảnh: IAM Owner, Android key đã tạo và Firebase Fraud Defense Registered. Cần xác minh tiếp: saved settings, điều kiện/quota Mobile, nơi sao lưu signing key và máy thử cài mới; billing trong ảnh gần nhất chưa được liên kết.
 - Nếu chuyển từ debug signing sang release signing trên máy đang có report, phải chốt bảo toàn dữ liệu trước; không tự uninstall/clear data.
 
-> Yêu cầu release lần này mở phạm vi release/App Check ngoài feature freeze cũ. Đã thực hiện phần local của Task 1, đối chiếu ảnh Console do người dùng cung cấp và cập nhật docs; công cụ truy cập Console trực tiếp còn lỗi. Chưa triển khai Task 2 hoặc build.
+> Yêu cầu release lần này mở phạm vi release/App Check ngoài feature freeze cũ. Đã thực hiện phần local/ảnh Console của Task 1 và triển khai mã Task 2 theo lựa chọn mới của người dùng; công cụ truy cập Console trực tiếp còn lỗi. Chưa có build release hoặc request AI mới. Không suy các gate Task 1 còn thiếu đã đạt từ host tests.
 
 ## 11. Nguồn đối chiếu ngày 01/10/2026
 

@@ -1,6 +1,14 @@
-# Tóm tắt dự án — cập nhật Release Task 1 (01/10/2026)
+# Tóm tắt dự án — cập nhật Release Task 2 (01/10/2026)
 
-## Cập nhật mới nhất — Release Task 1
+## Cập nhật mới nhất — Release Task 2
+
+- Người dùng chọn Release Task 2, không phải Day 7 Task 2. Nhánh `codex/release-app-check` từ `6bb3a1e`. Phạm vi commit gồm main, hai helper/widget, hai test mới và bốn tài liệu; hai test modified và HOME_DEVICE_TEST_CHECKLIST untracked có trước được giữ nguyên ngoài commit.
+- `main.dart` mở AppBootstrap; initializer chờ Firebase, rồi App Check trước khi xây app/services. Android debug dùng AndroidDebugProvider, profile/release dùng AndroidReCaptchaProvider với key công khai từ `String.fromEnvironment('APP_CHECK_ANDROID_SITE_KEY')`. Key rỗng hoặc activate lỗi không fallback debug; thông báo startup chung không lộ lỗi thô và có retry. Retry dùng Firebase app đã khởi tạo; nút không hiện khi attempt đang chờ. Web debug giữ nguyên, web production ngoài phạm vi.
+- Thêm helper `lib/services/app_check_initializer.dart`, widget `lib/widgets/app_bootstrap.dart` và hai test mới tương ứng. Không thay service AI/error mapping, schema, repository, dependency, signing hoặc Console. Site key thực tế không được ghi vào repo; cần truyền đúng `--dart-define` khi build sau này.
+- Kiểm chứng mới: format 5 tệp Dart mới/đổi; analyzer No issues; bộ App Check/bootstrap/service/parser 52/52 PASS. Full suite working tree: 133 PASS/2 FAIL, ở detail thiếu scroll và widget sai cast FilledButton/OutlinedButton trong hai test modified có trước. Hai tệp được giữ nguyên, không tuyên bố suite sạch. Lần test đầu phát hiện lỗi callback setState trả Future; đã sửa và bộ liên quan chạy lại đạt.
+- Chưa có release APK, native token hoặc request AI mới; ADB kiểm tra 0 online/unauthorized/offline. Một build debug khởi động lúc câu hỏi chọn Task 2 còn pending đã được dừng (exit 1), không có build PASS mới. Task 2 hoàn tất phần mã + kiểm tra liên quan; gate Task 1 còn PARTIAL và Task 3 signing/Task 4 build/Task 6 thiết bị chưa thực hiện. Full-suite lỗi nêu trên cần xử lý riêng nếu được giao.
+
+## Lịch sử — Release Task 1
 
 - Baseline trước publication docs: `codex/day7`, HEAD `fa8565818f2c6ecd40e796638669590cc5d06a93`. Có trước: hai test modified (`report_detail_screen_test.dart`, `widget_test.dart`), checklist thiết bị và plan release untracked; giữ nguyên test/checklist. Chỉ cập nhật docs trong task này, không tạo nhánh hoặc sửa code. Các bullet ảnh bên dưới ghi theo trình tự; trạng thái cuối là Android Fraud Defense Registered, các trạng thái Unregistered/chưa tạo key là lịch sử trước đó.
 - Đã chốt APK tải trực tiếp, người nhận dùng AI mà không đăng ký token thủ công/đăng nhập. E — reCAPTCHA Enterprise Android là hướng đề xuất có điều kiện. Ảnh IAM do người dùng gửi có tài khoản cá nhân role Owner; API/mobile key/quota/billing thực tế chưa xác minh.
