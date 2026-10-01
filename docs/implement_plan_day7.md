@@ -1,5 +1,7 @@
 # Kế hoạch Ngày 7 — Kiểm tra cuối, video demo và nộp bài
 
+> **Kết quả chuẩn bị (01/10/2026):** format/analyze/135 test intended submission PASS; APK release `0.2.0+2` build, verify chữ ký, cài trên PKG110 Android 16/API 36; AI text-only và text + sơ đồ tổng hợp PASS, lưu/history/restart cho report text PASS, PDF save/render PASS. Video, link GitHub/Drive, offline, ảnh persistence, camera và submit còn thiếu. Người dùng tự quay video; các chi tiết ở [SUBMISSION_STATUS](SUBMISSION_STATUS.md) và [testcase_day7](testcase_day7.txt). Phần kế hoạch nền bên dưới mô tả trạng thái trước khi chạy các kiểm tra này.
+
 > Nhánh: `codex/day7`, tạo từ `origin/main` tại commit `a8026ff` (merge PR #2 — UI/UX refresh; cây làm việc trùng `0c93ea1`). Baseline tracked tree sạch; `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi có trước và phải giữ nguyên, không đưa vào commit Ngày 7.
 >
 > Hạn nộp ghi trên đề bài: **23:59 ngày 01/10/2026**. Ngày 7 là ngày cuối cùng; toàn bộ kế hoạch ưu tiên **kiểm tra – đóng gói – nộp sớm**, không thêm tính năng mới.

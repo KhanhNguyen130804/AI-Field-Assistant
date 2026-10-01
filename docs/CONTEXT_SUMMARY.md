@@ -1,5 +1,13 @@
 # Tóm tắt dự án — cập nhật Release Task 2 (01/10/2026)
 
+## Cập nhật sau đó — chuẩn bị bài nộp (01/10/2026)
+
+- Nhánh `codex/release-app-check`; Task 2 đã được commit/push trước lượt chuẩn bị. Signing/version/manifest/helper và hồ sơ ứng viên `0.2.0+2` là thay đổi local chưa commit. APK: 59.831.252 byte, SHA-256 `8E622C5580C1C18B1E397FBD000B0E48950D84CC8C397040288D5620545B8883`.
+- Format 35 tệp, analyzer sạch, bộ test intended submission 135/135 PASS; test modified trước đó còn nguyên. APK ký release riêng/zipaligned/không debuggable; cài và mở được trên PKG110 Android 16/API 36.
+- Hai request AI thật dùng dữ liệu tổng hợp: text-only và text + sơ đồ tổng hợp. Cả hai dẫn tới bản nháp. Text report đã xác nhận/lưu và còn trong History sau force-stop/relaunch. PDF được lưu bằng document picker và render kiểm tra; một PDF test cụ thể có ký tự gõ thừa ở summary, không dùng làm sản phẩm mẫu công khai. Share sheet chỉ mở/hủy.
+- Ảnh sau restart, offline, lỗi mạng/timeout/quota trên thiết bị, camera/từ chối quyền, video, GitHub Release/Drive links và submit còn NOT RUN/BLOCKED. `adb screenrecord` trả Permission denied trên ba vị trí; chủ dự án tự quay video. Showcase và chia sẻ nhật ký prompt: đã cho phép; giờ tiết kiệm chưa có số liệu.
+- Chi tiết mới nhất ở [SUBMISSION_STATUS](SUBMISSION_STATUS.md) và [testcase_day7](testcase_day7.txt). Các phần Release Task 2 và Task 1 phía dưới ghi lịch sử thời điểm cũ, không thay cho bằng chứng mới này.
+
 ## Cập nhật mới nhất — Release Task 2
 
 - Người dùng chọn Release Task 2, không phải Day 7 Task 2. Nhánh `codex/release-app-check` từ `6bb3a1e`. Phạm vi commit gồm main, hai helper/widget, hai test mới và bốn tài liệu; hai test modified và HOME_DEVICE_TEST_CHECKLIST untracked có trước được giữ nguyên ngoài commit.

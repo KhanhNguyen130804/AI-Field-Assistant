@@ -46,3 +46,11 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Private release material must never enter source control.
+**/*.jks
+**/*.keystore
+**/*.dpapi
+**/key.properties
+.kotlin/
+/android/build/

@@ -1,0 +1,29 @@
+AI FIELD ASSISTANT — SUBMISSION VERIFICATION 2026-10-01
+Artifact: 0.2.0+2; base commit 28b0a9c + uncommitted release preparation.
+APK SHA256: 8E622C5580C1C18B1E397FBD000B0E48950D84CC8C397040288D5620545B8883
+No secrets, device identifiers, personal reports or raw logs retained here.
+
+HOST-D7-01 PASS: dart format --output=none --set-exit-if-changed lib test; 35 files, 0 changes.
+HOST-D7-02 PASS: flutter --suppress-analytics analyze --no-pub; No issues, exit 0.
+HOST-D7-03 PASS: flutter --suppress-analytics test --no-pub --reporter expanded with intended test list; 135/135, exit 0. Exact HEAD copies replaced paths of the two pre-existing modified tests in ignored .dart_tool/submission-verification-tests. Original files untouched. This is not proof of the dirty working-tree suite.
+SIGN-D7-01 PASS: dedicated RSA-2048 JKS outside repo; encrypted DPAPI password outside repo; restricted ACL; no debug signing fallback.
+SIGN-D7-02 PASS: wrapper via Android Studio JBR, :app:validateSigningRelease --offline without signing env, exit 1 with expected Missing private release signing configuration. Initial gradlew.bat failed for absent JAVA_HOME before reaching this guard.
+BUILD-D7-01 PASS: tools/Build-Release.ps1 with public Android site key, flutter build apk --release --no-pub, exit 0; 59,831,252 bytes. Initial DPAPI helper attempt failed on trailing newline; fixed Trim before successful build.
+BUILD-D7-02 PASS: apksigner exit 0/v2; dedicated cert differs from installed debug; aapt package/version/min24/target36/ABIs/INTERNET/non-debuggable; zipalign -c -P 16 4 exit 0.
+DEVICE-D7-01 PASS: user authorized uninstall debug/data loss; uninstall Success, install release Success, launch; version 0.2.0/code2. No new debug-token registration.
+AI-D7-01 PASS: text-only synthetic request, loading -> real AI draft; category/location grounded, priority unset. Primary versus fallback execution not visible from UI.
+REVIEW-D7-01 PASS OBSERVED: edited synthetic issue; field confirmations; History contains saved report. Device actions interleaved between final snapshots; not all save steps attributable to agent.
+STORE-D7-01 PASS: force-stop/relaunch -> same synthetic text report in History/detail. Image persistence not covered.
+PDF-D7-01 PASS: ColorOS document picker -> Download PDF -> success message; pulled exact synthetic PDF, 39,431 bytes, 1 page; Poppler render inspected, pypdf text assertions PASS. Manual typo in saved summary; PDF withheld from public sample assets. First text-output command hit Windows encoding error; rerun UTF-8 passed.
+SHARE-D7-01 PASS OPEN ONLY: Android intent resolver opened; canceled; recipient app and Zalo not tested, no message/file sent externally.
+INPUT-D7-01 PASS: empty form rejected with clear validation; no AI draft opened.
+PHOTO-D7-01 PASS: synthetic diagram PNG 24,480 bytes, explicitly labeled not real incident. Thumbnail compared with own fixture (mean difference 5.31), selected in Photo Picker; app preview and review-input observed.
+AI-D7-02 PASS: synthetic image + text request submitted once, loading -> AI draft; thumbnail verified fixture, not personal image. No accuracy uplift claim.
+STORE-D7-02 NOT RUN: image persistence after restart, pending image report save.
+OFFLINE-D7-01 NOT RUN: independent USB transport not established by get-devpath; no Wi-Fi/mobile data toggled.
+ERROR-D7-01 NOT RUN ON DEVICE: network loss/timeout/quota/invalid JSON; host test coverage is separate.
+CAMERA-D7-01 NOT RUN: camera and permission refusal on final artifact.
+VIDEO-D7-01 BLOCKED TOOL: adb screenrecord Permission denied at three paths; no successful video. User will record manually using script.
+PUBLISH-D7-01 NOT RUN: no GitHub Release/Drive video/public-link check/Submit in this preparation run.
+
+Historical results remain in AI_WORKLOG. Do not promote APK compile, host tests, previous debug tokens or Console screenshots into proof on every Android device.

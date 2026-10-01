@@ -1,5 +1,7 @@
 # Walkthrough — luồng ứng dụng và ranh giới kiểm chứng (30/09/2026)
 
+> **Cập nhật kiểm tra APK nộp (01/10/2026):** `0.2.0+2` cài được trên PKG110 Android 16/API 36; hai request Gemini/App Check thật (text và text + sơ đồ tổng hợp) trả draft. Report text lưu/lịch sử qua force-stop, PDF lưu qua document picker và render đọc được. Ảnh sau restart/offline/camera chưa test; share sheet mở rồi hủy. Video chưa quay. Xem testcase mới nhất ở [testcase_day7.txt](testcase_day7.txt), không coi các lần chạy dưới đây là kiểm tra mới.
+
 Hướng dẫn kiểm tra nhập mô tả/chọn ảnh, Firebase/App Check, Gemini draft, review/save, History và detail theo ID. Widget tests History/detail dùng fake repository. Theo quyết định của chủ dự án, Task 7 được đóng với ngoại lệ được chấp nhận: đã xác minh một report text-only còn ở History/detail sau force-stop/relaunch trên PKG110 Android 16/API 36, nhưng ảnh sau restart và offline save/read chưa được kiểm chứng. Fixture ảnh không xuất hiện trong Photo Picker; thiết bị chỉ có ADB Wireless. Day 4 chưa được nghiệm thu đầy đủ.
 
 ## 1. Chuẩn bị và khởi chạy

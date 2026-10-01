@@ -1,12 +1,18 @@
 # AI Field Assistant
 
+## Trạng thái ứng viên nộp (01/10/2026)
+
+APK release `0.2.0+2` đã build, ký riêng, cài/mở trên PKG110 (Android 16/API 36), và nhận bản nháp AI thật cho cả mô tả text-only lẫn text kèm sơ đồ tổng hợp. Text report lưu vào lịch sử và còn sau force-stop/relaunch; PDF lưu qua Android picker. Đây là bằng chứng trên một máy trong lượt chuẩn bị, không cam kết mọi thiết bị. Video chưa quay; link GitHub Release/Drive chưa tạo; chưa nộp. Chi tiết PASS/NOT RUN và SHA-256 ở [trạng thái gói nộp](docs/SUBMISSION_STATUS.md); thao tác lắp đặt ở [hướng dẫn APK](docs/INSTALL_RELEASE.md).
+
+Signing key và mật khẩu nằm ngoài repository. Chủ dự án cần tạo backup độc lập an toàn, quay/review video theo script, điền giờ tiết kiệm có căn cứ và xác minh link/form trước nộp.
+
 Ứng dụng Android-first dành trước hết cho nhân viên bảo trì tòa nhà ghi nhận sự cố điện, nước, điều hòa và thiết bị. Biểu mẫu dài làm gián đoạn công việc; báo cáo có thể thiếu ảnh/bối cảnh hoặc cách ghi không thống nhất. AI Field Assistant hướng tới chuyển mô tả/ảnh thành bản nháp có cấu trúc để nhân viên kiểm tra, chỉnh sửa và xác nhận trước khi lưu.
 
-## Trạng thái hiện tại
+## Lịch sử — trạng thái sau Release Task 2, trước lượt chuẩn bị APK
 
-**Release Task 2 (01/10/2026): đã triển khai mã trên `codex/release-app-check`.** Android debug giữ Debug provider; profile/release activate `AndroidReCaptchaProvider` với site key công khai từ `APP_CHECK_ANDROID_SITE_KEY`, sau Firebase init và trước khi tạo các dịch vụ của app. Thiếu key/lỗi khởi tạo thì hiện thông báo và nút thử lại; không mở app hoặc fallback debug. Chưa lấy token/request AI thật trên Android release, chưa hoàn tất signing/build/device proof.
+Release Task 2 đã triển khai mã trên `codex/release-app-check`. Android debug giữ Debug provider; profile/release activate `AndroidReCaptchaProvider` với site key công khai từ `APP_CHECK_ANDROID_SITE_KEY`, sau Firebase init và trước khi tạo dịch vụ. Thiếu key/lỗi khởi tạo thì không mở app hoặc fallback debug. Khi snapshot ban đầu này được ghi, chưa lấy token/request AI trên release. Bằng chứng mới nhất trong lượt chuẩn bị này nằm ở phần đầu README và `docs/SUBMISSION_STATUS.md`.
 
-Kiểm tra mới của Task 2: format 5 tệp Dart mới/đổi, analyzer sạch; test App Check/bootstrap + service/parser **52/52 PASS**. Full suite working tree **133 PASS, 2 FAIL** ở hai test modified có trước: detail thiếu scroll tới suggested_action; widget cast FilledButton trong khi UI là OutlinedButton. Giữ nguyên hai tệp này. Các số test cũ bên dưới là lịch sử, không thay thế kết quả mới.
+Trong lần triển khai Task 2: format 5 tệp Dart mới/đổi, analyzer sạch; test App Check/bootstrap + service/parser **52/52 PASS**. Full suite dirty working tree lúc đó **133 PASS, 2 FAIL** ở hai test modified có trước. Ở lần chuẩn bị APK mới, bộ intended submission **135/135 PASS**, trong đó hai đường dẫn test modified dùng đúng bản từ HEAD; file gốc được giữ nguyên. Không dùng con số này như thể full suite dirty working tree đã PASS.
 
 ### Snapshot lịch sử — Release Task 1
 
