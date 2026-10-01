@@ -29,6 +29,13 @@ void main() {
     expect(find.text('Điện'), findsOneWidget);
     expect(find.text('Tầng 2'), findsOneWidget);
     expect(find.text('Cao'), findsOneWidget);
+    expect(find.text('Đã xác nhận'), findsOneWidget);
+    // The UI refresh moved suggested_action below the fold, so the lazily
+    // built ListView needs scrolling before its value/note exist to find.
+    await _scrollTo(
+      tester,
+      find.byKey(const Key('report-detail-field-suggested_action')),
+    );
     expect(
       find.text('Kiểm tra cầu dao và ngắt nguồn nếu thấy tia lửa.'),
       findsOneWidget,
@@ -37,7 +44,6 @@ void main() {
       find.text('Đây là hành động đề xuất, chưa phải việc đã thực hiện.'),
       findsOneWidget,
     );
-    expect(find.text('Đã xác nhận'), findsOneWidget);
     await _scrollTo(
       tester,
       find.byKey(const Key('report-detail-source-description')),

@@ -1,10 +1,28 @@
 # AI Field Assistant
 
+## Trạng thái ứng viên nộp (01/10/2026)
+
+APK release `0.2.0+2` đã build, ký riêng, cài/mở trên PKG110 (Android 16/API 36), và nhận bản nháp AI thật cho cả mô tả text-only lẫn text kèm sơ đồ tổng hợp. Text report lưu vào lịch sử và còn sau force-stop/relaunch; PDF lưu qua Android picker. Đây là bằng chứng trên một máy trong lượt chuẩn bị, không cam kết mọi thiết bị. Video chưa quay; link GitHub Release/Drive chưa tạo; chưa nộp. Chi tiết PASS/NOT RUN và SHA-256 ở [trạng thái gói nộp](docs/SUBMISSION_STATUS.md); thao tác lắp đặt ở [hướng dẫn APK](docs/INSTALL_RELEASE.md).
+
+Signing key và mật khẩu nằm ngoài repository. Chủ dự án cần tạo backup độc lập an toàn, quay/review video theo script, điền giờ tiết kiệm có căn cứ và xác minh link/form trước nộp.
+
 Ứng dụng Android-first dành trước hết cho nhân viên bảo trì tòa nhà ghi nhận sự cố điện, nước, điều hòa và thiết bị. Biểu mẫu dài làm gián đoạn công việc; báo cáo có thể thiếu ảnh/bối cảnh hoặc cách ghi không thống nhất. AI Field Assistant hướng tới chuyển mô tả/ảnh thành bản nháp có cấu trúc để nhân viên kiểm tra, chỉnh sửa và xác nhận trước khi lưu.
 
-## Trạng thái hiện tại
+## Lịch sử — trạng thái sau Release Task 2, trước lượt chuẩn bị APK
 
-UI/UX refresh được thực hiện trên nhánh `codex/ui-ux-refresh`, tạo từ `codex/day6` tại commit `18e3ea7f5dc900bbd8099e9ed99ee54b14c43187`. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi có trước và được giữ nguyên.
+Release Task 2 đã triển khai mã trên `codex/release-app-check`. Android debug giữ Debug provider; profile/release activate `AndroidReCaptchaProvider` với site key công khai từ `APP_CHECK_ANDROID_SITE_KEY`, sau Firebase init và trước khi tạo dịch vụ. Thiếu key/lỗi khởi tạo thì không mở app hoặc fallback debug. Khi snapshot ban đầu này được ghi, chưa lấy token/request AI trên release. Bằng chứng mới nhất trong lượt chuẩn bị này nằm ở phần đầu README và `docs/SUBMISSION_STATUS.md`.
+
+Trong lần triển khai Task 2: format 5 tệp Dart mới/đổi, analyzer sạch; test App Check/bootstrap + service/parser **52/52 PASS**. Full suite dirty working tree lúc đó **133 PASS, 2 FAIL** ở hai test modified có trước. Ở lần chuẩn bị APK mới, bộ intended submission **135/135 PASS**, trong đó hai đường dẫn test modified dùng đúng bản từ HEAD; file gốc được giữ nguyên. Không dùng con số này như thể full suite dirty working tree đã PASS.
+
+### Snapshot lịch sử — Release Task 1
+
+**Release Task 1 (01/10/2026): PARTIAL.** Baseline hiện tại là `codex/day7`, HEAD `fa85658`. Đã chốt APK trực tiếp, người nhận dùng AI không đăng ký debug token từng máy hoặc đăng nhập. Người dùng đã bật reCAPTCHA API, tạo key `ai-field-assistant-android-release` và đăng ký App Check Android: ảnh Apps mới nhất ghi Fraud Defense/Registered, đúng package. IAM có role Owner; billing ở ảnh gần nhất chưa liên kết. Wizard AI Logic trước đó chọn baseline Enforced/replay Monitoring only, chưa có bằng chứng lưu wizard; saved key settings/quota Mobile và runtime release còn cần kiểm chứng. Mã Flutter chưa activate provider release; Task 2/signing/build/device proof chưa thực hiện.
+
+Project trong mã là `ai-field-assistant-7f9dc`, package `com.example.ai_field_assistant`; tránh thao tác nhầm project StudyTrack. Source release vẫn chưa activate App Check và đang ký bằng debug key. Preflight ADB vừa ghi nhận 0 thiết bị online; chưa sửa mã, tạo keystore, chạy test/analyze/build hay gọi AI trong Task 1. Các kết quả test/build bên dưới thuộc những lượt lịch sử. Chi tiết gate và bước hoàn tất preflight ở [kế hoạch release](docs/implement_plan_release_app.md).
+
+Ảnh quota Gemini mới: API Enabled; quota request/ngày free tier `gemini-3.8-flash` 20, usage 25; `gemini-3.5-flash-lite` 500, usage 4. Primary đã vượt giới hạn hiển thị tại thời điểm ảnh; service có fallback quota, chưa có request AI mới để xác minh. Quota/điều kiện reCAPTCHA Mobile vẫn chưa kiểm tra xong; không suy APK sẽ dùng AI không giới hạn.
+
+UI/UX refresh trước đó được thực hiện trên nhánh `codex/ui-ux-refresh`, tạo từ `codex/day6` tại commit `18e3ea7f5dc900bbd8099e9ed99ee54b14c43187`. `docs/HOME_DEVICE_TEST_CHECKLIST.md` là tệp chưa được theo dõi có trước và được giữ nguyên.
 
 - Luồng hiện có: nhập mô tả/chọn ảnh → người dùng chủ động gọi AI → xem/sửa/xác nhận draft → lưu cục bộ → History → chi tiết report. Service AI, parser, SQLite repository và các màn UI đã được nối trong app.
 - **Day 5 Task 1:** baseline lịch sử gồm 99/99 test, analyzer sạch, APK debug build/cài trên emulator. Đây là kết quả của Task 1, không phải build mới sau Task 3.
@@ -110,8 +128,8 @@ Schema thiết kế cho báo cáo gồm `category`, `location`, `priority`, `iss
 - **AI đã tích hợp:** Firebase AI Logic gọi Gemini Developer API khi người dùng bấm CTA; model chính `gemini-3.8-flash`, fallback `gemini-3.5-flash-lite` chỉ khi model chính báo quota. Quota thay đổi theo project/thời gian; cần kiểm tra Console trước demo, không dựa vào số cũ trong tài liệu lịch sử. Firebase-managed proxy được dùng; dự án không tự quản lý backend/proxy riêng.
 - **Input ảnh gửi AI:** service và form nhận `image/jpeg`, `image/png`, `image/webp` để phân tích; form giới hạn preview 10 MiB, service giới hạn bytes gửi 4 MiB. [Firebase AI Logic liệt kê ba MIME này cho ảnh inline](https://firebase.google.com/docs/ai-logic/input-file-requirements). Task 4 đã được kiểm tra bằng widget test host; chưa xác minh trên Android trong lượt này.
 - Task 2 Ngày 3 thêm `ReportDraft` schema/parser và prompt; Task 4 Ngày 3 thêm service Firebase AI Logic với `responseSchema`, fake sender, timeout và ánh xạ lỗi; Task 5 Ngày 3 nối CTA/loading/lỗi/retry. Task 3 Ngày 5 bổ sung kiểm tra MIME/signature, lỗi đọc ảnh và test parser mà không đổi schema.
-- **Firebase trong app (Task 3):** `firebase_core` 4.15.0, `firebase_ai` 4.0.0, `firebase_app_check` 0.4.8 (`firebase_auth` 6.7.0 là dependency chuyển tiếp). `main()` async khởi tạo Firebase và kích hoạt App Check debug provider trong `kDebugMode`; API `firebase_app_check` 0.4.8 dùng class provider mới (`providerAndroid`/`providerWeb`), tham số enum cũ đã deprecated.
-- Firebase Console/App Check đã hoạt động cho lần request Android thật ngày 27/09/2026. Tuy nhiên, một lần thử khác trên emulator trong Task 2 Day 5 bị App Check từ chối; debug token có thể khác giữa thiết bị/cài đặt. Web và provider production (Play Integrity/reCAPTCHA Enterprise) chưa được xác minh/cấu hình. Firebase debug provider ghi token vào log cục bộ; không chụp/chia sẻ raw log hoặc đưa token vào tài liệu.
+- **Firebase trong app:** `firebase_core` 4.15.0, `firebase_ai` 4.0.0, `firebase_app_check` 0.4.8 (`firebase_auth` 6.7.0 là dependency chuyển tiếp). `main()` mở AppBootstrap, chờ Firebase rồi App Check trước khi mở AiFieldAssistantApp; retry dùng lại Firebase app đã khởi tạo. Android debug dùng Debug provider, profile/release dùng reCAPTCHA qua helper. API 0.4.8 dùng class provider (`providerAndroid`/`providerWeb`); không nâng dependency trong Release Task 2.
+- Firebase Console/App Check đã hoạt động cho request Android thật ngày 27/09/2026; một lần thử mới hơn trên emulator bị từ chối. Android Fraud Defense hiện Registered theo ảnh người dùng gửi; mã release đã được nối trong Task 2 nhưng native attestation/AI chưa xác minh. Web production ngoài phạm vi. Firebase debug provider có thể ghi token vào log cục bộ; không chia sẻ raw log hoặc đưa token vào tài liệu.
 - Các khóa Firebase trong `firebase_options.dart`/`google-services.json` là cấu hình client nhận diện project, không phải Gemini Developer API key. Chưa kiểm tra API restrictions của project trong Google Cloud Console; không phát hiện Gemini Developer API key trong lần quét source/config Task 5. Xem [Firebase API key guidance](https://firebase.google.com/docs/projects/api-keys) và [Firebase AI Logic security checklist](https://firebase.google.com/docs/ai-logic/security-checklist).
 - Các con số quota và trạng thái Console được ghi trong log theo thời điểm quan sát, không được truy vấn lại trong Task 3 Day 5. Quota có thể thay đổi; kiểm tra Firebase/Google Cloud Console trước request demo.
 - Spark/free tier không cần thẻ hoặc Cloud Billing. Free-tier input có thể được dùng để cải thiện sản phẩm Google, nên chỉ thử bằng mô tả/ảnh tổng hợp, không dùng dữ liệu hiện trường thật. Paid tier và mục tiêu USD 5/tháng chưa áp dụng; việc bật billing sau này cần xác nhận riêng.
@@ -134,7 +152,13 @@ Xem trước trên Chrome bằng `flutter run -d chrome`. Nếu Flutter yêu c�
 flutter build apk --debug
 ```
 
-Tạo APK release để kiểm tra demo bằng `flutter build apk --release`; output là `build/app/outputs/flutter-apk/app-release.apk`. Cấu hình hiện tại ký release bằng debug key, nên APK này không phải artifact phát hành production.
+Android profile/release cần site key **công khai** của Android app đã Registered với Fraud Defense trong đúng project. Truyền lúc chạy/build, ví dụ lệnh cho bước build tiếp theo (chưa chạy trong Task 2):
+
+```bash
+flutter build apk --release --no-pub "--dart-define=APP_CHECK_ANDROID_SITE_KEY=<ANDROID_SITE_KEY_PUBLIC>"
+```
+
+Thay placeholder bằng site key thực tế; không dùng API key, debug token hoặc server secret. `--dart-define` được nhúng vào APK và không bảo vệ bí mật. Thiếu key sẽ chặn khởi tạo; retry không thể sửa cấu hình đã nhúng, người cung cấp phải build lại đúng key. Sai key/package/quota cần kiểm tra Console và thử trên thiết bị thật; activate thành công chưa chứng minh token hợp lệ. Output là `build/app/outputs/flutter-apk/app-release.apk`; signing hiện vẫn dùng debug key, chưa đủ điều kiện phát hành production (Release Task 3). Không tắt enforcement hoặc đưa người nhận sang đăng ký debug token để nghiệm thu release.
 
 `android/gradle.properties` tắt Kotlin incremental để tránh lỗi cache khi project Windows và Pub Cache nằm ở hai ổ đĩa khác nhau. Điều này làm một số lần build Kotlin biên dịch lại lâu hơn, nhưng không cần thêm tham số cho Android Studio hoặc `flutter run`. APK debug được tạo tại `build/app/outputs/flutter-apk/app-debug.apk`.
 
